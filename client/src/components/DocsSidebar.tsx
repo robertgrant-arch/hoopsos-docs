@@ -4,11 +4,11 @@ import { cn } from "@/lib/utils";
 
 export default function DocsSidebar({ currentSlug }: { currentSlug?: string }) {
   const [location] = useLocation();
-  const isHome = location === "/";
+  const isHome = location === "/docs" || location === "/docs/";
 
   return (
     <nav className="h-full overflow-y-auto doc-scroll py-8 px-5 text-[13.5px]">
-      <Link href="/">
+      <Link href="/docs">
         <a
           className={cn(
             "block px-3 py-1.5 rounded-md transition-colors mb-4",
