@@ -114,3 +114,11 @@
 - [ ] Update architecture + schema docs
 - [ ] Wire into Coach HQ / Player / Team / Expert / Admin nav
 - [ ] QA + checkpoint
+
+
+## Phase 21 — Drill Library toolbar layout fix
+- [ ] Re-read DrillLibraryDrawer header markup
+- [ ] Refactor into 4 sub-containers: header / tabs / search+chips / filters+matched
+- [ ] Use flex-wrap + min-widths so nothing overlaps at any width
+- [ ] Add 2-column grid on >=1024px for bottom (search+chips | filters)
+- [ ] Verify desktop/tablet/mobile, save checkpoint

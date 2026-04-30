@@ -362,15 +362,24 @@ function DrillLibraryDrawer({
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>{trigger}</SheetTrigger>
       <SheetContent side="right" className="w-full sm:max-w-xl flex flex-col p-0">
-        <SheetHeader className="p-5 border-b border-border">
-          <div className="flex items-center justify-between gap-2">
-            <SheetTitle className="font-display text-lg uppercase tracking-tight">
-              {tab === "LIBRARY" ? "Drill Library" : "My Drills"}
-            </SheetTitle>
+        {/* Drill Library toolbar — 4 explicit zones, never overlapping */}
+        <SheetHeader className="drill-toolbar shrink-0 px-5 pt-5 pb-4 border-b border-border flex flex-col gap-3 text-left space-y-0">
+          {/* Row 1 — header (title + subtitle + new-drill button) */}
+          <div className="drill-toolbar-header flex flex-wrap items-start justify-between gap-x-4 gap-y-2">
+            <div className="flex flex-col gap-1 min-w-0">
+              <SheetTitle className="font-display text-lg uppercase tracking-tight leading-tight">
+                {tab === "LIBRARY" ? "Drill Library" : "My Drills"}
+              </SheetTitle>
+              <p className="text-[12.5px] text-muted-foreground leading-snug">
+                {tab === "LIBRARY"
+                  ? `${drillLibrary.length} drills across ${drillCategories.length} categories. Click to add to plan.`
+                  : `${visibleCustoms.length} custom drill${visibleCustoms.length === 1 ? "" : "s"} authored by you or shared with your org.`}
+              </p>
+            </div>
             <Button
               size="sm"
               variant="outline"
-              className="h-8"
+              className="h-8 shrink-0"
               onClick={() => {
                 setEditing(null);
                 setEditorOpen(true);
@@ -379,102 +388,108 @@ function DrillLibraryDrawer({
               <Plus className="w-3.5 h-3.5 mr-1" /> New drill
             </Button>
           </div>
-          <p className="text-[12.5px] text-muted-foreground mt-1">
-            {tab === "LIBRARY"
-              ? `${drillLibrary.length} drills across ${drillCategories.length} categories. Click to add to plan.`
-              : `${visibleCustoms.length} custom drill${visibleCustoms.length === 1 ? "" : "s"} authored by you or shared with your org.`}
-          </p>
-          {/* Tab toggle */}
-          <div className="mt-3 inline-flex rounded-md border border-border p-0.5 bg-card">
-            <button
-              onClick={() => setTab("LIBRARY")}
-              className={`h-7 px-3 rounded text-[11.5px] font-mono uppercase tracking-wider transition ${
-                tab === "LIBRARY"
-                  ? "bg-primary text-primary-foreground"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              Library
-            </button>
-            <button
-              onClick={() => setTab("MINE")}
-              className={`h-7 px-3 rounded text-[11.5px] font-mono uppercase tracking-wider transition ${
-                tab === "MINE"
-                  ? "bg-primary text-primary-foreground"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              My Drills{visibleCustoms.length > 0 ? ` · ${visibleCustoms.length}` : ""}
-            </button>
-          </div>
-        </SheetHeader>
 
-        <div className="px-5 py-3 border-b border-border space-y-3">
-          <div className="relative">
-            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search by name, description, tag…"
-              className="pl-9 h-9"
-            />
-          </div>
-
-          <div className="flex flex-wrap items-center gap-2">
-            <button
-              onClick={() => setActiveCat("ALL")}
-              className={`h-7 px-2.5 rounded-full text-[11px] border ${
-                activeCat === "ALL" ? "bg-primary/15 border-primary text-primary" : "border-border hover:border-primary/40"
-              }`}
-            >
-              All
-            </button>
-            {drillCategories.map((c) => (
+          {/* Row 2 — tabs */}
+          <div className="drill-toolbar-tabs flex flex-wrap items-center gap-2">
+            <div className="inline-flex rounded-md border border-border p-0.5 bg-card">
               <button
-                key={c.id}
-                onClick={() => setActiveCat(c.id)}
-                className={`h-7 px-2.5 rounded-full text-[11px] border inline-flex items-center gap-1.5 ${
-                  activeCat === c.id ? "border-primary text-primary bg-primary/10" : "border-border hover:border-primary/40"
+                onClick={() => setTab("LIBRARY")}
+                className={`h-7 px-3 rounded text-[11.5px] font-mono uppercase tracking-wider transition whitespace-nowrap ${
+                  tab === "LIBRARY"
+                    ? "bg-primary text-primary-foreground"
+                    : "text-muted-foreground hover:text-foreground"
                 }`}
               >
-                <span className="w-1.5 h-1.5 rounded-full" style={{ background: c.color }} />
-                {c.name}
+                Library
               </button>
-            ))}
+              <button
+                onClick={() => setTab("MINE")}
+                className={`h-7 px-3 rounded text-[11.5px] font-mono uppercase tracking-wider transition whitespace-nowrap ${
+                  tab === "MINE"
+                    ? "bg-primary text-primary-foreground"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                My Drills{visibleCustoms.length > 0 ? ` · ${visibleCustoms.length}` : ""}
+              </button>
+            </div>
           </div>
 
-          <div className="flex items-center gap-2 flex-wrap">
-            <Select value={activeIntensity} onValueChange={(v) => setActiveIntensity(v as any)}>
-              <SelectTrigger className="h-8 w-[140px] text-[12px]">
-                <SelectValue placeholder="Intensity" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="ALL">All intensities</SelectItem>
-                {INTENSITIES.map((i) => (
-                  <SelectItem key={i} value={i}>
-                    {i}
-                  </SelectItem>
+          {/* Rows 3 + 4 — search/chips on the left, filters/matched on the right at >=lg */}
+          <div className="drill-toolbar-bottom grid grid-cols-1 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] gap-x-4 gap-y-3 items-start">
+            {/* Row 3 — search + chips */}
+            <div className="drill-toolbar-search-and-chips flex flex-col gap-2 min-w-0">
+              <div className="relative flex-1 min-w-[260px]">
+                <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+                <Input
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Search by name, description, tag…"
+                  className="pl-9 h-9"
+                />
+              </div>
+              <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5">
+                <button
+                  onClick={() => setActiveCat("ALL")}
+                  className={`h-7 px-2.5 rounded-full text-[11px] border whitespace-nowrap ${
+                    activeCat === "ALL"
+                      ? "bg-primary/15 border-primary text-primary"
+                      : "border-border hover:border-primary/40"
+                  }`}
+                >
+                  All
+                </button>
+                {drillCategories.map((c) => (
+                  <button
+                    key={c.id}
+                    onClick={() => setActiveCat(c.id)}
+                    className={`h-7 px-2.5 rounded-full text-[11px] border inline-flex items-center gap-1.5 whitespace-nowrap ${
+                      activeCat === c.id
+                        ? "border-primary text-primary bg-primary/10"
+                        : "border-border hover:border-primary/40"
+                    }`}
+                  >
+                    <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: c.color }} />
+                    {c.name}
+                  </button>
                 ))}
-              </SelectContent>
-            </Select>
-            <Select value={activeSurface} onValueChange={(v) => setActiveSurface(v as any)}>
-              <SelectTrigger className="h-8 w-[160px] text-[12px]">
-                <SelectValue placeholder="Surface" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="ALL">All surfaces</SelectItem>
-                {SURFACES.map((s) => (
-                  <SelectItem key={s} value={s}>
-                    {formatSurface(s)}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <span className="text-[11px] text-muted-foreground ml-auto font-mono">
-              {filtered.length} matched
-            </span>
+              </div>
+            </div>
+
+            {/* Row 4 — filters + matched count */}
+            <div className="drill-toolbar-filters flex flex-wrap items-center gap-2 lg:justify-end">
+              <Select value={activeIntensity} onValueChange={(v) => setActiveIntensity(v as any)}>
+                <SelectTrigger className="h-8 min-w-[150px] text-[12px] shrink-0">
+                  <SelectValue placeholder="Intensity" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="ALL">All intensities</SelectItem>
+                  {INTENSITIES.map((i) => (
+                    <SelectItem key={i} value={i}>
+                      {i}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Select value={activeSurface} onValueChange={(v) => setActiveSurface(v as any)}>
+                <SelectTrigger className="h-8 min-w-[150px] text-[12px] shrink-0">
+                  <SelectValue placeholder="Surface" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="ALL">All surfaces</SelectItem>
+                  {SURFACES.map((s) => (
+                    <SelectItem key={s} value={s}>
+                      {formatSurface(s)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <span className="text-[11px] text-muted-foreground font-mono whitespace-nowrap">
+                {filtered.length} matched
+              </span>
+            </div>
           </div>
-        </div>
+        </SheetHeader>
 
         <ScrollArea className="flex-1">
           <div className="p-4 space-y-2">
