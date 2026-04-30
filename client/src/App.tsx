@@ -1,9 +1,11 @@
+import React from "react";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/NotFound";
 import { Route, Switch } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
+import RequireAuth from "@/components/RequireAuth";
 
 // Marketing
 import MarketingHome from "@/pages/marketing/Home";
@@ -18,6 +20,7 @@ import {
 
 // Auth
 import SignIn from "@/pages/SignIn";
+import SignUp from "@/pages/SignUp";
 
 // Docs
 import DocsHome from "@/pages/DocsHome";
@@ -76,6 +79,10 @@ import {
   ExpertDashboard,
 } from "@/pages/app/AppPages";
 
+const guard = (Component: React.ComponentType<any>) => (props: any) => (
+  <RequireAuth><Component {...props} /></RequireAuth>
+);
+
 function Router() {
   return (
     <Switch>
@@ -90,6 +97,9 @@ function Router() {
 
       {/* Auth */}
       <Route path="/sign-in" component={SignIn} />
+      <Route path="/sign-in/:rest*" component={SignIn} />
+      <Route path="/sign-up" component={SignUp} />
+      <Route path="/sign-up/:rest*" component={SignUp} />
 
       {/* Docs */}
       <Route path="/docs" component={DocsHome} />
@@ -103,16 +113,17 @@ function Router() {
       <Route path="/app/player/skills" component={PlayerSkills} />
       <Route path="/app/player/achievements" component={PlayerAchievements} />
 
-      {/* Coach HQ */}
-      <Route path="/app/coach" component={CoachDashboard} />
-      <Route path="/app/coach/roster" component={CoachRoster} />
-      <Route path="/app/coach/queue" component={CoachQueue} />
-      <Route path="/app/coach/queue/:id" component={CoachQueueDetail} />
-      <Route path="/app/coach/assignments" component={CoachAssignments} />
-      <Route path="/app/coach/practice-plans" component={CoachPracticePlanBuilder} />
-      <Route path="/app/coach/practice-plans/legacy" component={CoachPracticePlans} />
-      <Route path="/app/coach/bookings" component={CoachBookings} />
-      <Route path="/app/coach/messages" component={CoachDashboard} />
+      {/* Coach HQ - auth required */}
+      <Route path="/app/coach" component={guard(CoachDashboard)} />
+      <Route path="/app/coach/roster" component={guard(CoachRoster)} />
+      <Route path="/app/coach/queue" component={guard(CoachQueue)} />
+      <Route path="/app/coach/queue/:id" component={guard(CoachQueueDetail)} />
+      <Route path="/app/coach/assignments" component={guard(CoachAssignments)} />
+      <Route path="/app/coach/practice-plans" component={guard(CoachPracticePlanBuilder)} />
+      <Route path="/app/coach/practice-plans/legacy" component={guard(CoachPracticePlans)} />
+      <Route path="/app/coach/bookings" component={guard(CoachBookings)} />
+      <Route path="/app/coach/messages" component={guard(CoachDashboard)} />
+      <Route path="/app/coach/playbook" component={guard(CoachPlaybookStudio)} />
 
       {/* Team */}
       <Route path="/app/team" component={TeamDashboard} />
@@ -130,7 +141,6 @@ function Router() {
 
       {/* Playbook */}
       <Route path="/app/playbook" component={CoachPlaybookStudio} />
-      <Route path="/app/coach/playbook" component={CoachPlaybookStudio} />
       <Route path="/app/playbook/legacy" component={PlaybookStudio} />
       <Route path="/app/player/quizzes/:id" component={PlayQuizRunner} />
       <Route path="/app/player/quizzes" component={PlayQuizRunner} />
