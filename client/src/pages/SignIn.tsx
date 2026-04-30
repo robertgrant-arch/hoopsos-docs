@@ -24,7 +24,7 @@ const iconFor: Record<Role, React.ReactNode> = {
 export default function SignIn() {
   const [, navigate] = useLocation();
   const { signIn } = useAuth();
-  const HAS_CLERK = !!(import.meta.env as any).VITE_CLERK_PUBLISHABLE_KEY;
+    const HAS_CLERK = false;
 if (HAS_CLERK) {
 return (
 <div className="min-h-screen flex items-center justify-center p-6 bg-background">
