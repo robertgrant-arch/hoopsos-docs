@@ -13,7 +13,7 @@
  * In production this maps to `/(coach)/practice-plans` with `PracticePlanBuilder`
  * as the canonical component.
  */
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "wouter";
 import {
   Calendar as CalendarIcon,
@@ -630,6 +630,44 @@ function DrillLibraryDrawer({
 /* Right-rail summary                                                          */
 /* -------------------------------------------------------------------------- */
 
+/**
+ * BudgetInput
+ * --------------------------------------------------------------------------
+ * Number input that stores a raw string while the user is typing so it can
+ * be cleared and retyped without snapping to the floor on every keystroke.
+ * Normalizes on blur via clamp [15, 240].
+ */
+function BudgetInput({
+  value,
+  onChange,
+}: {
+  value: number;
+  onChange: (v: number) => void;
+}) {
+  const [draft, setDraft] = useState<string>(String(value));
+  useEffect(() => {
+    setDraft(String(value));
+  }, [value]);
+  return (
+    <Input
+      type="number"
+      inputMode="numeric"
+      min={15}
+      max={240}
+      step={1}
+      value={draft}
+      onChange={(e) => setDraft(e.target.value)}
+      onBlur={() => {
+        const n = parseInt(draft, 10);
+        const clamped = Number.isFinite(n) ? Math.min(240, Math.max(15, n)) : 15;
+        setDraft(String(clamped));
+        onChange(clamped);
+      }}
+      className="h-8 w-20 text-center font-mono text-sm"
+    />
+  );
+}
+
 function PlanSummary({
   plan,
   onTitleChange,
@@ -640,6 +678,7 @@ function PlanSummary({
   onStatusChange,
   onPrint,
 }: {
+  /* see comment in handler below */
   plan: PracticePlan;
   onTitleChange: (v: string) => void;
   onFocusChange: (v: string) => void;
@@ -741,14 +780,7 @@ function PlanSummary({
           />
         </div>
         <div className="flex items-center gap-2">
-          <Input
-            type="number"
-            min={15}
-            max={240}
-            value={plan.budgetMin}
-            onChange={(e) => onBudgetChange(Math.max(15, parseInt(e.target.value || "0", 10)))}
-            className="h-8 w-20 text-center font-mono text-sm"
-          />
+          <BudgetInput value={plan.budgetMin} onChange={onBudgetChange} />
           <span className="text-[12px] text-muted-foreground">min budgeted</span>
           <span className="ml-auto text-[12px] font-mono">
             {overBudget ? (

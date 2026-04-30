@@ -126,10 +126,30 @@ export function CustomDrillEditor({
   const [equipDraft, setEquipDraft] = useState("");
   const [pointDraft, setPointDraft] = useState("");
 
+  /**
+   * Number fields are stored as raw strings during typing so users can
+   * clear, edit, and retype without the input snapping back to a fallback
+   * on every keystroke. They are normalized on blur (display) and again
+   * on save (payload).
+   */
+  const [numStr, setNumStr] = useState({
+    duration: String(empty.defaultDurationMin),
+    coaches: String(empty.coachesNeeded),
+    minPlayers: String(empty.minPlayers),
+    maxPlayers: String(empty.maxPlayers),
+  });
+
   // Sync form whenever the editor reopens.
   useEffect(() => {
     if (!open) return;
-    setForm(editing ? fromDrill(editing) : empty);
+    const next = editing ? fromDrill(editing) : empty;
+    setForm(next);
+    setNumStr({
+      duration: String(next.defaultDurationMin),
+      coaches: String(next.coachesNeeded),
+      minPlayers: String(next.minPlayers),
+      maxPlayers: String(next.maxPlayers),
+    });
     setEquipDraft("");
     setPointDraft("");
   }, [open, editing]);
@@ -147,6 +167,11 @@ export function CustomDrillEditor({
     k: K,
     v: CustomDrillInput[K],
   ) => setForm((f) => ({ ...f, [k]: v }));
+
+  function normalizePositiveInt(v: string, fallback = 1, min = 1): number {
+    const n = parseInt(v, 10);
+    return Number.isFinite(n) && n >= min ? n : fallback;
+  }
 
   function addEquipment() {
     const v = equipDraft.trim();
@@ -167,17 +192,37 @@ export function CustomDrillEditor({
   }
 
   function handleSave() {
-    if (!canSave) {
+    // Final coercion of the raw-string number fields. This handles the case
+    // where the user is still focused on a number input and clicks Save.
+    const duration = normalizePositiveInt(numStr.duration, 1);
+    const coaches = normalizePositiveInt(numStr.coaches, 1);
+    const minPlayers = normalizePositiveInt(numStr.minPlayers, 1);
+    const maxPlayers = normalizePositiveInt(numStr.maxPlayers, minPlayers, minPlayers);
+    const finalForm: CustomDrillInput = {
+      ...form,
+      defaultDurationMin: duration,
+      coachesNeeded: coaches,
+      minPlayers,
+      maxPlayers,
+    };
+
+    const isValid =
+      finalForm.title.trim().length >= 3 &&
+      finalForm.description.trim().length >= 6 &&
+      finalForm.defaultDurationMin >= 1 &&
+      finalForm.maxPlayers >= finalForm.minPlayers;
+    if (!isValid) {
       toast.error("Title, description, duration, and player range are required.");
       return;
     }
+
     if (editing) {
-      update(editing.id, form);
-      toast.success(`Updated "${form.title}"`);
-      onSaved?.({ ...editing, ...form });
+      update(editing.id, finalForm);
+      toast.success(`Updated "${finalForm.title}"`);
+      onSaved?.({ ...editing, ...finalForm });
     } else {
-      const created = create(form, ownerCoachId, orgId);
-      toast.success(`Saved "${form.title}" to My Drills`);
+      const created = create(finalForm, ownerCoachId, orgId);
+      toast.success(`Saved "${finalForm.title}" to My Drills`);
       onSaved?.(created);
     }
     onOpenChange(false);
@@ -252,14 +297,16 @@ export function CustomDrillEditor({
               <Label>Duration (min)</Label>
               <Input
                 type="number"
+                inputMode="numeric"
                 min={1}
-                value={form.defaultDurationMin}
-                onChange={(e) =>
-                  set(
-                    "defaultDurationMin",
-                    Math.max(1, parseInt(e.target.value) || 1),
-                  )
-                }
+                step={1}
+                value={numStr.duration}
+                onChange={(e) => setNumStr((p) => ({ ...p, duration: e.target.value }))}
+                onBlur={() => {
+                  const n = normalizePositiveInt(numStr.duration, 1);
+                  setNumStr((p) => ({ ...p, duration: String(n) }));
+                  set("defaultDurationMin", n);
+                }}
                 className="h-9"
               />
             </div>
@@ -303,14 +350,16 @@ export function CustomDrillEditor({
               <Label>Coaches</Label>
               <Input
                 type="number"
+                inputMode="numeric"
                 min={1}
-                value={form.coachesNeeded}
-                onChange={(e) =>
-                  set(
-                    "coachesNeeded",
-                    Math.max(1, parseInt(e.target.value) || 1),
-                  )
-                }
+                step={1}
+                value={numStr.coaches}
+                onChange={(e) => setNumStr((p) => ({ ...p, coaches: e.target.value }))}
+                onBlur={() => {
+                  const n = normalizePositiveInt(numStr.coaches, 1);
+                  setNumStr((p) => ({ ...p, coaches: String(n) }));
+                  set("coachesNeeded", n);
+                }}
                 className="h-9"
               />
             </div>
@@ -322,14 +371,16 @@ export function CustomDrillEditor({
               <Label>Min players</Label>
               <Input
                 type="number"
+                inputMode="numeric"
                 min={1}
-                value={form.minPlayers}
-                onChange={(e) =>
-                  set(
-                    "minPlayers",
-                    Math.max(1, parseInt(e.target.value) || 1),
-                  )
-                }
+                step={1}
+                value={numStr.minPlayers}
+                onChange={(e) => setNumStr((p) => ({ ...p, minPlayers: e.target.value }))}
+                onBlur={() => {
+                  const n = normalizePositiveInt(numStr.minPlayers, 1);
+                  setNumStr((p) => ({ ...p, minPlayers: String(n) }));
+                  set("minPlayers", n);
+                }}
                 className="h-9"
               />
             </div>
@@ -337,14 +388,16 @@ export function CustomDrillEditor({
               <Label>Max players</Label>
               <Input
                 type="number"
+                inputMode="numeric"
                 min={form.minPlayers}
-                value={form.maxPlayers}
-                onChange={(e) =>
-                  set(
-                    "maxPlayers",
-                    Math.max(form.minPlayers, parseInt(e.target.value) || 1),
-                  )
-                }
+                step={1}
+                value={numStr.maxPlayers}
+                onChange={(e) => setNumStr((p) => ({ ...p, maxPlayers: e.target.value }))}
+                onBlur={() => {
+                  const n = normalizePositiveInt(numStr.maxPlayers, form.minPlayers, form.minPlayers);
+                  setNumStr((p) => ({ ...p, maxPlayers: String(n) }));
+                  set("maxPlayers", n);
+                }}
                 className="h-9"
               />
             </div>

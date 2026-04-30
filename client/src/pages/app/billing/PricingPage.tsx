@@ -4,7 +4,7 @@
  * Source: Prompt 16 §1, §6, §11.
  */
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useLocation } from "wouter";
 import { Check, Loader2, Tag, Sparkles, Users } from "lucide-react";
 import { AppShell, PageHeader } from "@/components/app/AppShell";
@@ -30,6 +30,41 @@ function getTierOrder() {
     "EXPERT_CONNECT",
     "AI_CREDIT_PACK",
   ] as const;
+}
+
+/**
+ * SeatCountInput
+ * --------------------------------------------------------------------------
+ * Number input that uses raw-string state during typing so the user can
+ * clear and retype without snapping back to the floor on every keystroke.
+ */
+function SeatCountInput({
+  value,
+  onChange,
+}: {
+  value: number;
+  onChange: (n: number) => void;
+}) {
+  const [draft, setDraft] = useState(String(value));
+  useEffect(() => setDraft(String(value)), [value]);
+  return (
+    <input
+      type="number"
+      inputMode="numeric"
+      min={20}
+      max={200}
+      step={1}
+      value={draft}
+      onChange={(e) => setDraft(e.target.value)}
+      onBlur={() => {
+        const n = parseInt(draft, 10);
+        const clamped = Number.isFinite(n) ? Math.min(200, Math.max(20, n)) : 20;
+        setDraft(String(clamped));
+        onChange(clamped);
+      }}
+      className="w-14 h-7 px-1.5 rounded-md border border-border bg-background text-foreground text-[12px] font-mono"
+    />
+  );
 }
 
 export function AppPricingPage() {
@@ -215,16 +250,7 @@ export function AppPricingPage() {
               {product.tier === "TEAM_PRO" && (
                 <div className="mt-2 flex items-center gap-2 text-[11.5px] text-muted-foreground">
                   <Users className="w-3.5 h-3.5" />
-                  <input
-                    type="number"
-                    value={seatCount}
-                    min={20}
-                    max={200}
-                    onChange={(e) =>
-                      setSeatCount(Math.max(20, parseInt(e.target.value) || 20))
-                    }
-                    className="w-14 h-7 px-1.5 rounded-md border border-border bg-background text-foreground text-[12px] font-mono"
-                  />
+                  <SeatCountInput value={seatCount} onChange={setSeatCount} />
                   seats · 20 included · ${formatCents(headlinePrice.perExtraUnitAmount ?? 0)}/extra
                 </div>
               )}

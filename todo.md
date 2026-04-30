@@ -122,3 +122,10 @@
 - [ ] Use flex-wrap + min-widths so nothing overlaps at any width
 - [ ] Add 2-column grid on >=1024px for bottom (search+chips | filters)
 - [ ] Verify desktop/tablet/mobile, save checkpoint
+
+
+## Phase 22 — Custom Drill modal: number-input editing bug
+- [ ] CustomDrillEditor: switch durationMin/coaches/minPlayers/maxPlayers to raw-string state
+- [ ] Normalize via parseInt/clamp only on blur + submit
+- [ ] Re-verify clearing & retyping any value works smoothly
+- [ ] Save checkpoint + republish

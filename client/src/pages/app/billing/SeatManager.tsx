@@ -5,7 +5,7 @@
  * COACH50 via the Team Pro link entitlement).
  */
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   CheckCircle2,
   Mail,
@@ -262,6 +262,8 @@ function SeatStat({
 function AddSeatDialog({ subscriptionId }: { subscriptionId: string }) {
   const [open, setOpen] = useState(false);
   const [count, setCount] = useState(1);
+  const [countDraft, setCountDraft] = useState("1");
+  useEffect(() => setCountDraft(String(count)), [count]);
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
@@ -283,10 +285,18 @@ function AddSeatDialog({ subscriptionId }: { subscriptionId: string }) {
           </Label>
           <Input
             type="number"
+            inputMode="numeric"
             min={1}
             max={20}
-            value={count}
-            onChange={(e) => setCount(parseInt(e.target.value) || 1)}
+            step={1}
+            value={countDraft}
+            onChange={(e) => setCountDraft(e.target.value)}
+            onBlur={() => {
+              const n = parseInt(countDraft, 10);
+              const clamped = Number.isFinite(n) ? Math.min(20, Math.max(1, n)) : 1;
+              setCountDraft(String(clamped));
+              setCount(clamped);
+            }}
             className="mt-2 w-32"
           />
         </div>
@@ -296,10 +306,13 @@ function AddSeatDialog({ subscriptionId }: { subscriptionId: string }) {
           </Button>
           <Button
             onClick={() => {
-              for (let i = 0; i < count; i++) addSeat(subscriptionId);
-              toast.success(`${count} seat${count === 1 ? "" : "s"} added`);
+              const n = parseInt(countDraft, 10);
+              const final = Number.isFinite(n) ? Math.min(20, Math.max(1, n)) : 1;
+              for (let i = 0; i < final; i++) addSeat(subscriptionId);
+              toast.success(`${final} seat${final === 1 ? "" : "s"} added`);
               setOpen(false);
               setCount(1);
+              setCountDraft("1");
             }}
           >
             Add {count} seat{count === 1 ? "" : "s"}
