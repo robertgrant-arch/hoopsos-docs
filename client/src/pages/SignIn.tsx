@@ -10,6 +10,7 @@ import {
 import { useAuth } from "@/lib/auth";
 import { ROLE_META, demoUsers, type Role } from "@/lib/mock/users";
 import { Logo } from "@/components/brand/Logo";
+import { SignIn as ClerkSignIn } from "@clerk/clerk-react";
 
 const iconFor: Record<Role, React.ReactNode> = {
   ATHLETE: <User className="w-5 h-5" />,
@@ -23,6 +24,14 @@ const iconFor: Record<Role, React.ReactNode> = {
 export default function SignIn() {
   const [, navigate] = useLocation();
   const { signIn } = useAuth();
+  const HAS_CLERK = !!(import.meta.env as any).VITE_CLERK_PUBLISHABLE_KEY;
+if (HAS_CLERK) {
+return (
+<div className="min-h-screen flex items-center justify-center p-6 bg-background">
+<ClerkSignIn routing="path" path="/sign-in" signUpUrl="/sign-up" afterSignInUrl="/app/coach" />
+</div>
+);
+}
 
   function chooseUser(id: string, role: Role) {
     signIn(id);
