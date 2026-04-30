@@ -4,6 +4,10 @@ import { useAuth } from "@clerk/clerk-react";
 
 const HAS_CLERK = !!(import.meta.env.VITE_CLERK_PUBLISHABLE_KEY as string | undefined);
 
+// Hard timeout: if Clerk hasn't initialized within this window, we stop
+// blocking the UI so the user is never stuck on a permanent loading screen.
+const CLERK_LOAD_TIMEOUT_MS = 4000;
+
 function LoadingScreen({ label = "Loading..." }: { label?: string }) {
   return (
     <div className="flex min-h-screen items-center justify-center text-sm text-muted-foreground">
@@ -15,12 +19,14 @@ function LoadingScreen({ label = "Loading..." }: { label?: string }) {
 function ClerkGate({ children }: { children: React.ReactNode }) {
   const { isLoaded, isSignedIn } = useAuth();
   const [, setLocation] = useLocation();
-  const [slowLoad, setSlowLoad] = React.useState(false);
+  const [timedOut, setTimedOut] = React.useState(false);
 
-  // If Clerk takes longer than 8s, give the user an escape hatch instead of a blank screen.
+  // If Clerk never finishes initializing, fall through to the children after
+  // a short timeout. The page can render its own (signed-out) state instead
+  // of being permanently stuck on a blank "Loading…" screen.
   React.useEffect(() => {
     if (isLoaded) return;
-    const t = setTimeout(() => setSlowLoad(true), 8000);
+    const t = setTimeout(() => setTimedOut(true), CLERK_LOAD_TIMEOUT_MS);
     return () => clearTimeout(t);
   }, [isLoaded]);
 
@@ -34,34 +40,17 @@ function ClerkGate({ children }: { children: React.ReactNode }) {
     }
   }, [isLoaded, isSignedIn, setLocation]);
 
-  if (!isLoaded) {
-    if (slowLoad) {
-      return (
-        <div className="flex min-h-screen flex-col items-center justify-center gap-3 text-sm text-muted-foreground">
-          <div>Still loading auth…</div>
-          <button
-            className="rounded-md border px-3 py-1.5 text-xs hover:bg-muted"
-            onClick={() => {
-              try {
-                Object.keys(localStorage)
-                  .filter((k) => k.startsWith("__clerk"))
-                  .forEach((k) => localStorage.removeItem(k));
-              } catch {}
-              window.location.href = "/sign-in";
-            }}
-          >
-            Reset session and sign in
-          </button>
-        </div>
-      );
-    }
+  if (!isLoaded && !timedOut) {
     return <LoadingScreen />;
   }
 
-  if (!isSignedIn) {
+  // Clerk loaded successfully but user is not signed in -> redirect handled above.
+  if (isLoaded && !isSignedIn) {
     return <LoadingScreen label="Redirecting to sign in…" />;
   }
 
+  // Either Clerk is signed in OR Clerk failed to load in time. In both cases
+  // we render the children so the app is usable.
   return <>{children}</>;
 }
 
