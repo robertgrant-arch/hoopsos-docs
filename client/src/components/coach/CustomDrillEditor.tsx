@@ -6,19 +6,24 @@
  * Source: Prompt 16 addendum.
  *
  * Fields per spec:
- *   - name (title)
- *   - description
- *   - category (FK to DrillCategory)
- *   - default duration (minutes)
- *   - intensity, surface, player range, coaches needed
- *   - equipment (chips)
- *   - coaching points (bullet list — multiple)
- *   - optional Mux video URL
- *   - optional diagram URL
+ *   - name (title), description, category
+ *   - default duration, intensity, surface, player range, coaches needed
+ *   - equipment (chips), coaching points (bullets)
+ *   - optional Mux video URL, optional diagram URL
  *   - visibility: private | org | public
+ *
+ * Implementation notes from code review:
+ *   • Numeric fields (duration, coaches, min/max players) live in a single
+ *     `numStr` raw-string buffer and are not duplicated on the form object.
+ *     We derive their parsed integer values at submit time only.
+ *   • `canSave` reads live raw-string values via `normalizePositiveInt` so
+ *     the Save button never reflects stale state mid-typing.
+ *   • Every input/select uses a real <label htmlFor=> with a stable id for
+ *     screen readers. Visibility option buttons expose `aria-pressed`.
+ *     Equipment/coaching-point delete buttons expose `aria-label`.
  */
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useId, useMemo, useState, type ReactNode } from "react";
 import {
   Dialog,
   DialogContent,
@@ -37,6 +42,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { NumericInput, normalizePositiveInt } from "@/components/ui/numeric-input";
 import { Plus, X } from "lucide-react";
 import { toast } from "sonner";
 
@@ -65,17 +71,26 @@ const VISIBILITIES: { value: DrillVisibility; label: string; hint: string }[] = 
   { value: "public", label: "Public", hint: "Visible to all HoopsOS coaches" },
 ];
 
-const empty: CustomDrillInput = {
+/* -------------------------------------------------------------------------- */
+/* Form shape                                                                  */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Non-numeric portion of the drill form. Numeric fields are managed via the
+ * `numStr` raw-string buffer so we have a single source of truth for editing.
+ */
+type DrillFormShape = Omit<
+  CustomDrillInput,
+  "defaultDurationMin" | "coachesNeeded" | "minPlayers" | "maxPlayers"
+>;
+
+const emptyFormShape: DrillFormShape = {
   title: "",
   description: "",
   categoryId: "cat_warmup",
-  defaultDurationMin: 10,
   intensity: "MEDIUM",
   surface: "HALF_COURT",
-  minPlayers: 1,
-  maxPlayers: 12,
   equipment: [],
-  coachesNeeded: 1,
   videoUrl: undefined,
   diagramUrl: undefined,
   coachingPoints: [],
@@ -83,25 +98,40 @@ const empty: CustomDrillInput = {
   visibility: "private",
 };
 
-function fromDrill(d: Drill): CustomDrillInput {
+const emptyNumStr = {
+  duration: "10",
+  coaches: "1",
+  minPlayers: "1",
+  maxPlayers: "12",
+};
+
+function fromDrillShape(d: Drill): { shape: DrillFormShape; numStr: typeof emptyNumStr } {
   return {
-    title: d.title,
-    description: d.description,
-    categoryId: d.categoryId,
-    defaultDurationMin: d.defaultDurationMin,
-    intensity: d.intensity,
-    surface: d.surface,
-    minPlayers: d.minPlayers,
-    maxPlayers: d.maxPlayers,
-    equipment: d.equipment,
-    coachesNeeded: d.coachesNeeded,
-    videoUrl: d.videoUrl,
-    diagramUrl: d.diagramUrl,
-    coachingPoints: d.coachingPoints ?? [],
-    tags: d.tags,
-    visibility: d.visibility ?? "private",
+    shape: {
+      title: d.title,
+      description: d.description,
+      categoryId: d.categoryId,
+      intensity: d.intensity,
+      surface: d.surface,
+      equipment: d.equipment,
+      videoUrl: d.videoUrl,
+      diagramUrl: d.diagramUrl,
+      coachingPoints: d.coachingPoints ?? [],
+      tags: d.tags,
+      visibility: d.visibility ?? "private",
+    },
+    numStr: {
+      duration: String(d.defaultDurationMin),
+      coaches: String(d.coachesNeeded),
+      minPlayers: String(d.minPlayers),
+      maxPlayers: String(d.maxPlayers),
+    },
   };
 }
+
+/* -------------------------------------------------------------------------- */
+/* Component                                                                   */
+/* -------------------------------------------------------------------------- */
 
 export function CustomDrillEditor({
   open,
@@ -122,56 +152,58 @@ export function CustomDrillEditor({
   const create = useCustomDrillsStore((s) => s.create);
   const update = useCustomDrillsStore((s) => s.update);
 
-  const [form, setForm] = useState<CustomDrillInput>(empty);
+  const [form, setForm] = useState<DrillFormShape>(emptyFormShape);
+  const [numStr, setNumStr] = useState(emptyNumStr);
   const [equipDraft, setEquipDraft] = useState("");
   const [pointDraft, setPointDraft] = useState("");
 
-  /**
-   * Number fields are stored as raw strings during typing so users can
-   * clear, edit, and retype without the input snapping back to a fallback
-   * on every keystroke. They are normalized on blur (display) and again
-   * on save (payload).
-   */
-  const [numStr, setNumStr] = useState({
-    duration: String(empty.defaultDurationMin),
-    coaches: String(empty.coachesNeeded),
-    minPlayers: String(empty.minPlayers),
-    maxPlayers: String(empty.maxPlayers),
-  });
+  // Stable ids for label association. useId guarantees uniqueness across
+  // multiple instances of the editor on the same page.
+  const idScope = useId();
+  const id = (key: string) => `${idScope}-${key}`;
 
   // Sync form whenever the editor reopens.
   useEffect(() => {
     if (!open) return;
-    const next = editing ? fromDrill(editing) : empty;
-    setForm(next);
-    setNumStr({
-      duration: String(next.defaultDurationMin),
-      coaches: String(next.coachesNeeded),
-      minPlayers: String(next.minPlayers),
-      maxPlayers: String(next.maxPlayers),
-    });
+    if (editing) {
+      const { shape, numStr } = fromDrillShape(editing);
+      setForm(shape);
+      setNumStr(numStr);
+    } else {
+      setForm(emptyFormShape);
+      setNumStr(emptyNumStr);
+    }
     setEquipDraft("");
     setPointDraft("");
   }, [open, editing]);
 
-  const canSave = useMemo(
-    () =>
+  /**
+   * Live save-validity check. Reads numStr directly so the Save button
+   * reflects what the user is typing, not a stale snapshot of `form`.
+   */
+  const canSave = useMemo(() => {
+    const duration = normalizePositiveInt(numStr.duration);
+    const minPlayers = normalizePositiveInt(numStr.minPlayers);
+    const maxPlayers = normalizePositiveInt(numStr.maxPlayers, {
+      min: minPlayers,
+      fallback: minPlayers,
+    });
+    return (
       form.title.trim().length >= 3 &&
       form.description.trim().length >= 6 &&
-      form.defaultDurationMin >= 1 &&
-      form.maxPlayers >= form.minPlayers,
-    [form],
-  );
+      duration >= 1 &&
+      maxPlayers >= minPlayers
+    );
+  }, [
+    form.title,
+    form.description,
+    numStr.duration,
+    numStr.minPlayers,
+    numStr.maxPlayers,
+  ]);
 
-  const set = <K extends keyof CustomDrillInput>(
-    k: K,
-    v: CustomDrillInput[K],
-  ) => setForm((f) => ({ ...f, [k]: v }));
-
-  function normalizePositiveInt(v: string, fallback = 1, min = 1): number {
-    const n = parseInt(v, 10);
-    return Number.isFinite(n) && n >= min ? n : fallback;
-  }
+  const set = <K extends keyof DrillFormShape>(k: K, v: DrillFormShape[K]) =>
+    setForm((f) => ({ ...f, [k]: v }));
 
   function addEquipment() {
     const v = equipDraft.trim();
@@ -194,11 +226,15 @@ export function CustomDrillEditor({
   function handleSave() {
     // Final coercion of the raw-string number fields. This handles the case
     // where the user is still focused on a number input and clicks Save.
-    const duration = normalizePositiveInt(numStr.duration, 1);
-    const coaches = normalizePositiveInt(numStr.coaches, 1);
-    const minPlayers = normalizePositiveInt(numStr.minPlayers, 1);
-    const maxPlayers = normalizePositiveInt(numStr.maxPlayers, minPlayers, minPlayers);
-    const finalForm: CustomDrillInput = {
+    const duration = normalizePositiveInt(numStr.duration);
+    const coaches = normalizePositiveInt(numStr.coaches);
+    const minPlayers = normalizePositiveInt(numStr.minPlayers);
+    const maxPlayers = normalizePositiveInt(numStr.maxPlayers, {
+      min: minPlayers,
+      fallback: minPlayers,
+    });
+
+    const payload: CustomDrillInput = {
       ...form,
       defaultDurationMin: duration,
       coachesNeeded: coaches,
@@ -207,26 +243,30 @@ export function CustomDrillEditor({
     };
 
     const isValid =
-      finalForm.title.trim().length >= 3 &&
-      finalForm.description.trim().length >= 6 &&
-      finalForm.defaultDurationMin >= 1 &&
-      finalForm.maxPlayers >= finalForm.minPlayers;
+      payload.title.trim().length >= 3 &&
+      payload.description.trim().length >= 6 &&
+      payload.defaultDurationMin >= 1 &&
+      payload.maxPlayers >= payload.minPlayers;
     if (!isValid) {
       toast.error("Title, description, duration, and player range are required.");
       return;
     }
 
     if (editing) {
-      update(editing.id, finalForm);
-      toast.success(`Updated "${finalForm.title}"`);
-      onSaved?.({ ...editing, ...finalForm });
+      update(editing.id, payload);
+      toast.success(`Updated "${payload.title}"`);
+      onSaved?.({ ...editing, ...payload });
     } else {
-      const created = create(finalForm, ownerCoachId, orgId);
-      toast.success(`Saved "${finalForm.title}" to My Drills`);
+      const created = create(payload, ownerCoachId, orgId);
+      toast.success(`Saved "${payload.title}" to My Drills`);
       onSaved?.(created);
     }
     onOpenChange(false);
   }
+
+  // Pre-compute the live min for maxPlayers' clamp. Reads raw string so the
+  // user can see the constraint update as they type the floor.
+  const maxPlayersMin = normalizePositiveInt(numStr.minPlayers);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -244,45 +284,43 @@ export function CustomDrillEditor({
         <div className="space-y-4 py-2">
           {/* Title + Category */}
           <div className="grid grid-cols-1 md:grid-cols-[1fr,200px] gap-3">
-            <div>
-              <Label>Drill name</Label>
-              <Input
-                value={form.title}
-                onChange={(e) => set("title", e.target.value)}
-                placeholder="e.g. Spain PnR — Live"
-                className="h-9"
-              />
-            </div>
-            <div>
-              <Label>Category</Label>
-              <Select
-                value={form.categoryId}
-                onValueChange={(v) => set("categoryId", v)}
-              >
-                <SelectTrigger className="h-9 text-[12.5px]">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {drillCategories.map((c) => (
-                    <SelectItem key={c.id} value={c.id}>
-                      <span className="inline-flex items-center gap-2">
-                        <span
-                          className="w-1.5 h-1.5 rounded-full"
-                          style={{ background: c.color }}
-                        />
-                        {c.name}
-                      </span>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            <FieldLabel htmlFor={id("title")}>Drill name</FieldLabel>
+            <FieldLabel htmlFor={id("category")}>Category</FieldLabel>
+            <Input
+              id={id("title")}
+              value={form.title}
+              onChange={(e) => set("title", e.target.value)}
+              placeholder="e.g. Spain PnR — Live"
+              className="h-9"
+            />
+            <Select
+              value={form.categoryId}
+              onValueChange={(v) => set("categoryId", v)}
+            >
+              <SelectTrigger id={id("category")} className="h-9 text-[12.5px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {drillCategories.map((c) => (
+                  <SelectItem key={c.id} value={c.id}>
+                    <span className="inline-flex items-center gap-2">
+                      <span
+                        className="w-1.5 h-1.5 rounded-full"
+                        style={{ background: c.color }}
+                      />
+                      {c.name}
+                    </span>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           {/* Description */}
           <div>
-            <Label>Description</Label>
+            <FieldLabel htmlFor={id("description")}>Description</FieldLabel>
             <Textarea
+              id={id("description")}
               value={form.description}
               onChange={(e) => set("description", e.target.value)}
               placeholder="Setup, execution, scoring conditions…"
@@ -293,30 +331,21 @@ export function CustomDrillEditor({
 
           {/* Duration / intensity / surface / coaches */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <NumericInput
+              id={id("duration")}
+              label="Duration (min)"
+              value={normalizePositiveInt(numStr.duration)}
+              onChange={(n) => setNumStr((p) => ({ ...p, duration: String(n) }))}
+              min={1}
+              max={120}
+            />
             <div>
-              <Label>Duration (min)</Label>
-              <Input
-                type="number"
-                inputMode="numeric"
-                min={1}
-                step={1}
-                value={numStr.duration}
-                onChange={(e) => setNumStr((p) => ({ ...p, duration: e.target.value }))}
-                onBlur={() => {
-                  const n = normalizePositiveInt(numStr.duration, 1);
-                  setNumStr((p) => ({ ...p, duration: String(n) }));
-                  set("defaultDurationMin", n);
-                }}
-                className="h-9"
-              />
-            </div>
-            <div>
-              <Label>Intensity</Label>
+              <FieldLabel htmlFor={id("intensity")}>Intensity</FieldLabel>
               <Select
                 value={form.intensity}
                 onValueChange={(v) => set("intensity", v as DrillIntensity)}
               >
-                <SelectTrigger className="h-9 text-[12.5px]">
+                <SelectTrigger id={id("intensity")} className="h-9 text-[12.5px]">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -329,12 +358,12 @@ export function CustomDrillEditor({
               </Select>
             </div>
             <div>
-              <Label>Surface</Label>
+              <FieldLabel htmlFor={id("surface")}>Surface</FieldLabel>
               <Select
                 value={form.surface}
                 onValueChange={(v) => set("surface", v as DrillSurface)}
               >
-                <SelectTrigger className="h-9 text-[12.5px]">
+                <SelectTrigger id={id("surface")} className="h-9 text-[12.5px]">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -346,68 +375,50 @@ export function CustomDrillEditor({
                 </SelectContent>
               </Select>
             </div>
-            <div>
-              <Label>Coaches</Label>
-              <Input
-                type="number"
-                inputMode="numeric"
-                min={1}
-                step={1}
-                value={numStr.coaches}
-                onChange={(e) => setNumStr((p) => ({ ...p, coaches: e.target.value }))}
-                onBlur={() => {
-                  const n = normalizePositiveInt(numStr.coaches, 1);
-                  setNumStr((p) => ({ ...p, coaches: String(n) }));
-                  set("coachesNeeded", n);
-                }}
-                className="h-9"
-              />
-            </div>
+            <NumericInput
+              id={id("coaches")}
+              label="Coaches"
+              value={normalizePositiveInt(numStr.coaches)}
+              onChange={(n) => setNumStr((p) => ({ ...p, coaches: String(n) }))}
+              min={1}
+              max={10}
+            />
           </div>
 
           {/* Player range */}
           <div className="grid grid-cols-2 gap-3">
-            <div>
-              <Label>Min players</Label>
-              <Input
-                type="number"
-                inputMode="numeric"
-                min={1}
-                step={1}
-                value={numStr.minPlayers}
-                onChange={(e) => setNumStr((p) => ({ ...p, minPlayers: e.target.value }))}
-                onBlur={() => {
-                  const n = normalizePositiveInt(numStr.minPlayers, 1);
-                  setNumStr((p) => ({ ...p, minPlayers: String(n) }));
-                  set("minPlayers", n);
-                }}
-                className="h-9"
-              />
-            </div>
-            <div>
-              <Label>Max players</Label>
-              <Input
-                type="number"
-                inputMode="numeric"
-                min={form.minPlayers}
-                step={1}
-                value={numStr.maxPlayers}
-                onChange={(e) => setNumStr((p) => ({ ...p, maxPlayers: e.target.value }))}
-                onBlur={() => {
-                  const n = normalizePositiveInt(numStr.maxPlayers, form.minPlayers, form.minPlayers);
-                  setNumStr((p) => ({ ...p, maxPlayers: String(n) }));
-                  set("maxPlayers", n);
-                }}
-                className="h-9"
-              />
-            </div>
+            <NumericInput
+              id={id("minPlayers")}
+              label="Min players"
+              value={normalizePositiveInt(numStr.minPlayers)}
+              onChange={(n) =>
+                setNumStr((p) => ({ ...p, minPlayers: String(n) }))
+              }
+              min={1}
+              max={50}
+            />
+            <NumericInput
+              id={id("maxPlayers")}
+              label="Max players"
+              value={normalizePositiveInt(numStr.maxPlayers, {
+                min: maxPlayersMin,
+                fallback: maxPlayersMin,
+              })}
+              onChange={(n) =>
+                setNumStr((p) => ({ ...p, maxPlayers: String(n) }))
+              }
+              min={maxPlayersMin}
+              max={50}
+              fallback={maxPlayersMin}
+            />
           </div>
 
           {/* Equipment chips */}
           <div>
-            <Label>Equipment</Label>
+            <FieldLabel htmlFor={id("equipment")}>Equipment</FieldLabel>
             <div className="flex items-center gap-2">
               <Input
+                id={id("equipment")}
                 value={equipDraft}
                 onChange={(e) => setEquipDraft(e.target.value)}
                 onKeyDown={(e) => {
@@ -424,8 +435,9 @@ export function CustomDrillEditor({
                 size="sm"
                 variant="outline"
                 onClick={addEquipment}
+                aria-label="Add equipment"
               >
-                <Plus className="w-3.5 h-3.5" />
+                <Plus className="w-3.5 h-3.5" aria-hidden="true" />
               </Button>
             </div>
             {form.equipment.length > 0 && (
@@ -438,6 +450,7 @@ export function CustomDrillEditor({
                     {e}
                     <button
                       type="button"
+                      aria-label={`Remove ${e}`}
                       onClick={() =>
                         set(
                           "equipment",
@@ -446,7 +459,7 @@ export function CustomDrillEditor({
                       }
                       className="hover:text-destructive"
                     >
-                      <X className="w-3 h-3" />
+                      <X className="w-3 h-3" aria-hidden="true" />
                     </button>
                   </span>
                 ))}
@@ -456,9 +469,10 @@ export function CustomDrillEditor({
 
           {/* Coaching points */}
           <div>
-            <Label>Coaching points</Label>
+            <FieldLabel htmlFor={id("coachingPoint")}>Coaching points</FieldLabel>
             <div className="flex items-center gap-2">
               <Input
+                id={id("coachingPoint")}
                 value={pointDraft}
                 onChange={(e) => setPointDraft(e.target.value)}
                 onKeyDown={(e) => {
@@ -475,8 +489,9 @@ export function CustomDrillEditor({
                 size="sm"
                 variant="outline"
                 onClick={addCoachingPoint}
+                aria-label="Add coaching point"
               >
-                <Plus className="w-3.5 h-3.5" />
+                <Plus className="w-3.5 h-3.5" aria-hidden="true" />
               </Button>
             </div>
             {form.coachingPoints.length > 0 && (
@@ -486,10 +501,13 @@ export function CustomDrillEditor({
                     key={i}
                     className="flex items-start gap-2 text-[12.5px] bg-muted/30 border border-border rounded px-2 py-1.5"
                   >
-                    <span className="text-primary font-bold">•</span>
+                    <span className="text-primary font-bold" aria-hidden="true">
+                      •
+                    </span>
                     <span className="flex-1">{p}</span>
                     <button
                       type="button"
+                      aria-label="Remove coaching point"
                       onClick={() =>
                         set(
                           "coachingPoints",
@@ -498,7 +516,7 @@ export function CustomDrillEditor({
                       }
                       className="hover:text-destructive"
                     >
-                      <X className="w-3 h-3" />
+                      <X className="w-3 h-3" aria-hidden="true" />
                     </button>
                   </li>
                 ))}
@@ -509,8 +527,11 @@ export function CustomDrillEditor({
           {/* Optional media */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div>
-              <Label>Video URL (Mux / YouTube — optional)</Label>
+              <FieldLabel htmlFor={id("videoUrl")}>
+                Video URL (Mux / YouTube — optional)
+              </FieldLabel>
               <Input
+                id={id("videoUrl")}
                 value={form.videoUrl ?? ""}
                 onChange={(e) =>
                   set("videoUrl", e.target.value || undefined)
@@ -520,8 +541,11 @@ export function CustomDrillEditor({
               />
             </div>
             <div>
-              <Label>Diagram URL (optional)</Label>
+              <FieldLabel htmlFor={id("diagramUrl")}>
+                Diagram URL (optional)
+              </FieldLabel>
               <Input
+                id={id("diagramUrl")}
                 value={form.diagramUrl ?? ""}
                 onChange={(e) =>
                   set("diagramUrl", e.target.value || undefined)
@@ -534,14 +558,21 @@ export function CustomDrillEditor({
 
           {/* Visibility */}
           <div>
-            <Label>Visibility</Label>
-            <div className="grid grid-cols-3 gap-2">
+            <FieldLabel as="div">Visibility</FieldLabel>
+            <div
+              role="radiogroup"
+              aria-label="Visibility"
+              className="grid grid-cols-3 gap-2"
+            >
               {VISIBILITIES.map((v) => {
                 const active = form.visibility === v.value;
                 return (
                   <button
                     key={v.value}
                     type="button"
+                    role="radio"
+                    aria-checked={active}
+                    aria-pressed={active}
                     onClick={() => set("visibility", v.value)}
                     className={`text-left p-2.5 rounded-md border transition ${
                       active
@@ -575,10 +606,32 @@ export function CustomDrillEditor({
   );
 }
 
-function Label({ children }: { children: React.ReactNode }) {
+/* -------------------------------------------------------------------------- */
+/* Field label                                                                 */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Real <label htmlFor=> for screen-reader association. Falls back to a styled
+ * <div> when no input id is available (e.g. group-level captions like the
+ * Visibility radio group, which uses role="radiogroup" + aria-label).
+ */
+function FieldLabel({
+  htmlFor,
+  as = "label",
+  children,
+}: {
+  htmlFor?: string;
+  as?: "label" | "div";
+  children: ReactNode;
+}) {
+  const className =
+    "text-[10px] uppercase tracking-[0.14em] font-mono text-muted-foreground mb-1 block";
+  if (as === "div" || !htmlFor) {
+    return <div className={className}>{children}</div>;
+  }
   return (
-    <div className="text-[10px] uppercase tracking-[0.14em] font-mono text-muted-foreground mb-1">
+    <label htmlFor={htmlFor} className={className}>
       {children}
-    </div>
+    </label>
   );
 }

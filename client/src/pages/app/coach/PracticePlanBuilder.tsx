@@ -52,6 +52,7 @@ import { AppShell, PageHeader } from "@/components/app/AppShell";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { NumericInput } from "@/components/ui/numeric-input";
 import { Textarea } from "@/components/ui/textarea";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -232,18 +233,17 @@ function BlockRow({
             </div>
             <div className="flex items-center gap-2 shrink-0">
               {editingDuration ? (
-                <Input
-                  type="number"
-                  min={1}
-                  max={120}
-                  defaultValue={block.durationMin}
-                  autoFocus
-                  className="w-16 h-8 text-center font-mono text-sm"
-                  onBlur={(e) => {
-                    const v = Math.max(1, Math.min(120, parseInt(e.target.value || "1", 10)));
+                <NumericInput
+                  aria-label="Block duration in minutes"
+                  value={block.durationMin}
+                  onChange={(v) => {
                     onDurationChange(v);
                     setEditingDuration(false);
                   }}
+                  min={1}
+                  max={120}
+                  autoFocus
+                  className="w-16 h-8 text-center font-mono text-sm"
                   onKeyDown={(e) => {
                     if (e.key === "Enter") (e.target as HTMLInputElement).blur();
                     if (e.key === "Escape") setEditingDuration(false);
@@ -630,44 +630,6 @@ function DrillLibraryDrawer({
 /* Right-rail summary                                                          */
 /* -------------------------------------------------------------------------- */
 
-/**
- * BudgetInput
- * --------------------------------------------------------------------------
- * Number input that stores a raw string while the user is typing so it can
- * be cleared and retyped without snapping to the floor on every keystroke.
- * Normalizes on blur via clamp [15, 240].
- */
-function BudgetInput({
-  value,
-  onChange,
-}: {
-  value: number;
-  onChange: (v: number) => void;
-}) {
-  const [draft, setDraft] = useState<string>(String(value));
-  useEffect(() => {
-    setDraft(String(value));
-  }, [value]);
-  return (
-    <Input
-      type="number"
-      inputMode="numeric"
-      min={15}
-      max={240}
-      step={1}
-      value={draft}
-      onChange={(e) => setDraft(e.target.value)}
-      onBlur={() => {
-        const n = parseInt(draft, 10);
-        const clamped = Number.isFinite(n) ? Math.min(240, Math.max(15, n)) : 15;
-        setDraft(String(clamped));
-        onChange(clamped);
-      }}
-      className="h-8 w-20 text-center font-mono text-sm"
-    />
-  );
-}
-
 function PlanSummary({
   plan,
   onTitleChange,
@@ -780,7 +742,14 @@ function PlanSummary({
           />
         </div>
         <div className="flex items-center gap-2">
-          <BudgetInput value={plan.budgetMin} onChange={onBudgetChange} />
+          <NumericInput
+            aria-label="Practice plan minute budget"
+            value={plan.budgetMin}
+            onChange={onBudgetChange}
+            min={15}
+            max={240}
+            className="h-8 w-20 text-center font-mono text-sm"
+          />
           <span className="text-[12px] text-muted-foreground">min budgeted</span>
           <span className="ml-auto text-[12px] font-mono">
             {overBudget ? (

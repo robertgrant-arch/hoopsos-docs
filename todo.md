@@ -129,3 +129,16 @@
 - [ ] Normalize via parseInt/clamp only on blur + submit
 - [ ] Re-verify clearing & retyping any value works smoothly
 - [ ] Save checkpoint + republish
+
+
+## Phase 23 — Claude code review fixes for CustomDrillEditor
+- [ ] Build NumericInput primitive (raw-string internal state, normalize on blur)
+- [ ] Module-level normalizePositiveInt(v, opts?) — fallback defaults to min
+- [ ] Drop defaultDurationMin/coachesNeeded/min/maxPlayers from `form`; derive at save
+- [ ] canSave reads live numStr values via normalizePositiveInt
+- [ ] Replace local Label div with <label htmlFor=> + stable id on every input/select
+- [ ] aria-pressed on visibility option buttons
+- [ ] aria-label on equipment + coaching point remove buttons
+- [ ] Import ReactNode where needed
+- [ ] Replace BudgetInput/SeatCountInput/AddSeatDialog with NumericInput
+- [ ] TS check, save checkpoint, redeploy
