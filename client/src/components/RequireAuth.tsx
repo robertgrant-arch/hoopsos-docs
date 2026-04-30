@@ -2,7 +2,7 @@ import React from "react";
 import { useLocation } from "wouter";
 import { useAuth } from "@clerk/clerk-react";
 
-const HAS_CLERK = !!(import.meta.env.VITE_CLERK_PUBLISHABLE_KEY as string | undefined);
+const HAS_CLERK = false;
 
 // Watchdog: if Clerk hasn't initialized within this window, force a recovery
 // reload to /sign-in so the user is never permanently stuck on a blank screen.
