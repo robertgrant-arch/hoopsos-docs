@@ -17,7 +17,16 @@ export function MarketingHeader() {
   const { user } = useAuth();
 
   return (
-    <header className="sticky top-0 z-40 h-16 border-b border-border bg-background/70 backdrop-blur-xl">
+    <div className="sticky top-0 z-40">
+      {/* Demo banner */}
+      <Link href="/sign-in">
+        <a
+          className="block w-full bg-primary text-primary-foreground text-center text-[12px] font-mono uppercase tracking-[0.14em] py-2 hover:brightness-110 transition"
+        >
+          ▶ This is a demo · Click any role on Sign-in to use the actual app — no password, no signup
+        </a>
+      </Link>
+      <header className="h-16 border-b border-border bg-background/70 backdrop-blur-xl">
       <div className="h-full max-w-[1400px] mx-auto px-5 lg:px-8 flex items-center gap-8">
         <Logo />
         <nav className="hidden md:flex items-center gap-7 flex-1">
@@ -59,13 +68,14 @@ export function MarketingHeader() {
               </Link>
               <Link href="/sign-in">
                 <a className="inline-flex items-center gap-2 h-9 px-4 rounded-md bg-primary text-primary-foreground font-semibold text-[12.5px] uppercase tracking-[0.08em] hover:brightness-110 transition">
-                  Start Training
+                  Open Demo App
                 </a>
               </Link>
             </>
           )}
         </div>
       </div>
-    </header>
+      </header>
+    </div>
   );
 }

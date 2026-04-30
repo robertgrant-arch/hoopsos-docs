@@ -37,15 +37,14 @@ export default function SignIn() {
       <main className="flex-1 flex items-center justify-center p-6">
         <div className="w-full max-w-3xl">
           <div className="text-center mb-10">
-            <div className="inline-block px-3 py-1 rounded-full border border-primary/30 bg-primary/10 text-primary text-[11px] uppercase tracking-[0.12em] font-mono mb-5">
-              Demo · No password required
+            <div className="inline-block px-3 py-1.5 rounded-full bg-primary text-primary-foreground text-[11.5px] uppercase tracking-[0.14em] font-mono mb-5 font-bold">
+              ▶ Demo Mode · No Password Required
             </div>
             <h1 className="display text-4xl lg:text-5xl leading-tight">
-              Who's <span className="text-primary">on the floor?</span>
+              Tap any role <span className="text-primary">to enter the app.</span>
             </h1>
             <p className="text-[14.5px] text-muted-foreground mt-4 max-w-md mx-auto">
-              Choose a role to enter HoopsOS. Each surface is role-scoped — the
-              app adapts to you.
+              This is the actual working product, not a video tour. Pick a role below — you'll be signed in instantly with a fully populated demo team.
             </p>
           </div>
 

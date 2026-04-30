@@ -88,7 +88,7 @@ export function PlayersPage() {
       title="YOUR DAILY BLUEPRINT"
       titleAccent="FOR GREATNESS."
       lede="A real training plan. Honest AI feedback. Coaches who actually watch your tape. The minutes you put in compound — HoopsOS keeps the ledger."
-      primaryCta="Start Training Free"
+      primaryCta="Open Player Demo"
       primaryHref="/sign-in"
       secondaryCta="See How AI Feedback Works"
       secondaryHref="#ai-feedback"
@@ -198,7 +198,7 @@ export function CoachesPage() {
       title="THE COMMAND CENTER"
       titleAccent="FOR ELITE PROGRAMS."
       lede="Stop living in seven apps. Roster compliance, review queues, telestration, practice plans, playbook studio, film assignments, and parent-in-the-loop messaging — in one tab, built for coaches."
-      primaryCta="Start 14-Day Free Trial"
+      primaryCta="Open Coach Demo"
       primaryHref="/sign-in"
       secondaryCta="Download Free Playbook (PDF)"
       secondaryHref="#playbook"
@@ -233,8 +233,8 @@ export function TeamsPage() {
       title="STANDARDIZE EXCELLENCE"
       titleAccent="ACROSS YOUR ORG."
       lede="From one varsity team to a 16-team travel program. Seat-based billing, SSO, roster SSO-import, and a flagship perk for your athletes: 50% off Player Core — forever, while they're on roster."
-      primaryCta="Book A Demo"
-      primaryHref="/contact"
+      primaryCta="Open Org Admin Demo"
+      primaryHref="/sign-in"
       secondaryCta="See Pricing"
       secondaryHref="/pricing"
       accent="teal"
@@ -274,7 +274,7 @@ export function ExpertsPage() {
       title="MONETIZE YOUR"
       titleAccent="BASKETBALL MIND."
       lede="List async video reviews, 1:1 consults, live classes, and premium courses. We handle payments, member pricing, and the platform. You set the price and keep 80%."
-      primaryCta="Apply to Teach"
+      primaryCta="Open Expert Demo"
       primaryHref="/sign-in"
       secondaryCta="Browse the Marketplace"
       secondaryHref="/experts#marketplace"
@@ -386,7 +386,7 @@ export function PricingPage() {
                     : "border border-border hover:bg-[oklch(0.17_0.005_260)]"
                 }`}
               >
-                {p.perSeat ? "Book a Demo" : "Start Free Trial"}
+                {p.perSeat ? "Open Org Demo" : "Open Demo App"}
               </a>
             </Link>
           </div>

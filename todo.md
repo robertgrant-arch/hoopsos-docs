@@ -87,3 +87,10 @@
 - [ ] Test sign-in flow on the deployed domain
 - [ ] Test direct deep-links: `/app/coach/practice-plans` and `/app/playbook` after sign-in
 - [ ] Patch any mismatched hrefs / missing routes
+
+
+## Phase 19 — UX: marketing/demo-app boundary is confusing
+- [ ] Audit every CTA on /, /coaches, /players, /teams, /experts, /pricing, /live
+- [ ] "Start 14-day trial", "Start training" type CTAs → `/sign-in`
+- [ ] Top-nav "Sign in" already routes to `/sign-in` — add a primary "Open Demo App" button next to it
+- [ ] Add a dismissible banner across marketing routes: "This is the demo product page — sign in (no password) to use the actual app"
