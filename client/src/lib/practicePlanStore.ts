@@ -11,6 +11,7 @@ import {
   type PracticePlanBlock,
   drillLibrary,
 } from "@/lib/mock/practice";
+import { useCustomDrillsStore } from "@/lib/customDrillsStore";
 
 type State = {
   plans: PracticePlan[];
@@ -93,7 +94,11 @@ export const usePracticePlans = create<State>()(
       },
 
       addBlock: (planId, drillId, atIndex) => {
-        const drill = drillLibrary.find((d) => d.id === drillId);
+        const globalDrill = drillLibrary.find((d) => d.id === drillId);
+        const customDrill = !globalDrill
+          ? useCustomDrillsStore.getState().byId(drillId)
+          : undefined;
+        const drill = globalDrill ?? customDrill;
         if (!drill) return;
         const block: PracticePlanBlock = {
           id: `blk_${nanoid(5)}`,
@@ -131,7 +136,11 @@ export const usePracticePlans = create<State>()(
           plans: get().plans.map((p) =>
             p.id !== planId
               ? p
-              : { ...p, blocks: p.blocks.filter((b) => b.id !== blockId), updatedAt: new Date().toISOString() }
+              : {
+                  ...p,
+                  blocks: p.blocks.filter((b) => b.id !== blockId),
+                  updatedAt: new Date().toISOString(),
+                }
           ),
         });
       },
