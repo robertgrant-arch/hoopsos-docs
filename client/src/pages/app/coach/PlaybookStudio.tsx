@@ -1,0 +1,912 @@
+/**
+ * PlaybookStudio — Coach HQ
+ *
+ * Faithful build of the Whiteboard / Playbook Studio described in Prompt 14:
+ *   • multi-phase plays (ENTRY → TRIGGER → READS → COUNTER → SAFETY)
+ *   • tool palette (V/T/P/D/C/S)
+ *   • formation library (Horns, 5-out, 4-out 1-in, Box, 1-3-1)
+ *   • token + path editing on Konva canvas
+ *   • per-phase coach notes
+ *   • animation playback across phases
+ *   • play list (LHS) with thumbnails
+ *   • metadata + version history (RHS)
+ *   • presentation mode (full-screen review)
+ */
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Link } from "wouter";
+import {
+  ChevronRight,
+  Copy,
+  MousePointer2,
+  Play as PlayIcon,
+  Pause,
+  Plus,
+  RotateCcw,
+  Save,
+  Maximize2,
+  X,
+  Trash2,
+  History,
+  ArrowRight,
+  Move,
+  Slash,
+} from "lucide-react";
+import {
+  DndContext,
+  closestCenter,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import { SortableContext, useSortable, arrayMove, horizontalListSortingStrategy } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import { AppShell, PageHeader } from "@/components/app/AppShell";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { toast } from "sonner";
+import {
+  formations,
+  getQuizzesForPlay,
+  type PhaseLabel,
+  type Play,
+  type PlayPhase,
+} from "@/lib/mock/playbook";
+import { usePlaybook } from "@/lib/playbookStore";
+import PlayCanvas, { type CanvasTool } from "@/components/playbook/PlayCanvas";
+import { PlayThumbnail } from "@/components/court/PlayThumbnail";
+import { usePlayback } from "@/components/playbook/usePlayback";
+
+const PHASE_LABELS: { key: PhaseLabel; label: string; color: string }[] = [
+  { key: "ENTRY", label: "Entry", color: "oklch(0.7 0.13 200)" },
+  { key: "TRIGGER", label: "Trigger", color: "oklch(0.78 0.16 75)" },
+  { key: "READ_1", label: "Read 1", color: "oklch(0.75 0.16 30)" },
+  { key: "READ_2", label: "Read 2", color: "oklch(0.7 0.18 25)" },
+  { key: "COUNTER", label: "Counter", color: "oklch(0.7 0.16 320)" },
+  { key: "SAFETY", label: "Safety", color: "oklch(0.7 0.13 140)" },
+];
+
+const TOOLS: { key: CanvasTool; label: string; shortcut: string; icon: React.ReactNode; group: "select" | "token" | "path" }[] = [
+  { key: "SELECT", label: "Select", shortcut: "V", icon: <MousePointer2 className="w-4 h-4" />, group: "select" },
+  { key: "OFFENSE", label: "Offense", shortcut: "O", icon: <span className="font-mono font-bold text-[12px]">O</span>, group: "token" },
+  { key: "DEFENSE", label: "Defense", shortcut: "X", icon: <span className="font-mono font-bold text-[12px]">X</span>, group: "token" },
+  { key: "BALL", label: "Ball", shortcut: "B", icon: <span className="text-[14px]">●</span>, group: "token" },
+  { key: "CONE", label: "Cone", shortcut: "K", icon: <span className="text-[14px]">▲</span>, group: "token" },
+  { key: "PASS", label: "Pass", shortcut: "P", icon: <Slash className="w-4 h-4 -rotate-12" />, group: "path" },
+  { key: "DRIBBLE", label: "Dribble", shortcut: "D", icon: <ArrowRight className="w-4 h-4" />, group: "path" },
+  { key: "CUT", label: "Cut", shortcut: "C", icon: <Move className="w-4 h-4" />, group: "path" },
+  { key: "SCREEN", label: "Screen", shortcut: "S", icon: <span className="font-mono font-bold text-[12px]">⊥</span>, group: "path" },
+  { key: "HANDOFF", label: "Handoff", shortcut: "H", icon: <span className="font-mono font-bold text-[12px]">DHO</span>, group: "path" },
+];
+
+/* -------------------------------------------------------------------------- */
+/* Sortable phase chip                                                          */
+/* -------------------------------------------------------------------------- */
+
+function PhaseChip({
+  phase,
+  index,
+  isActive,
+  onClick,
+  onDuplicate,
+  onDelete,
+}: {
+  phase: PlayPhase;
+  index: number;
+  isActive: boolean;
+  onClick: () => void;
+  onDuplicate: () => void;
+  onDelete: () => void;
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: phase.id });
+  const style: React.CSSProperties = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+  const meta = PHASE_LABELS.find((p) => p.key === phase.phase) ?? PHASE_LABELS[0];
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      {...attributes}
+      {...listeners}
+      onClick={onClick}
+      className={`relative shrink-0 w-[148px] cursor-pointer rounded-lg border transition group ${
+        isActive ? "border-primary ring-1 ring-primary/40 bg-card" : "border-border bg-card hover:border-primary/40"
+      }`}
+    >
+      <div className="px-2 py-1.5 flex items-center justify-between gap-1.5">
+        <div className="flex items-center gap-1.5 min-w-0">
+          <span className="font-mono text-[10px] text-muted-foreground">{String(index + 1).padStart(2, "0")}</span>
+          <span
+            className="font-mono text-[9.5px] uppercase tracking-wider px-1.5 py-0.5 rounded truncate"
+            style={{ background: `${meta.color.replace(")", " / 0.15)")}`, color: meta.color }}
+          >
+            {meta.label}
+          </span>
+        </div>
+        <div className="opacity-0 group-hover:opacity-100 flex items-center gap-0.5">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onDuplicate();
+            }}
+            className="p-0.5 rounded hover:bg-background text-muted-foreground hover:text-foreground"
+            aria-label="Duplicate phase"
+          >
+            <Copy className="w-3 h-3" />
+          </button>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              if (confirm("Delete this phase?")) onDelete();
+            }}
+            className="p-0.5 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive"
+            aria-label="Delete phase"
+          >
+            <X className="w-3 h-3" />
+          </button>
+        </div>
+      </div>
+      <div className="px-1.5 pb-1.5">
+        <PlayThumbnail phase={phase} width={132} height={99} showLabels={false} />
+      </div>
+    </div>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+/* Play list (left rail)                                                       */
+/* -------------------------------------------------------------------------- */
+
+function PlayList({
+  plays,
+  activeId,
+  onPick,
+  onCreate,
+  onDuplicate,
+  onDelete,
+}: {
+  plays: Play[];
+  activeId: string | null;
+  onPick: (id: string) => void;
+  onCreate: () => void;
+  onDuplicate: (id: string) => void;
+  onDelete: (id: string) => void;
+}) {
+  return (
+    <div className="rounded-xl border border-border bg-card flex flex-col h-fit max-h-[calc(100vh-180px)]">
+      <div className="p-4 border-b border-border flex items-center justify-between">
+        <div>
+          <div className="text-[10px] uppercase tracking-[0.14em] font-mono text-muted-foreground">Plays</div>
+          <div className="font-display text-base mt-0.5">{plays.length}</div>
+        </div>
+        <Button size="sm" onClick={onCreate} className="h-8 px-3">
+          <Plus className="w-3.5 h-3.5 mr-1" /> New
+        </Button>
+      </div>
+      <ScrollArea className="flex-1">
+        <div className="p-2 space-y-1.5">
+          {plays.map((p) => {
+            const isActive = p.id === activeId;
+            return (
+              <div key={p.id} className="group relative">
+                <button
+                  onClick={() => onPick(p.id)}
+                  className={`w-full text-left rounded-md p-2 transition flex gap-2 ${
+                    isActive ? "bg-primary/10 border border-primary/30" : "hover:bg-muted/40 border border-transparent"
+                  }`}
+                >
+                  <div className="shrink-0 rounded overflow-hidden border border-border/60">
+                    <PlayThumbnail phase={p.phases[0]} width={64} height={48} showLabels={false} />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="font-semibold text-[12.5px] truncate">{p.title}</div>
+                    <div className="text-[10.5px] text-muted-foreground font-mono mt-0.5">
+                      {p.category} · {p.phases.length} phase{p.phases.length !== 1 ? "s" : ""}
+                    </div>
+                    <div className="text-[10px] text-muted-foreground mt-0.5 truncate">{p.versionLabel}</div>
+                  </div>
+                </button>
+                <div className="absolute top-1.5 right-1.5 opacity-0 group-hover:opacity-100 flex items-center gap-0.5">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onDuplicate(p.id);
+                    }}
+                    className="p-1 rounded hover:bg-background text-muted-foreground hover:text-foreground"
+                    aria-label="Duplicate"
+                  >
+                    <Copy className="w-3 h-3" />
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (confirm(`Delete "${p.title}"?`)) onDelete(p.id);
+                    }}
+                    className="p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive"
+                    aria-label="Delete"
+                  >
+                    <Trash2 className="w-3 h-3" />
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </ScrollArea>
+    </div>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+/* Page                                                                        */
+/* -------------------------------------------------------------------------- */
+
+export function CoachPlaybookStudio() {
+  const {
+    plays,
+    selectedPlayId,
+    selectedPhaseId,
+    selectedTokenId,
+    selectedPathId,
+    versionHistory,
+    setSelectedPlay,
+    setSelectedPhase,
+    setSelectedToken,
+    setSelectedPath,
+    createPlay,
+    duplicatePlay,
+    deletePlay,
+    updatePlayMeta,
+    addPhase,
+    duplicatePhase,
+    deletePhase,
+    updatePhase,
+    reorderPhase,
+    addToken,
+    updateToken,
+    removeToken,
+    addPath,
+    removePath,
+    saveVersion,
+    restoreVersion,
+  } = usePlaybook();
+
+  const [tool, setTool] = useState<CanvasTool>("SELECT");
+  const [presentOpen, setPresentOpen] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
+
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }));
+
+  const play = plays.find((p) => p.id === selectedPlayId) ?? plays[0];
+  const phase = play?.phases.find((ph) => ph.id === selectedPhaseId) ?? play?.phases[0];
+
+  // Canvas size — measure container
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [canvasSize, setCanvasSize] = useState({ width: 800, height: 600 });
+  useEffect(() => {
+    if (!containerRef.current) return;
+    const ro = new ResizeObserver((entries) => {
+      const entry = entries[0];
+      const w = entry.contentRect.width;
+      const h = Math.min(entry.contentRect.height, w * 0.75);
+      setCanvasSize({ width: w, height: h });
+    });
+    ro.observe(containerRef.current);
+    return () => ro.disconnect();
+  }, []);
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if ((e.target as HTMLElement)?.tagName === "INPUT" || (e.target as HTMLElement)?.tagName === "TEXTAREA") return;
+      const map: Record<string, CanvasTool> = {
+        v: "SELECT", o: "OFFENSE", x: "DEFENSE", b: "BALL", k: "CONE",
+        p: "PASS", d: "DRIBBLE", c: "CUT", s: "SCREEN", h: "HANDOFF",
+      };
+      const t = map[e.key.toLowerCase()];
+      if (t) {
+        setTool(t);
+        return;
+      }
+      if (e.key === "Delete" || e.key === "Backspace") {
+        if (selectedTokenId && play && phase) {
+          removeToken(play.id, phase.id, selectedTokenId);
+        } else if (selectedPathId && play && phase) {
+          removePath(play.id, phase.id, selectedPathId);
+        }
+      }
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [selectedTokenId, selectedPathId, play, phase, removeToken, removePath]);
+
+  // Playback
+  const playback = usePlayback(play);
+
+  // Phase reorder via dnd-kit
+  function handlePhaseDragEnd(e: DragEndEvent) {
+    const { active, over } = e;
+    if (!over || active.id === over.id || !play) return;
+    const from = play.phases.findIndex((p) => p.id === active.id);
+    const to = play.phases.findIndex((p) => p.id === over.id);
+    if (from === -1 || to === -1) return;
+    reorderPhase(play.id, from, to);
+  }
+
+  if (!play || !phase) {
+    return (
+      <AppShell>
+        <div className="px-6 lg:px-10 py-8">
+          <div className="text-center max-w-sm mx-auto py-16">
+            <Plus className="w-8 h-8 mx-auto text-muted-foreground mb-3" />
+            <h2 className="font-display text-xl mb-1">No plays yet</h2>
+            <p className="text-[13px] text-muted-foreground mb-4">Create your first play to start designing.</p>
+            <Button onClick={() => createPlay()}>
+              <Plus className="w-4 h-4 mr-1.5" /> New Play
+            </Button>
+          </div>
+        </div>
+      </AppShell>
+    );
+  }
+
+  return (
+    <AppShell>
+      <div className="px-4 lg:px-8 py-6 max-w-[1700px] mx-auto">
+        <PageHeader
+          eyebrow="Coach HQ"
+          title="Playbook Studio"
+          subtitle="Diagram every phase of every play. Animate it, version it, ship it to your team."
+          actions={
+            <div className="flex items-center gap-2">
+              <Link href="/app/coach">
+                <a className="text-[12px] text-muted-foreground hover:text-foreground inline-flex items-center gap-1">
+                  Coach HQ <ChevronRight className="w-3 h-3" />
+                </a>
+              </Link>
+              {(() => {
+                const quizzes = getQuizzesForPlay(play.id);
+                if (quizzes.length === 0) return null;
+                return (
+                  <Link href={`/app/player/quizzes/${quizzes[0].id}`}>
+                    <a>
+                      <Button variant="ghost" size="sm" className="h-9">
+                        Preview quiz
+                      </Button>
+                    </a>
+                  </Link>
+                );
+              })()}
+              <Button
+                onClick={() => {
+                  saveVersion(play.id);
+                  toast.success("Saved version");
+                }}
+                variant="outline"
+                size="sm"
+                className="h-9"
+              >
+                <Save className="w-4 h-4 mr-1.5" /> Save version
+              </Button>
+              <Button onClick={() => setPresentOpen(true)} className="h-9">
+                <Maximize2 className="w-4 h-4 mr-1.5" /> Present
+              </Button>
+            </div>
+          }
+        />
+
+        <div className="grid grid-cols-[240px_1fr_300px] gap-4">
+          {/* Left: play list */}
+          <PlayList
+            plays={plays}
+            activeId={play.id}
+            onPick={setSelectedPlay}
+            onCreate={() => {
+              createPlay();
+              toast.success("New play created");
+            }}
+            onDuplicate={(id) => {
+              duplicatePlay(id);
+              toast.success("Play duplicated");
+            }}
+            onDelete={(id) => {
+              deletePlay(id);
+              toast.success("Play deleted");
+            }}
+          />
+
+          {/* Center: canvas + tools + phase timeline */}
+          <div className="space-y-3">
+            {/* Tool palette */}
+            <div className="rounded-xl border border-border bg-card p-2 flex items-center gap-1 flex-wrap">
+              {TOOLS.map((t) => (
+                <button
+                  key={t.key}
+                  onClick={() => setTool(t.key)}
+                  title={`${t.label} (${t.shortcut})`}
+                  className={`h-9 px-2.5 rounded-md text-[12px] inline-flex items-center gap-1.5 border transition ${
+                    tool === t.key
+                      ? "bg-primary text-primary-foreground border-primary"
+                      : "border-border bg-background hover:border-primary/50"
+                  }`}
+                >
+                  {t.icon}
+                  <span className="hidden md:inline">{t.label}</span>
+                  <span className="font-mono text-[9px] opacity-60 ml-0.5 hidden lg:inline">{t.shortcut}</span>
+                </button>
+              ))}
+              <div className="ml-auto flex items-center gap-2">
+                <FormationDrawer
+                  onPick={(formationId) => {
+                    addPhase(play.id, formationId);
+                    toast.success("Phase added from formation");
+                  }}
+                />
+                <Button
+                  onClick={() => addPhase(play.id)}
+                  size="sm"
+                  variant="outline"
+                  className="h-9"
+                  title="Add phase (clones current)"
+                >
+                  <Plus className="w-4 h-4 mr-1" /> Phase
+                </Button>
+              </div>
+            </div>
+
+            {/* Canvas */}
+            <div ref={containerRef} className="rounded-xl border border-border bg-card overflow-hidden flex items-center justify-center" style={{ minHeight: 500 }}>
+              <PlayCanvas
+                phase={phase}
+                tool={tool}
+                selectedTokenId={selectedTokenId}
+                selectedPathId={selectedPathId}
+                width={canvasSize.width}
+                height={canvasSize.height}
+                animatedTokens={playback.isPlaying ? playback.tokens : null}
+                onSelectToken={setSelectedToken}
+                onSelectPath={setSelectedPath}
+                onMoveToken={(id, x, y) => updateToken(play.id, phase.id, id, { x, y })}
+                onAddToken={(t) => addToken(play.id, phase.id, t)}
+                onAddPath={(pa) => addPath(play.id, phase.id, pa)}
+                onRemoveToken={(id) => removeToken(play.id, phase.id, id)}
+                onRemovePath={(id) => removePath(play.id, phase.id, id)}
+              />
+            </div>
+
+            {/* Phase timeline */}
+            <div className="rounded-xl border border-border bg-card p-3">
+              <div className="flex items-center justify-between mb-2">
+                <div>
+                  <div className="text-[10px] uppercase tracking-[0.14em] font-mono text-muted-foreground">
+                    Play Timeline
+                  </div>
+                  <div className="text-[12px] text-muted-foreground">
+                    {play.phases.length} phase{play.phases.length !== 1 ? "s" : ""} · drag to reorder
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  {!playback.isPlaying ? (
+                    <Button
+                      size="sm"
+                      onClick={playback.play}
+                      disabled={play.phases.length < 2}
+                      className="h-8"
+                    >
+                      <PlayIcon className="w-3.5 h-3.5 mr-1" /> Play
+                    </Button>
+                  ) : (
+                    <Button size="sm" variant="outline" onClick={playback.pause} className="h-8">
+                      <Pause className="w-3.5 h-3.5 mr-1" /> Pause
+                    </Button>
+                  )}
+                  <Button size="sm" variant="ghost" onClick={playback.reset} className="h-8 px-2">
+                    <RotateCcw className="w-3.5 h-3.5" />
+                  </Button>
+                </div>
+              </div>
+
+              <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handlePhaseDragEnd}>
+                <SortableContext items={play.phases.map((p) => p.id)} strategy={horizontalListSortingStrategy}>
+                  <div className="flex items-center gap-2 overflow-x-auto pb-1.5">
+                    {play.phases.map((ph, i) => (
+                      <PhaseChip
+                        key={ph.id}
+                        phase={ph}
+                        index={i}
+                        isActive={ph.id === phase.id}
+                        onClick={() => setSelectedPhase(ph.id)}
+                        onDuplicate={() => {
+                          duplicatePhase(play.id, ph.id);
+                          toast.success("Phase duplicated");
+                        }}
+                        onDelete={() => {
+                          if (play.phases.length <= 1) {
+                            toast.error("A play must have at least one phase");
+                            return;
+                          }
+                          deletePhase(play.id, ph.id);
+                        }}
+                      />
+                    ))}
+                    <button
+                      onClick={() => addPhase(play.id)}
+                      className="shrink-0 h-[148px] w-[60px] rounded-lg border-2 border-dashed border-border hover:border-primary/60 text-muted-foreground hover:text-primary inline-flex items-center justify-center"
+                      aria-label="Add phase"
+                    >
+                      <Plus className="w-5 h-5" />
+                    </button>
+                  </div>
+                </SortableContext>
+              </DndContext>
+            </div>
+          </div>
+
+          {/* Right: meta + phase notes + selection */}
+          <RightRail
+            play={play}
+            phase={phase}
+            selectedTokenId={selectedTokenId}
+            selectedPathId={selectedPathId}
+            onUpdatePlay={(patch) => updatePlayMeta(play.id, patch)}
+            onUpdatePhase={(patch) => updatePhase(play.id, phase.id, patch)}
+            onUpdateToken={(id, patch) => updateToken(play.id, phase.id, id, patch)}
+            onRemoveToken={(id) => removeToken(play.id, phase.id, id)}
+            onRemovePath={(id) => removePath(play.id, phase.id, id)}
+            onOpenHistory={() => setHistoryOpen(true)}
+          />
+        </div>
+
+        {/* Presentation mode */}
+        <Dialog open={presentOpen} onOpenChange={setPresentOpen}>
+          <DialogContent className="max-w-5xl">
+            <DialogHeader>
+              <DialogTitle className="font-display uppercase tracking-tight">{play.title}</DialogTitle>
+            </DialogHeader>
+            <PresentationView play={play} />
+          </DialogContent>
+        </Dialog>
+
+        {/* Version history */}
+        <Dialog open={historyOpen} onOpenChange={setHistoryOpen}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>Version history — {play.title}</DialogTitle>
+            </DialogHeader>
+            <VersionList
+              versions={versionHistory[play.id] ?? []}
+              onRestore={(versionId) => {
+                if (confirm("Restore this version? Your current edits will be replaced (you can save a version first).")) {
+                  restoreVersion(play.id, versionId);
+                  setHistoryOpen(false);
+                  toast.success("Version restored");
+                }
+              }}
+            />
+          </DialogContent>
+        </Dialog>
+      </div>
+    </AppShell>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+/* Right rail — tabs: Play meta · Phase · Selection                            */
+/* -------------------------------------------------------------------------- */
+
+function RightRail({
+  play,
+  phase,
+  selectedTokenId,
+  selectedPathId,
+  onUpdatePlay,
+  onUpdatePhase,
+  onUpdateToken,
+  onRemoveToken,
+  onRemovePath,
+  onOpenHistory,
+}: {
+  play: Play;
+  phase: PlayPhase;
+  selectedTokenId: string | null;
+  selectedPathId: string | null;
+  onUpdatePlay: (p: Partial<Play>) => void;
+  onUpdatePhase: (p: Partial<PlayPhase>) => void;
+  onUpdateToken: (id: string, p: Partial<PlayPhase["tokens"][number]>) => void;
+  onRemoveToken: (id: string) => void;
+  onRemovePath: (id: string) => void;
+  onOpenHistory: () => void;
+}) {
+  const selectedToken = phase.tokens.find((t) => t.id === selectedTokenId);
+  const selectedPath = phase.paths.find((p) => p.id === selectedPathId);
+
+  return (
+    <div className="space-y-3">
+      <div className="rounded-xl border border-border bg-card p-3.5 space-y-2.5">
+        <div className="text-[10px] uppercase tracking-[0.14em] font-mono text-muted-foreground">Play</div>
+        <Input value={play.title} onChange={(e) => onUpdatePlay({ title: e.target.value })} className="font-display text-sm h-8" />
+        <Textarea value={play.description} onChange={(e) => onUpdatePlay({ description: e.target.value })} placeholder="What is this play and when do we use it?" rows={2} className="text-[12px] resize-none" />
+        <div className="grid grid-cols-2 gap-2">
+          <Select value={play.category} onValueChange={(v) => onUpdatePlay({ category: v as Play["category"] })}>
+            <SelectTrigger className="h-8 text-[11.5px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="PRIMARY">Primary</SelectItem>
+              <SelectItem value="MOTION">Motion</SelectItem>
+              <SelectItem value="ZONE_OFFENSE">Zone Offense</SelectItem>
+              <SelectItem value="PRESS_BREAK">Press Break</SelectItem>
+              <SelectItem value="BLOB">BLOB</SelectItem>
+              <SelectItem value="SLOB">SLOB</SelectItem>
+              <SelectItem value="ATO">ATO</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={play.courtType} onValueChange={(v) => onUpdatePlay({ courtType: v as Play["courtType"] })}>
+            <SelectTrigger className="h-8 text-[11.5px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="HALF">Half court</SelectItem>
+              <SelectItem value="FULL">Full court</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="flex items-center justify-between text-[10.5px] text-muted-foreground">
+          <span className="font-mono">{play.versionLabel}</span>
+          <button onClick={onOpenHistory} className="inline-flex items-center gap-1 hover:text-foreground">
+            <History className="w-3 h-3" /> history
+          </button>
+        </div>
+      </div>
+
+      <div className="rounded-xl border border-border bg-card p-3.5 space-y-2.5">
+        <div className="flex items-center justify-between">
+          <div className="text-[10px] uppercase tracking-[0.14em] font-mono text-muted-foreground">Phase</div>
+          <Select value={phase.phase} onValueChange={(v) => onUpdatePhase({ phase: v as PhaseLabel })}>
+            <SelectTrigger className="h-7 text-[11px] w-[120px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {PHASE_LABELS.map((p) => (
+                <SelectItem key={p.key} value={p.key}>
+                  {p.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <Textarea
+          value={phase.notes}
+          onChange={(e) => onUpdatePhase({ notes: e.target.value })}
+          placeholder="What happens in this phase?"
+          rows={4}
+          className="text-[12.5px] resize-none"
+        />
+        <div className="flex items-center gap-1.5 text-[10.5px] text-muted-foreground font-mono">
+          <span>{phase.tokens.filter((t) => t.type === "OFFENSE").length} offense</span>
+          <span>·</span>
+          <span>{phase.tokens.filter((t) => t.type === "DEFENSE").length} defense</span>
+          <span>·</span>
+          <span>{phase.paths.length} action{phase.paths.length !== 1 ? "s" : ""}</span>
+        </div>
+      </div>
+
+      {selectedToken && (
+        <div className="rounded-xl border border-primary/40 bg-card p-3.5 space-y-2.5">
+          <div className="flex items-center justify-between">
+            <div className="text-[10px] uppercase tracking-[0.14em] font-mono text-primary">Selected token</div>
+            <Button
+              size="icon"
+              variant="ghost"
+              onClick={() => onRemoveToken(selectedToken.id)}
+              className="h-6 w-6 text-muted-foreground hover:text-destructive"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+            </Button>
+          </div>
+          <div className="text-[12px] font-mono text-muted-foreground">
+            {selectedToken.type} · ({Math.round(selectedToken.x)}, {Math.round(selectedToken.y)})
+          </div>
+          {(selectedToken.type === "OFFENSE" || selectedToken.type === "DEFENSE") && (
+            <div>
+              <div className="text-[10px] uppercase tracking-wider font-mono text-muted-foreground mb-1">Label</div>
+              <Input
+                value={selectedToken.label}
+                onChange={(e) => onUpdateToken(selectedToken.id, { label: e.target.value })}
+                className="h-8 font-mono text-center"
+                maxLength={3}
+              />
+            </div>
+          )}
+        </div>
+      )}
+
+      {selectedPath && (
+        <div className="rounded-xl border border-primary/40 bg-card p-3.5 space-y-2.5">
+          <div className="flex items-center justify-between">
+            <div className="text-[10px] uppercase tracking-[0.14em] font-mono text-primary">Selected action</div>
+            <Button
+              size="icon"
+              variant="ghost"
+              onClick={() => onRemovePath(selectedPath.id)}
+              className="h-6 w-6 text-muted-foreground hover:text-destructive"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+            </Button>
+          </div>
+          <div className="text-[12px] font-mono text-muted-foreground">{selectedPath.type}</div>
+        </div>
+      )}
+
+      {!selectedToken && !selectedPath && (
+        <div className="rounded-xl border border-border/60 bg-card/40 p-3.5 text-[11.5px] text-muted-foreground">
+          <div className="font-semibold text-foreground mb-1">Tips</div>
+          <ul className="space-y-1 list-disc pl-4">
+            <li>Press <span className="font-mono text-foreground">V</span> to select, then drag tokens.</li>
+            <li>Press <span className="font-mono text-foreground">P/D/C/S/H</span>, click a token, then click another to draw.</li>
+            <li>Press <span className="font-mono text-foreground">Delete</span> to remove a selection.</li>
+            <li>Add phases to animate the play across reads.</li>
+          </ul>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+/* Formation drawer                                                            */
+/* -------------------------------------------------------------------------- */
+
+function FormationDrawer({ onPick }: { onPick: (formationId: string) => void }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <Sheet open={open} onOpenChange={setOpen}>
+      <SheetTrigger asChild>
+        <Button size="sm" variant="outline" className="h-9">
+          From formation…
+        </Button>
+      </SheetTrigger>
+      <SheetContent side="right" className="w-full sm:max-w-md p-0 flex flex-col">
+        <SheetHeader className="p-5 border-b border-border">
+          <SheetTitle className="font-display uppercase tracking-tight">Formation Library</SheetTitle>
+          <p className="text-[12.5px] text-muted-foreground">Pick a starting alignment to add as a new phase.</p>
+        </SheetHeader>
+        <ScrollArea className="flex-1">
+          <div className="p-4 space-y-3">
+            {formations.map((f) => (
+              <button
+                key={f.id}
+                onClick={() => {
+                  onPick(f.id);
+                  setOpen(false);
+                }}
+                className="w-full text-left rounded-lg border border-border hover:border-primary/50 bg-card overflow-hidden group"
+              >
+                <PlayThumbnail
+                  phase={{ id: "_p", order: 0, phase: "ENTRY", notes: "", tokens: f.tokens, paths: [] }}
+                  width={400}
+                  height={300}
+                />
+                <div className="p-3">
+                  <div className="font-semibold text-[13px]">{f.name}</div>
+                  <div className="text-[12px] text-muted-foreground">{f.description}</div>
+                </div>
+              </button>
+            ))}
+          </div>
+        </ScrollArea>
+      </SheetContent>
+    </Sheet>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+/* Presentation mode                                                           */
+/* -------------------------------------------------------------------------- */
+
+function PresentationView({ play }: { play: Play }) {
+  const [idx, setIdx] = useState(0);
+  const playback = usePlayback(play);
+  const phase = play.phases[idx] ?? play.phases[0];
+
+  return (
+    <div className="space-y-3">
+      <div className="rounded-xl border border-border bg-card overflow-hidden">
+        <div style={{ aspectRatio: "4/3" }} className="relative">
+          <div className="absolute inset-0 flex items-center justify-center bg-background">
+            <PlayThumbnail
+              phase={
+                playback.isPlaying
+                  ? { ...phase, tokens: playback.tokens }
+                  : phase
+              }
+              width={760}
+              height={570}
+            />
+          </div>
+        </div>
+      </div>
+      <div className="flex items-center gap-3">
+        <Button size="sm" variant="outline" disabled={idx === 0} onClick={() => setIdx((i) => Math.max(0, i - 1))}>
+          ← Prev
+        </Button>
+        <Button
+          size="sm"
+          variant="outline"
+          disabled={idx === play.phases.length - 1}
+          onClick={() => setIdx((i) => Math.min(play.phases.length - 1, i + 1))}
+        >
+          Next →
+        </Button>
+        <div className="text-[12px] text-muted-foreground font-mono ml-2">
+          Phase {idx + 1} / {play.phases.length} · {phase.phase}
+        </div>
+        <div className="ml-auto flex items-center gap-2">
+          {!playback.isPlaying ? (
+            <Button size="sm" onClick={playback.play}>
+              <PlayIcon className="w-3.5 h-3.5 mr-1" /> Auto-play
+            </Button>
+          ) : (
+            <Button size="sm" variant="outline" onClick={playback.pause}>
+              <Pause className="w-3.5 h-3.5 mr-1" /> Pause
+            </Button>
+          )}
+        </div>
+      </div>
+      <div className="rounded-md border border-border bg-card/40 p-3 text-[13px] leading-relaxed">
+        {phase.notes || "—"}
+      </div>
+    </div>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+/* Versions list                                                               */
+/* -------------------------------------------------------------------------- */
+
+function VersionList({
+  versions,
+  onRestore,
+}: {
+  versions: { id: string; label: string; savedAt: string; authorName: string }[];
+  onRestore: (id: string) => void;
+}) {
+  if (versions.length === 0) {
+    return (
+      <div className="text-center py-8 text-[13px] text-muted-foreground">
+        No versions saved yet. Click <span className="font-mono text-foreground">Save version</span> on the toolbar to snapshot the current play.
+      </div>
+    );
+  }
+  return (
+    <div className="divide-y divide-border max-h-[400px] overflow-auto">
+      {versions.map((v) => (
+        <div key={v.id} className="flex items-center justify-between gap-3 py-2.5">
+          <div>
+            <div className="font-semibold text-[13.5px]">{v.label}</div>
+            <div className="text-[11.5px] text-muted-foreground">
+              {new Date(v.savedAt).toLocaleString()} · {v.authorName}
+            </div>
+          </div>
+          <Button size="sm" variant="outline" onClick={() => onRestore(v.id)}>
+            Restore
+          </Button>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+export default CoachPlaybookStudio;
+
+// Suppress unused arrayMove warning (kept for future free reorder)
+void arrayMove;

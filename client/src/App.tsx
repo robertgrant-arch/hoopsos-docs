@@ -33,6 +33,11 @@ import {
   PlayerAchievements,
 } from "@/pages/app/PlayerPages";
 
+// Practice Plan Builder (full v2)
+import CoachPracticePlanBuilder from "@/pages/app/coach/PracticePlanBuilder";
+import CoachPlaybookStudio from "@/pages/app/coach/PlaybookStudio";
+import PlayQuizRunner from "@/pages/app/player/PlayQuiz";
+
 // Everything else
 import {
   CoachDashboard,
@@ -97,7 +102,8 @@ function Router() {
       <Route path="/app/coach/queue" component={CoachQueue} />
       <Route path="/app/coach/queue/:id" component={CoachQueueDetail} />
       <Route path="/app/coach/assignments" component={CoachAssignments} />
-      <Route path="/app/coach/practice-plans" component={CoachPracticePlans} />
+      <Route path="/app/coach/practice-plans" component={CoachPracticePlanBuilder} />
+      <Route path="/app/coach/practice-plans/legacy" component={CoachPracticePlans} />
       <Route path="/app/coach/bookings" component={CoachBookings} />
       <Route path="/app/coach/messages" component={CoachDashboard} />
 
@@ -116,7 +122,11 @@ function Router() {
       <Route path="/app/film/inbox" component={FilmInbox} />
 
       {/* Playbook */}
-      <Route path="/app/playbook" component={PlaybookStudio} />
+      <Route path="/app/playbook" component={CoachPlaybookStudio} />
+      <Route path="/app/coach/playbook" component={CoachPlaybookStudio} />
+      <Route path="/app/playbook/legacy" component={PlaybookStudio} />
+      <Route path="/app/player/quizzes/:id" component={PlayQuizRunner} />
+      <Route path="/app/player/quizzes" component={PlayQuizRunner} />
 
       {/* Live */}
       <Route path="/app/live" component={LiveHome} />

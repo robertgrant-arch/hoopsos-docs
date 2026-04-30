@@ -53,3 +53,29 @@
 
 ## Phase 16: Completion roadmap doc
 - [ ] Write `hoopsos_completion_roadmap.md` — production checklist
+
+
+---
+
+## Phase 17 — Practice Plan Builder + Playbook Studio Buildout (NEW REQUEST)
+
+- [ ] Re-read Prompt 14 (Whiteboard/Playbook), Prompt 8 (Coach HQ practice plans), Prompt 3 (schema), audit existing PlaybookStudio + PracticePlans pages
+- [ ] Extend mock data: drill library, practice plans, playbooks/plays/phases/diagrams/quizzes
+- [ ] Practice Plan Builder
+  - [ ] Drill library drawer with categories + search + filters
+  - [ ] Period timeline with drag-add, drag-reorder, inline duration edit
+  - [ ] Auto-summed running clock + warnings if over budget
+  - [ ] Equipment / coach / court allocation summary
+  - [ ] Print/share/export view
+  - [ ] List + detail of multiple practice plans
+- [ ] Playbook Studio
+  - [ ] Half-court + full-court SVG backgrounds
+  - [ ] Token palette (O1–O5, X1–X5, ball, cones, screens)
+  - [ ] Drag tokens, snap-to-grid, multi-select
+  - [ ] Path tools (cut, dribble, pass, screen)
+  - [ ] Multi-phase timeline + animated playback
+  - [ ] Formation library
+  - [ ] Save/version, list view, naming, tags
+  - [ ] Coach presentation mode
+- [ ] Play Quizzes (author + take)
+- [ ] QA + checkpoint
