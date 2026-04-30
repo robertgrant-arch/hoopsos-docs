@@ -79,3 +79,11 @@
   - [ ] Coach presentation mode
 - [ ] Play Quizzes (author + take)
 - [ ] QA + checkpoint
+
+
+## Phase 18 — Bug: links/login broken to Practice Plans + Playbook Studio
+- [ ] Verify sidebar `Practice Plans` href matches the App.tsx route exactly
+- [ ] Verify sidebar `Playbook Studio` href matches the new route
+- [ ] Test sign-in flow on the deployed domain
+- [ ] Test direct deep-links: `/app/coach/practice-plans` and `/app/playbook` after sign-in
+- [ ] Patch any mismatched hrefs / missing routes

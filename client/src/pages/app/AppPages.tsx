@@ -278,7 +278,7 @@ export function CoachDashboard() {
                 label="Upload Game Film"
               />
               <QuickAction
-                href="/app/whiteboard"
+                href="/app/playbook"
                 icon={<Sparkles className="w-4 h-4" />}
                 label="Design a Play"
               />
