@@ -3,7 +3,17 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* ==========================================================================
+   HoopsOS Docs — "Stripe Docs × Linear × Courtside"
+   Dense, dark-first engineering documentation aesthetic.
+   Brand signatures: Amber #F59E0B accent, Oswald display, JetBrains Mono code.
+   ========================================================================== */
+
 @theme inline {
+  --font-display: "Oswald", system-ui, sans-serif;
+  --font-sans: "Inter", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
@@ -40,138 +50,407 @@
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
+
+  --color-amber: oklch(0.78 0.17 75);
+  --color-indigo: oklch(0.45 0.22 290);
 }
 
 :root {
-  --primary: var(--color-blue-700);
-  --primary-foreground: var(--color-blue-50);
-  --sidebar-primary: var(--color-blue-600);
-  --sidebar-primary-foreground: var(--color-blue-50);
-  --chart-1: var(--color-blue-300);
-  --chart-2: var(--color-blue-500);
-  --chart-3: var(--color-blue-600);
-  --chart-4: var(--color-blue-700);
-  --chart-5: var(--color-blue-800);
-  --radius: 0.65rem;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.235 0.015 65);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.235 0.015 65);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.235 0.015 65);
-  --secondary: oklch(0.98 0.001 286.375);
-  --secondary-foreground: oklch(0.4 0.015 65);
-  --muted: oklch(0.967 0.001 286.375);
-  --muted-foreground: oklch(0.552 0.016 285.938);
-  --accent: oklch(0.967 0.001 286.375);
-  --accent-foreground: oklch(0.141 0.005 285.823);
-  --destructive: oklch(0.577 0.245 27.325);
-  --destructive-foreground: oklch(0.985 0 0);
-  --border: oklch(0.92 0.004 286.32);
-  --input: oklch(0.92 0.004 286.32);
-  --ring: oklch(0.623 0.214 259.815);
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.235 0.015 65);
-  --sidebar-accent: oklch(0.967 0.001 286.375);
-  --sidebar-accent-foreground: oklch(0.141 0.005 285.823);
-  --sidebar-border: oklch(0.92 0.004 286.32);
-  --sidebar-ring: oklch(0.623 0.214 259.815);
+  --radius: 0.5rem;
+
+  /* Dark-first canvas: zinc-950 court bench feel */
+  --background: oklch(0.13 0.005 260);
+  --foreground: oklch(0.96 0.003 260);
+
+  --card: oklch(0.155 0.005 260);
+  --card-foreground: oklch(0.96 0.003 260);
+  --popover: oklch(0.17 0.005 260);
+  --popover-foreground: oklch(0.96 0.003 260);
+
+  /* Amber #F59E0B as single accent */
+  --primary: oklch(0.78 0.17 75);
+  --primary-foreground: oklch(0.15 0.01 260);
+
+  --secondary: oklch(0.22 0.005 260);
+  --secondary-foreground: oklch(0.85 0.005 260);
+  --muted: oklch(0.2 0.004 260);
+  --muted-foreground: oklch(0.62 0.01 260);
+  --accent: oklch(0.22 0.005 260);
+  --accent-foreground: oklch(0.96 0.003 260);
+  --destructive: oklch(0.62 0.23 25);
+  --destructive-foreground: oklch(0.98 0 0);
+
+  --border: oklch(1 0 0 / 8%);
+  --input: oklch(1 0 0 / 10%);
+  --ring: oklch(0.78 0.17 75);
+
+  --chart-1: oklch(0.78 0.17 75);
+  --chart-2: oklch(0.62 0.19 290);
+  --chart-3: oklch(0.7 0.15 180);
+  --chart-4: oklch(0.65 0.15 15);
+  --chart-5: oklch(0.7 0.12 140);
+
+  --sidebar: oklch(0.12 0.005 260);
+  --sidebar-foreground: oklch(0.85 0.005 260);
+  --sidebar-primary: oklch(0.78 0.17 75);
+  --sidebar-primary-foreground: oklch(0.15 0.01 260);
+  --sidebar-accent: oklch(0.2 0.004 260);
+  --sidebar-accent-foreground: oklch(0.96 0.003 260);
+  --sidebar-border: oklch(1 0 0 / 6%);
+  --sidebar-ring: oklch(0.78 0.17 75);
 }
 
-.dark {
-  --primary: var(--color-blue-700);
-  --primary-foreground: var(--color-blue-50);
-  --sidebar-primary: var(--color-blue-500);
-  --sidebar-primary-foreground: var(--color-blue-50);
-  --background: oklch(0.141 0.005 285.823);
-  --foreground: oklch(0.85 0.005 65);
-  --card: oklch(0.21 0.006 285.885);
-  --card-foreground: oklch(0.85 0.005 65);
-  --popover: oklch(0.21 0.006 285.885);
-  --popover-foreground: oklch(0.85 0.005 65);
-  --secondary: oklch(0.24 0.006 286.033);
-  --secondary-foreground: oklch(0.7 0.005 65);
-  --muted: oklch(0.274 0.006 286.033);
-  --muted-foreground: oklch(0.705 0.015 286.067);
-  --accent: oklch(0.274 0.006 286.033);
-  --accent-foreground:  oklch(0.92 0.005 65);
-  --destructive: oklch(0.704 0.191 22.216);
-  --destructive-foreground: oklch(0.985 0 0);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.488 0.243 264.376);
-  --chart-1: var(--color-blue-300);
-  --chart-2: var(--color-blue-500);
-  --chart-3: var(--color-blue-600);
-  --chart-4: var(--color-blue-700);
-  --chart-5: var(--color-blue-800);
-  --sidebar: oklch(0.21 0.006 285.885);
-  --sidebar-foreground: oklch(0.85 0.005 65);
-  --sidebar-accent: oklch(0.274 0.006 286.033);
-  --sidebar-accent-foreground:  oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.488 0.243 264.376);
+/* Light theme kept as compatibility fallback, but design defaults to dark */
+.light {
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.2 0.01 260);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.2 0.01 260);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.2 0.01 260);
+  --primary: oklch(0.7 0.15 75);
+  --primary-foreground: oklch(1 0 0);
+  --secondary: oklch(0.97 0.002 260);
+  --secondary-foreground: oklch(0.3 0.01 260);
+  --muted: oklch(0.97 0.002 260);
+  --muted-foreground: oklch(0.5 0.01 260);
+  --accent: oklch(0.96 0.003 260);
+  --accent-foreground: oklch(0.2 0.01 260);
+  --border: oklch(0.9 0.004 260);
+  --input: oklch(0.9 0.004 260);
+  --ring: oklch(0.7 0.15 75);
+  --sidebar: oklch(0.985 0 0);
+  --sidebar-foreground: oklch(0.2 0.01 260);
+  --sidebar-border: oklch(0.9 0.004 260);
 }
 
 @layer base {
   * {
     @apply border-border outline-ring/50;
   }
+  html {
+    color-scheme: dark;
+  }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground font-sans antialiased;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
   }
   button:not(:disabled),
   [role="button"]:not([aria-disabled="true"]),
   [type="button"]:not(:disabled),
   [type="submit"]:not(:disabled),
-  [type="reset"]:not(:disabled),
   a[href],
-  select:not(:disabled),
-  input[type="checkbox"]:not(:disabled),
-  input[type="radio"]:not(:disabled) {
+  select:not(:disabled) {
     @apply cursor-pointer;
+  }
+  ::selection {
+    background: oklch(0.78 0.17 75 / 0.3);
+    color: oklch(0.98 0 0);
   }
 }
 
 @layer components {
-  /**
-   * Custom container utility that centers content and adds responsive padding.
-   *
-   * This overrides Tailwind's default container behavior to:
-   * - Auto-center content (mx-auto)
-   * - Add responsive horizontal padding
-   * - Set max-width for large screens
-   *
-   * Usage: <div className="container">...</div>
-   *
-   * For custom widths, use max-w-* utilities directly:
-   * <div className="max-w-6xl mx-auto px-4">...</div>
-   */
   .container {
     width: 100%;
     margin-left: auto;
     margin-right: auto;
-    padding-left: 1rem; /* 16px - mobile padding */
-    padding-right: 1rem;
+    padding-left: 1.25rem;
+    padding-right: 1.25rem;
   }
-
   .flex {
     min-height: 0;
     min-width: 0;
   }
 
-  @media (min-width: 640px) {
-    .container {
-      padding-left: 1.5rem; /* 24px - tablet padding */
-      padding-right: 1.5rem;
-    }
+  /* Display tracking — uppercase Oswald for H1s and chapter labels */
+  .display {
+    font-family: var(--font-display);
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    text-transform: uppercase;
   }
 
-  @media (min-width: 1024px) {
-    .container {
-      padding-left: 2rem; /* 32px - desktop padding */
-      padding-right: 2rem;
-      max-width: 1280px; /* Standard content width */
-    }
+  /* Mono pill (PROMPT 01, route groups, API paths) */
+  .mono-pill {
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.04em;
+    padding: 0.2rem 0.55rem;
+    border-radius: 4px;
+    background: oklch(0.2 0.005 260);
+    color: oklch(0.65 0.005 260);
+    border: 1px solid oklch(1 0 0 / 8%);
+    text-transform: uppercase;
   }
+
+  /* Hairline bottom line for section separators */
+  .hairline {
+    background-image: linear-gradient(to right, oklch(1 0 0 / 0%), oklch(1 0 0 / 10%), oklch(1 0 0 / 0%));
+    height: 1px;
+  }
+
+  /* Custom scrollbar — dense UIs need it to feel deliberate */
+  .doc-scroll::-webkit-scrollbar {
+    width: 10px;
+  }
+  .doc-scroll::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .doc-scroll::-webkit-scrollbar-thumb {
+    background: oklch(0.3 0.005 260);
+    border-radius: 8px;
+    border: 2px solid oklch(0.13 0.005 260);
+  }
+  .doc-scroll::-webkit-scrollbar-thumb:hover {
+    background: oklch(0.4 0.005 260);
+  }
+}
+
+@media (min-width: 640px) {
+  .container {
+    padding-left: 1.75rem;
+    padding-right: 1.75rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .container {
+    max-width: 1400px;
+    padding-left: 2rem;
+    padding-right: 2rem;
+  }
+}
+
+/* ==========================================================================
+   Prose — the doc body typography. Tuned for long-form engineering reading.
+   ========================================================================== */
+
+.prose-doc {
+  color: oklch(0.92 0.005 260);
+  font-size: 15.5px;
+  line-height: 1.7;
+}
+.prose-doc h1 {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: clamp(1.85rem, 2.4vw, 2.35rem);
+  letter-spacing: 0.005em;
+  text-transform: uppercase;
+  color: oklch(0.98 0.002 260);
+  margin-top: 0;
+  margin-bottom: 1.25rem;
+  line-height: 1.15;
+}
+.prose-doc h2 {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 1.5rem;
+  letter-spacing: 0.008em;
+  text-transform: uppercase;
+  color: oklch(0.96 0.002 260);
+  margin-top: 3rem;
+  margin-bottom: 1rem;
+  padding-bottom: 0.6rem;
+  border-bottom: 1px solid oklch(1 0 0 / 8%);
+  scroll-margin-top: 6rem;
+}
+.prose-doc h3 {
+  font-family: var(--font-sans);
+  font-weight: 600;
+  font-size: 1.125rem;
+  color: oklch(0.95 0.002 260);
+  margin-top: 2rem;
+  margin-bottom: 0.6rem;
+  letter-spacing: -0.005em;
+  scroll-margin-top: 6rem;
+}
+.prose-doc h4 {
+  font-family: var(--font-sans);
+  font-weight: 600;
+  font-size: 1rem;
+  color: oklch(0.9 0.002 260);
+  margin-top: 1.5rem;
+  margin-bottom: 0.4rem;
+}
+.prose-doc p {
+  margin: 0.9rem 0;
+}
+.prose-doc a {
+  color: oklch(0.78 0.17 75);
+  text-decoration: none;
+  border-bottom: 1px solid oklch(0.78 0.17 75 / 0.3);
+  transition: border-color 150ms ease;
+}
+.prose-doc a:hover {
+  border-bottom-color: oklch(0.78 0.17 75);
+}
+.prose-doc strong {
+  color: oklch(0.98 0 0);
+  font-weight: 600;
+}
+.prose-doc em {
+  color: oklch(0.93 0.005 260);
+  font-style: italic;
+}
+.prose-doc ul,
+.prose-doc ol {
+  padding-left: 1.4rem;
+  margin: 0.9rem 0;
+}
+.prose-doc li {
+  margin: 0.35rem 0;
+}
+.prose-doc li::marker {
+  color: oklch(0.5 0.008 260);
+}
+.prose-doc blockquote {
+  border-left: 3px solid oklch(0.78 0.17 75);
+  padding: 0.4rem 0 0.4rem 1.1rem;
+  margin: 1.3rem 0;
+  color: oklch(0.82 0.005 260);
+  font-style: normal;
+  background: oklch(0.16 0.005 260);
+  border-radius: 0 4px 4px 0;
+}
+.prose-doc code {
+  font-family: var(--font-mono);
+  font-size: 0.875em;
+  background: oklch(0.2 0.005 260);
+  color: oklch(0.85 0.14 75);
+  padding: 0.15rem 0.4rem;
+  border-radius: 4px;
+  border: 1px solid oklch(1 0 0 / 6%);
+}
+.prose-doc pre {
+  background: oklch(0.1 0.005 260);
+  border: 1px solid oklch(1 0 0 / 8%);
+  border-radius: 8px;
+  padding: 1.1rem 1.25rem;
+  overflow-x: auto;
+  margin: 1.25rem 0;
+  font-size: 13.5px;
+  line-height: 1.6;
+}
+.prose-doc pre code {
+  background: transparent;
+  border: 0;
+  padding: 0;
+  color: oklch(0.92 0.005 260);
+  font-size: inherit;
+}
+.prose-doc table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 1.4rem 0;
+  font-size: 14.5px;
+  border: 1px solid oklch(1 0 0 / 8%);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.prose-doc thead {
+  background: oklch(0.17 0.005 260);
+}
+.prose-doc th {
+  text-align: left;
+  padding: 0.7rem 0.95rem;
+  font-weight: 600;
+  color: oklch(0.96 0.002 260);
+  font-size: 12.5px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  border-bottom: 1px solid oklch(1 0 0 / 10%);
+}
+.prose-doc td {
+  padding: 0.7rem 0.95rem;
+  border-bottom: 1px solid oklch(1 0 0 / 5%);
+  vertical-align: top;
+}
+.prose-doc tbody tr:last-child td {
+  border-bottom: 0;
+}
+.prose-doc tbody tr:hover {
+  background: oklch(0.17 0.005 260);
+}
+.prose-doc hr {
+  border: 0;
+  height: 1px;
+  background: oklch(1 0 0 / 8%);
+  margin: 2rem 0;
+}
+.prose-doc img {
+  border-radius: 8px;
+  border: 1px solid oklch(1 0 0 / 8%);
+  margin: 1.4rem 0;
+  max-width: 100%;
+}
+
+/* Syntax highlighting — one-dark-ish */
+.hljs-comment,
+.hljs-quote {
+  color: oklch(0.5 0.01 260);
+  font-style: italic;
+}
+.hljs-keyword,
+.hljs-selector-tag,
+.hljs-literal {
+  color: oklch(0.72 0.18 290);
+}
+.hljs-string,
+.hljs-doctag {
+  color: oklch(0.75 0.14 140);
+}
+.hljs-title,
+.hljs-section,
+.hljs-selector-id {
+  color: oklch(0.78 0.17 75);
+}
+.hljs-type,
+.hljs-class .hljs-title,
+.hljs-tag {
+  color: oklch(0.8 0.14 180);
+}
+.hljs-number,
+.hljs-symbol,
+.hljs-bullet,
+.hljs-attr {
+  color: oklch(0.72 0.14 25);
+}
+.hljs-variable,
+.hljs-template-variable,
+.hljs-name {
+  color: oklch(0.8 0.1 340);
+}
+.hljs-built_in {
+  color: oklch(0.78 0.14 180);
+}
+
+/* Amber glow utility for hero + logo */
+.glow-amber {
+  box-shadow: 0 0 40px 0 oklch(0.78 0.17 75 / 0.25);
+}
+
+/* Reveal animation */
+@keyframes fadeSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.fade-in {
+  animation: fadeSlideIn 300ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+/* Noise overlay — subtle texture on hero */
+.noise::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: url("data:image/svg+xml;utf8,<svg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)' opacity='0.55'/></svg>");
+  opacity: 0.05;
+  pointer-events: none;
+  mix-blend-mode: overlay;
 }
