@@ -12,6 +12,8 @@
 export type DrillIntensity = "LOW" | "MEDIUM" | "HIGH" | "MAX";
 export type DrillSurface = "HALF_COURT" | "FULL_COURT" | "BASELINE" | "STATIONARY";
 
+export type DrillVisibility = "private" | "org" | "public";
+
 export type Drill = {
   id: string;
   categoryId: string;
@@ -26,6 +28,22 @@ export type Drill = {
   coachesNeeded: number;
   videoUrl?: string;
   tags: string[];
+  /** Coaching points / cues. Bullet list rendered in the drill card. */
+  coachingPoints?: string[];
+  /** Optional diagram or thumbnail image URL. */
+  diagramUrl?: string;
+  /** Ownership — set on custom drills authored by a coach. */
+  ownerCoachId?: string;
+  /** Org scoping for org-visible custom drills. */
+  orgId?: string;
+  /** True when authored by a coach; false / undefined for global library. */
+  isCustom?: boolean;
+  /** Visibility scope (only meaningful when isCustom). */
+  visibility?: DrillVisibility;
+  /** ISO timestamp — when the custom drill was created. */
+  createdAt?: string;
+  /** ISO timestamp — last edit. */
+  updatedAt?: string;
 };
 
 export type DrillCategory = {
@@ -619,6 +637,11 @@ export function planMaxCoaches(plan: PracticePlan): number {
   }, 1);
 }
 
+/**
+ * Resolve a drill by id from the GLOBAL library only. Custom-drill consumers
+ * should use the `useResolveDrill` hook from `customDrillsStore`-aware sites,
+ * which falls back to the persisted custom-drills store.
+ */
 export function findDrill(drillId: string): Drill | undefined {
   return drillLibrary.find((d) => d.id === drillId);
 }

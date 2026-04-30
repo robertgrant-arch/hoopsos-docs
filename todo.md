@@ -94,3 +94,23 @@
 - [ ] "Start 14-day trial", "Start training" type CTAs → `/sign-in`
 - [ ] Top-nav "Sign in" already routes to `/sign-in` — add a primary "Open Demo App" button next to it
 - [ ] Add a dismissible banner across marketing routes: "This is the demo product page — sign in (no password) to use the actual app"
+
+
+## Phase 20 — Prompt 16: Billing + Custom Drills addendum
+- [ ] Custom Drills: extend Drill type with ownerCoachId, orgId, isCustom, visibility
+- [ ] Custom Drills: My Drills tab + create/edit/delete dialog in Practice Plan Builder
+- [ ] Custom Drills: localStorage-backed store + integration with existing drill drawer
+- [ ] Billing seed: Subscription, Entitlement, CoachLinkEntitlement, Seat, Invoice, WebhookEvent, Coupon, PayoutAccount
+- [ ] EntitlementService: grant/revoke/check + 50%-off engine with grandfathering + audit log
+- [ ] Webhook simulator panel (admin)
+- [ ] Pricing page wired to mock Checkout
+- [ ] Customer Portal page (cancel/upgrade/pause/resume)
+- [ ] Seat management UI for Team Pro (add/remove/swap with proration)
+- [ ] Dunning banner + grace period UX
+- [ ] Refund flow (subs / live / expert review SLA)
+- [ ] Expert payout panel + 15% platform fee math
+- [ ] Metered AI credits
+- [ ] Admin Analytics: MRR, ARR, churn, LTV, ARPU
+- [ ] Update architecture + schema docs
+- [ ] Wire into Coach HQ / Player / Team / Expert / Admin nav
+- [ ] QA + checkpoint

@@ -38,6 +38,13 @@ import CoachPracticePlanBuilder from "@/pages/app/coach/PracticePlanBuilder";
 import CoachPlaybookStudio from "@/pages/app/coach/PlaybookStudio";
 import PlayQuizRunner from "@/pages/app/player/PlayQuiz";
 
+// Billing (Prompt 16)
+import { AppPricingPage } from "@/pages/app/billing/PricingPage";
+import { BillingPortal } from "@/pages/app/billing/BillingPortal";
+import { SeatManager } from "@/pages/app/billing/SeatManager";
+import { ExpertPayouts } from "@/pages/app/billing/ExpertPayouts";
+import { BillingAdmin } from "@/pages/app/admin/BillingAdmin";
+
 // Everything else
 import {
   CoachDashboard,
@@ -139,8 +146,15 @@ function Router() {
       {/* Settings */}
       <Route path="/app/settings/billing" component={SettingsBilling} />
 
+      {/* Billing (Prompt 16) */}
+      <Route path="/app/billing" component={BillingPortal} />
+      <Route path="/app/billing/pricing" component={AppPricingPage} />
+      <Route path="/app/team/seats" component={SeatManager} />
+      <Route path="/app/expert/payouts" component={ExpertPayouts} />
+
       {/* Admin */}
       <Route path="/app/admin" component={AdminOverview} />
+      <Route path="/app/admin/billing" component={BillingAdmin} />
       <Route path="/app/admin/users" component={AdminUsers} />
       <Route path="/app/admin/moderation" component={AdminModeration} />
       <Route path="/app/admin/audit" component={AdminAudit} />

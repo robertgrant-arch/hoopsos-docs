@@ -69,9 +69,9 @@ import {
   drillCategories,
   drillLibrary,
   findCategory,
-  findDrill,
-  planEquipment,
-  planMaxCoaches,
+  findDrill as findGlobalDrill,
+  planEquipment as _planEquipmentRaw,
+  planMaxCoaches as _planMaxCoachesRaw,
   planTotalMinutes,
   type Drill,
   type DrillIntensity,
@@ -80,6 +80,36 @@ import {
   type PracticePlanBlock,
 } from "@/lib/mock/practice";
 import { usePracticePlans } from "@/lib/practicePlanStore";
+import { useCustomDrillsStore } from "@/lib/customDrillsStore";
+import { CustomDrillEditor } from "@/components/coach/CustomDrillEditor";
+import { useAuth } from "@/lib/auth";
+
+/**
+ * Resolve a drill against both the global library and the persisted custom
+ * drills store. Used everywhere this page reads a drill out of a plan block.
+ */
+function findDrill(drillId: string): Drill | undefined {
+  return (
+    findGlobalDrill(drillId) ??
+    useCustomDrillsStore.getState().byId(drillId)
+  );
+}
+
+/** Re-export of practice helpers but using our merged drill resolver. */
+function planEquipment(plan: PracticePlan): string[] {
+  const set = new Set<string>();
+  for (const b of plan.blocks) {
+    findDrill(b.drillId)?.equipment.forEach((e) => set.add(e));
+  }
+  return Array.from(set).sort();
+}
+function planMaxCoaches(plan: PracticePlan): number {
+  return plan.blocks.reduce((m, b) => Math.max(m, findDrill(b.drillId)?.coachesNeeded ?? 1), 1);
+}
+// Touch the original helpers so the linter doesn't flag them as unused if some
+// import path changes later. (No-op in optimised build.)
+void _planEquipmentRaw;
+void _planMaxCoachesRaw;
 
 const INTENSITIES: DrillIntensity[] = ["LOW", "MEDIUM", "HIGH", "MAX"];
 const SURFACES: DrillSurface[] = ["HALF_COURT", "FULL_COURT", "BASELINE", "STATIONARY"];
@@ -280,36 +310,103 @@ function DrillLibraryDrawer({
   onPick: (drillId: string) => void;
   trigger: React.ReactNode;
 }) {
+  const { user } = useAuth();
+  const coachId = user?.id ?? "coach_anonymous";
+  const orgId = (user as any)?.orgId as string | undefined;
+
+  const [tab, setTab] = useState<"LIBRARY" | "MINE">("LIBRARY");
   const [search, setSearch] = useState("");
   const [activeCat, setActiveCat] = useState<string | "ALL">("ALL");
   const [activeIntensity, setActiveIntensity] = useState<DrillIntensity | "ALL">("ALL");
   const [activeSurface, setActiveSurface] = useState<DrillSurface | "ALL">("ALL");
   const [open, setOpen] = useState(false);
 
+  // Custom drill editor state.
+  const [editorOpen, setEditorOpen] = useState(false);
+  const [editing, setEditing] = useState<Drill | null>(null);
+  const customDrills = useCustomDrillsStore((s) => s.drills);
+  const removeCustom = useCustomDrillsStore((s) => s.remove);
+
+  const visibleCustoms = useMemo(
+    () =>
+      customDrills.filter((d) => {
+        if (d.visibility === "public") return true;
+        if (d.visibility === "org" && orgId && d.orgId === orgId) return true;
+        return d.ownerCoachId === coachId;
+      }),
+    [customDrills, coachId, orgId],
+  );
+
+  const sourceList = tab === "LIBRARY" ? drillLibrary : visibleCustoms;
+
   const filtered = useMemo(() => {
-    return drillLibrary.filter((d) => {
+    return sourceList.filter((d) => {
       if (activeCat !== "ALL" && d.categoryId !== activeCat) return false;
       if (activeIntensity !== "ALL" && d.intensity !== activeIntensity) return false;
       if (activeSurface !== "ALL" && d.surface !== activeSurface) return false;
       if (search.trim()) {
         const q = search.toLowerCase();
-        if (!d.title.toLowerCase().includes(q) && !d.description.toLowerCase().includes(q) && !d.tags.some((t) => t.includes(q))) {
+        if (
+          !d.title.toLowerCase().includes(q) &&
+          !d.description.toLowerCase().includes(q) &&
+          !d.tags.some((t) => t.toLowerCase().includes(q))
+        ) {
           return false;
         }
       }
       return true;
     });
-  }, [search, activeCat, activeIntensity, activeSurface]);
+  }, [sourceList, search, activeCat, activeIntensity, activeSurface]);
 
   return (
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>{trigger}</SheetTrigger>
       <SheetContent side="right" className="w-full sm:max-w-xl flex flex-col p-0">
         <SheetHeader className="p-5 border-b border-border">
-          <SheetTitle className="font-display text-lg uppercase tracking-tight">Drill Library</SheetTitle>
-          <p className="text-[12.5px] text-muted-foreground">
-            {drillLibrary.length} drills across {drillCategories.length} categories. Click to add to plan.
+          <div className="flex items-center justify-between gap-2">
+            <SheetTitle className="font-display text-lg uppercase tracking-tight">
+              {tab === "LIBRARY" ? "Drill Library" : "My Drills"}
+            </SheetTitle>
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-8"
+              onClick={() => {
+                setEditing(null);
+                setEditorOpen(true);
+              }}
+            >
+              <Plus className="w-3.5 h-3.5 mr-1" /> New drill
+            </Button>
+          </div>
+          <p className="text-[12.5px] text-muted-foreground mt-1">
+            {tab === "LIBRARY"
+              ? `${drillLibrary.length} drills across ${drillCategories.length} categories. Click to add to plan.`
+              : `${visibleCustoms.length} custom drill${visibleCustoms.length === 1 ? "" : "s"} authored by you or shared with your org.`}
           </p>
+          {/* Tab toggle */}
+          <div className="mt-3 inline-flex rounded-md border border-border p-0.5 bg-card">
+            <button
+              onClick={() => setTab("LIBRARY")}
+              className={`h-7 px-3 rounded text-[11.5px] font-mono uppercase tracking-wider transition ${
+                tab === "LIBRARY"
+                  ? "bg-primary text-primary-foreground"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              Library
+            </button>
+            <button
+              onClick={() => setTab("MINE")}
+              className={`h-7 px-3 rounded text-[11.5px] font-mono uppercase tracking-wider transition ${
+                tab === "MINE"
+                  ? "bg-primary text-primary-foreground"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              My Drills{visibleCustoms.length > 0 ? ` · ${visibleCustoms.length}` : ""}
+            </button>
+          </div>
         </SheetHeader>
 
         <div className="px-5 py-3 border-b border-border space-y-3">
@@ -383,61 +480,133 @@ function DrillLibraryDrawer({
           <div className="p-4 space-y-2">
             {filtered.length === 0 && (
               <div className="text-center py-12 text-muted-foreground text-sm">
-                No drills match your filters.
+                {tab === "MINE" && visibleCustoms.length === 0
+                  ? "You haven't authored any drills yet. Click ‘New drill’ to add your first."
+                  : "No drills match your filters."}
               </div>
             )}
             {filtered.map((d) => {
               const cat = findCategory(d.categoryId);
+              const owned = d.isCustom && d.ownerCoachId === coachId;
               return (
-                <button
+                <div
                   key={d.id}
-                  onClick={() => {
-                    onPick(d.id);
-                    toast.success(`Added "${d.title}" to plan`);
-                  }}
-                  className="w-full text-left rounded-lg border border-border hover:border-primary/50 bg-card p-3 transition group"
+                  className="relative rounded-lg border border-border hover:border-primary/50 bg-card transition group"
                 >
-                  <div className="flex items-start gap-3">
-                    <span
-                      className="w-1 h-12 rounded-full shrink-0"
-                      style={{ background: cat?.color ?? "var(--muted)" }}
-                    />
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between gap-2">
-                        <h4 className="font-semibold text-[13.5px]">{d.title}</h4>
-                        <span className="font-mono text-[11.5px] text-muted-foreground shrink-0">
-                          {d.defaultDurationMin} min
-                        </span>
+                  <button
+                    onClick={() => {
+                      onPick(d.id);
+                      toast.success(`Added “${d.title}” to plan`);
+                    }}
+                    className="w-full text-left p-3"
+                  >
+                    <div className="flex items-start gap-3">
+                      <span
+                        className="w-1 h-12 rounded-full shrink-0"
+                        style={{ background: cat?.color ?? "var(--muted)" }}
+                      />
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <h4 className="font-semibold text-[13.5px] truncate">{d.title}</h4>
+                            {d.isCustom && (
+                              <span
+                                className={`text-[9.5px] font-mono uppercase tracking-wider px-1.5 py-0.5 rounded shrink-0 ${
+                                  d.visibility === "public"
+                                    ? "bg-emerald-500/15 text-emerald-400"
+                                    : d.visibility === "org"
+                                      ? "bg-blue-500/15 text-blue-400"
+                                      : "bg-primary/15 text-primary"
+                                }`}
+                              >
+                                {d.visibility ?? "private"}
+                              </span>
+                            )}
+                          </div>
+                          <span className="font-mono text-[11.5px] text-muted-foreground shrink-0">
+                            {d.defaultDurationMin} min
+                          </span>
+                        </div>
+                        <p className="text-[12px] text-muted-foreground line-clamp-2 mt-0.5">
+                          {d.description}
+                        </p>
+                        <div className="flex items-center gap-1.5 flex-wrap mt-1.5">
+                          <span
+                            className="text-[10px] font-mono uppercase tracking-wider px-1.5 py-0.5 rounded"
+                            style={{
+                              background: `${INTENSITY_COLOR[d.intensity].replace(")", " / 0.15)")}`,
+                              color: INTENSITY_COLOR[d.intensity],
+                            }}
+                          >
+                            {d.intensity}
+                          </span>
+                          <span className="text-[10px] font-mono text-muted-foreground bg-muted/40 px-1.5 py-0.5 rounded">
+                            {formatSurface(d.surface)}
+                          </span>
+                          <span className="text-[10px] font-mono text-muted-foreground">
+                            {d.minPlayers === d.maxPlayers
+                              ? `${d.minPlayers}p`
+                              : `${d.minPlayers}–${d.maxPlayers}p`}
+                          </span>
+                        </div>
                       </div>
-                      <p className="text-[12px] text-muted-foreground line-clamp-2 mt-0.5">
-                        {d.description}
-                      </p>
-                      <div className="flex items-center gap-1.5 flex-wrap mt-1.5">
-                        <span
-                          className="text-[10px] font-mono uppercase tracking-wider px-1.5 py-0.5 rounded"
-                          style={{
-                            background: `${INTENSITY_COLOR[d.intensity].replace(")", " / 0.15)")}`,
-                            color: INTENSITY_COLOR[d.intensity],
-                          }}
-                        >
-                          {d.intensity}
-                        </span>
-                        <span className="text-[10px] font-mono text-muted-foreground bg-muted/40 px-1.5 py-0.5 rounded">
-                          {formatSurface(d.surface)}
-                        </span>
-                        <span className="text-[10px] font-mono text-muted-foreground">
-                          {d.minPlayers === d.maxPlayers ? `${d.minPlayers}p` : `${d.minPlayers}–${d.maxPlayers}p`}
-                        </span>
-                      </div>
+                      <Plus className="w-4 h-4 text-muted-foreground group-hover:text-primary mt-1 shrink-0" />
                     </div>
-                    <Plus className="w-4 h-4 text-muted-foreground group-hover:text-primary mt-1 shrink-0" />
-                  </div>
-                </button>
+                  </button>
+                  {owned && (
+                    <div className="absolute top-1.5 right-1.5 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition">
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="h-7 w-7"
+                        title="Edit drill"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setEditing(d);
+                          setEditorOpen(true);
+                        }}
+                      >
+                        <Edit3 className="w-3.5 h-3.5" />
+                      </Button>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="h-7 w-7 hover:text-destructive"
+                        title="Delete drill"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (confirm(`Delete custom drill “${d.title}”?`)) {
+                            removeCustom(d.id);
+                            toast.success(`Deleted “${d.title}”—plans that already used it keep the block.`);
+                          }
+                        }}
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </Button>
+                    </div>
+                  )}
+                </div>
               );
             })}
           </div>
         </ScrollArea>
       </SheetContent>
+      <CustomDrillEditor
+        open={editorOpen}
+        onOpenChange={setEditorOpen}
+        editing={editing}
+        ownerCoachId={coachId}
+        orgId={orgId}
+        onSaved={(d) => {
+          // Auto-switch to My Drills tab so the new entry is immediately visible.
+          setTab("MINE");
+          // If the user saved a brand-new drill, drop it straight into the plan
+          // they're editing as a convenience (matches Coach HQ acceptance criteria).
+          if (!editing) {
+            onPick(d.id);
+          }
+        }}
+      />
     </Sheet>
   );
 }
