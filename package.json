@@ -75,7 +75,8 @@
     "vaul": "^1.1.2",
     "wouter": "^3.3.5",
     "zod": "^4.1.12",
-    "zustand": "^5.0.12"
+    "zustand": "^5.0.12",
+    "twilio": "^5.3.5"
   },
   "devDependencies": {
     "@builder.io/vite-plugin-jsx-loc": "^0.1.1",
@@ -85,7 +86,8 @@
     "@types/google.maps": "^3.58.1",
     "@types/node": "^24.7.0",
     "@types/react": "^19.2.1",
-    "@types/react-dom": "^19.2.1",
+    "@types/react-dom": "^19.2.1",,
+    "@vercel/node": "^5.1.0"
     "@vitejs/plugin-react": "^5.0.4",
     "add": "^2.0.6",
     "autoprefixer": "^10.4.20",
