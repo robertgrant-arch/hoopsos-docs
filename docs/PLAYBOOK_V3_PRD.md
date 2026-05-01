@@ -77,3 +77,31 @@ A varsity HS HC, given 30 min onboarding, can:
 6. Re-open it on iPad on the bus and edit live.
 
 If any of those fails, v3 is not done.
+
+---
+
+## Appendix A — PR #8 Implementation Prompt (paste into Claude Code locally)
+
+You are working in hoopsos-docs on branch main. Implement PR #8: free-form polyline path drawing for Cut and Dribble tools.
+
+Files to modify:
+- client/src/components/playbook/PlayCanvas.tsx (currently 465 lines, mode-based handlers)
+- client/src/lib/playbookStore.ts (the v2 store at /workspaces/hoopsos-docs/client/src/lib/playbookStore.ts)
+- client/src/components/playbook/usePlayback.ts
+- client/src/lib/mock/playbookSchema.ts (extend Cut and Dribble action zod schemas with optional path: { x: number; y: number }[])
+
+Behavior:
+1. When tool is CUT or DRIBBLE and the user pointer-downs on a token, do NOT enter DRAW_CUT/DRAW_DRIBBLE click-to-click mode. Instead enter TRACE mode.
+2. On pointermove while in TRACE mode, sample points at <=16ms intervals into a buffer, in court coordinates (use the existing screenToCourt helper).
+3. On pointerup: if the buffer has < 3 points OR the total path length < 1ft, fall back to legacy click-to-click mode (treat as a click). Otherwise:
+   a. Run Ramer-Douglas-Peucker simplification with epsilon=0.25ft to reduce to <=24 points.
+   b. Commit ADD_CUT or ADD_DRIBBLE with both fromTokenId and the simplified path[].
+   c. End point of path snaps to nearest token within 1.5ft if any (player-to-player still works); otherwise terminates at the freeform point.
+4. SVG renderer: if action.path is present, render it as a smoothed Catmull-Rom or quadratic-bezier polyline with the same stroke as the existing CUT/DRIBBLE styles. Arrowhead at last point. Dashed for cut (#cbd5e1), solid for dribble (#fb923c).
+5. Tip panel update: "Hold Cut (C) or Dribble (D) and drag from a player to trace a curved path. Release on a player or a court spot."
+6. Acceptance: drag from player 3 in an S-curve through the lane and release in the corner; the curve persists, animates with the play, and serializes to IndexedDB.
+7. Tests: at least 6 new unit tests in client/src/components/playbook/__tests__/canvas.test.tsx covering RDP simplification, fallback to click-mode on tap, snap-on-release, and roundtrip serialization.
+8. Run pnpm tsc --noEmit && pnpm test && pnpm build. All must pass.
+9. Commit: feat(playbook): free-form polyline path drawing for Cut/Dribble (PR #8). PR title same.
+
+Do NOT downscope. Do NOT ship a click-only fallback as the primary path. The user explicitly rejected click-to-click as the only mode.
