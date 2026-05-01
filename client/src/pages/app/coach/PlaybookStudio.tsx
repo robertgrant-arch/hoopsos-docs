@@ -361,6 +361,7 @@ export function CoachPlaybookStudio() {
 
   return (
     <AppShell>
+      <div data-v2-indicator className="px-4 lg:px-8 pt-3 max-w-[1700px] mx-auto"><div className="inline-flex items-center gap-2 rounded-full border border-emerald-500/40 bg-emerald-500/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-emerald-300"><span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse"/>Playbook Studio v2 · Enterprise build · SPEC-bound</div></div>
       <div className="px-4 lg:px-8 py-6 max-w-[1700px] mx-auto">
         <PageHeader
           eyebrow="Coach HQ"
