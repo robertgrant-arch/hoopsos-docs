@@ -1,19 +1,19 @@
 /**
- * Playback hook — animates a play across all phases.
+ * Playback hook — animates a play across phase transitions.
  *
- * Strategy: for each consecutive pair of phases, interpolate every token's
- * (x,y) from frame N to N+1. Uses requestAnimationFrame.
+ * Uses requestAnimationFrame with stable time tracking so hidden tab
+ * visibility does not desynchronize playback.
  */
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { Play, PlayToken } from "@/lib/mock/playbook";
 
 export type PlaybackState = {
   isPlaying: boolean;
-  /** Current "global" time in [0, totalSegments] where each segment is one phase transition. */
+  /** Current global cursor in [0, totalSegments]. */
   cursor: number;
-  /** Current rendered tokens (interpolated). */
+  /** Interpolated tokens for the current render frame. */
   tokens: PlayToken[];
-  /** Index of the phase we're currently *into* (segment from phase[i] → phase[i+1]). */
+  /** Current segment index for the cursor. */
   segmentIndex: number;
 };
 
@@ -42,17 +42,26 @@ export function usePlayback(play: Play | undefined): PlaybackState & {
   const rafRef = useRef<number | null>(null);
   const lastTsRef = useRef<number | null>(null);
 
-  const segments = (play?.phases.length ?? 1) - 1;
+  const segments = Math.max(0, (play?.phases.length ?? 1) - 1);
 
-  // Animation loop
+  useEffect(() => {
+    const handleVisibility = () => {
+      if (document.visibilityState === "hidden") {
+        lastTsRef.current = null;
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibility);
+    return () => document.removeEventListener("visibilitychange", handleVisibility);
+  }, []);
+
   useEffect(() => {
     if (!isPlaying || !play) return;
+
     function loop(ts: number) {
-      const last = lastTsRef.current ?? ts;
-      const dt = ts - last;
+      const lastTs = lastTsRef.current ?? ts;
       lastTsRef.current = ts;
       setCursorState((prev) => {
-        const next = prev + dt / SEGMENT_DURATION_MS;
+        const next = prev + (ts - lastTs) / SEGMENT_DURATION_MS;
         if (next >= segments) {
           setPlaying(false);
           lastTsRef.current = null;
@@ -62,26 +71,24 @@ export function usePlayback(play: Play | undefined): PlaybackState & {
       });
       rafRef.current = requestAnimationFrame(loop);
     }
+
     rafRef.current = requestAnimationFrame(loop);
     return () => {
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
+      rafRef.current = null;
       lastTsRef.current = null;
     };
   }, [isPlaying, play, segments]);
 
-  const segmentIndex = Math.min(segments - 1, Math.max(0, Math.floor(cursor)));
+  const segmentIndex = useMemo(() => Math.min(segments - 1, Math.max(0, Math.floor(cursor))), [cursor, segments]);
   const t = cursor - segmentIndex;
 
-  let tokens: PlayToken[] = play?.phases[0]?.tokens ?? [];
-  if (play && play.phases.length > 0) {
-    if (segments <= 0) {
-      tokens = play.phases[0].tokens;
-    } else if (cursor >= segments) {
-      tokens = play.phases[segments].tokens;
-    } else {
-      tokens = interpolate(play.phases[segmentIndex].tokens, play.phases[segmentIndex + 1].tokens, t);
-    }
-  }
+  const tokens = useMemo<PlayToken[]>(() => {
+    if (!play?.phases.length) return [];
+    if (segments <= 0) return play.phases[0].tokens;
+    if (cursor >= segments) return play.phases[segments].tokens;
+    return interpolate(play.phases[segmentIndex].tokens, play.phases[segmentIndex + 1].tokens, t);
+  }, [play, segments, cursor, segmentIndex, t]);
 
   return {
     isPlaying,
