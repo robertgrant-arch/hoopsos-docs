@@ -13,53 +13,30 @@
  * Stage size: 800 × 600. Top of stage = baseline / rim end. Bottom = half-court line.
  */
 
-export type CourtType = "HALF" | "FULL";
-export type TokenType = "OFFENSE" | "DEFENSE" | "BALL" | "CONE";
-export type PathType = "PASS" | "DRIBBLE" | "CUT" | "SCREEN" | "HANDOFF";
-export type PhaseLabel = "ENTRY" | "TRIGGER" | "READ_1" | "READ_2" | "COUNTER" | "SAFETY";
+// Re-export the canonical domain types from the zod schema so we have ONE
+// source of truth. Older imports of `@/lib/mock/playbook` keep working.
+export type {
+  CourtType,
+  TokenType,
+  PathType,
+  PhaseLabel,
+  TeamSide,
+  PlayCategory,
+  PlayToken,
+  PlayPath,
+  PlayPhase,
+  Play,
+  PlayVersion,
+} from "./playbookSchema";
 
-export type PlayToken = {
-  id: string;
-  type: TokenType;
-  label: string; // "1".."5" for offense, "X1".."X5" for defense, "" for ball
-  x: number;
-  y: number;
-};
+import type {
+  Play,
+  PlayPath,
+  PlayPhase,
+  PlayToken,
+} from "./playbookSchema";
 
-export type PlayPath = {
-  id: string;
-  type: PathType;
-  /** Flat array of points: [x1, y1, cx, cy, x2, y2] for a quadratic bezier, or [x1, y1, x2, y2] straight. */
-  points: number[];
-  startTokenId?: string;
-  endTokenId?: string;
-};
-
-export type PlayPhase = {
-  id: string;
-  order: number;
-  phase: PhaseLabel;
-  notes: string;
-  tokens: PlayToken[];
-  paths: PlayPath[];
-};
-
-export type PlayMeta = {
-  id: string;
-  playbookId: string;
-  title: string;
-  description: string;
-  courtType: CourtType;
-  category: "PRIMARY" | "SLOB" | "BLOB" | "ATO" | "MOTION" | "ZONE_OFFENSE" | "PRESS_BREAK";
-  tags: string[];
-  createdAt: string;
-  updatedAt: string;
-  versionLabel: string; // e.g. "v1.4 — added counter"
-};
-
-export type Play = PlayMeta & {
-  phases: PlayPhase[];
-};
+export type PlayMeta = Omit<Play, "phases">;
 
 export type Playbook = {
   id: string;

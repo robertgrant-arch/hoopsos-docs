@@ -58,8 +58,9 @@ import {
   type Play,
   type PlayPhase,
 } from "@/lib/mock/playbook";
+import type { EditorMode } from "@/lib/mock/playbookSchema";
 import { usePlaybook } from "@/lib/playbookStore";
-import PlayCanvas, { type CanvasTool } from "@/components/playbook/PlayCanvas";
+import PlayCanvas from "@/components/playbook/PlayCanvas";
 import { PlayThumbnail } from "@/components/court/PlayThumbnail";
 import { usePlayback } from "@/components/playbook/usePlayback";
 
@@ -72,18 +73,39 @@ const PHASE_LABELS: { key: PhaseLabel; label: string; color: string }[] = [
   { key: "SAFETY", label: "Safety", color: "oklch(0.7 0.13 140)" },
 ];
 
-const TOOLS: { key: CanvasTool; label: string; shortcut: string; icon: React.ReactNode; group: "select" | "token" | "path" }[] = [
+type ToolDef = {
+  key: EditorMode;
+  label: string;
+  shortcut: string;
+  icon: React.ReactNode;
+  group: "select" | "token" | "path";
+};
+
+const TOOLS: ToolDef[] = [
   { key: "SELECT", label: "Select", shortcut: "V", icon: <MousePointer2 className="w-4 h-4" />, group: "select" },
-  { key: "OFFENSE", label: "Offense", shortcut: "O", icon: <span className="font-mono font-bold text-[12px]">O</span>, group: "token" },
-  { key: "DEFENSE", label: "Defense", shortcut: "X", icon: <span className="font-mono font-bold text-[12px]">X</span>, group: "token" },
-  { key: "BALL", label: "Ball", shortcut: "B", icon: <span className="text-[14px]">●</span>, group: "token" },
-  { key: "CONE", label: "Cone", shortcut: "K", icon: <span className="text-[14px]">▲</span>, group: "token" },
-  { key: "PASS", label: "Pass", shortcut: "P", icon: <Slash className="w-4 h-4 -rotate-12" />, group: "path" },
-  { key: "DRIBBLE", label: "Dribble", shortcut: "D", icon: <ArrowRight className="w-4 h-4" />, group: "path" },
-  { key: "CUT", label: "Cut", shortcut: "C", icon: <Move className="w-4 h-4" />, group: "path" },
-  { key: "SCREEN", label: "Screen", shortcut: "S", icon: <span className="font-mono font-bold text-[12px]">⊥</span>, group: "path" },
-  { key: "HANDOFF", label: "Handoff", shortcut: "H", icon: <span className="font-mono font-bold text-[12px]">DHO</span>, group: "path" },
+  { key: "ADD_OFFENSE", label: "Offense", shortcut: "O", icon: <span className="font-mono font-bold text-[12px]">O</span>, group: "token" },
+  { key: "ADD_DEFENSE", label: "Defense", shortcut: "X", icon: <span className="font-mono font-bold text-[12px]">X</span>, group: "token" },
+  { key: "ADD_BALL", label: "Ball", shortcut: "B", icon: <span className="text-[14px]">●</span>, group: "token" },
+  { key: "ADD_CONE", label: "Cone", shortcut: "K", icon: <span className="text-[14px]">▲</span>, group: "token" },
+  { key: "DRAW_PASS", label: "Pass", shortcut: "P", icon: <Slash className="w-4 h-4 -rotate-12" />, group: "path" },
+  { key: "DRAW_DRIBBLE", label: "Dribble", shortcut: "D", icon: <ArrowRight className="w-4 h-4" />, group: "path" },
+  { key: "DRAW_CUT", label: "Cut", shortcut: "C", icon: <Move className="w-4 h-4" />, group: "path" },
+  { key: "DRAW_SCREEN", label: "Screen", shortcut: "S", icon: <span className="font-mono font-bold text-[12px]">⊥</span>, group: "path" },
+  { key: "DRAW_HANDOFF", label: "Handoff", shortcut: "H", icon: <span className="font-mono font-bold text-[12px]">DHO</span>, group: "path" },
 ];
+
+const KEY_TO_MODE: Record<string, EditorMode> = {
+  v: "SELECT",
+  o: "ADD_OFFENSE",
+  x: "ADD_DEFENSE",
+  b: "ADD_BALL",
+  k: "ADD_CONE",
+  p: "DRAW_PASS",
+  d: "DRAW_DRIBBLE",
+  c: "DRAW_CUT",
+  s: "DRAW_SCREEN",
+  h: "DRAW_HANDOFF",
+};
 
 /* -------------------------------------------------------------------------- */
 /* Sortable phase chip                                                          */
@@ -258,10 +280,14 @@ export function CoachPlaybookStudio() {
     selectedTokenId,
     selectedPathId,
     versionHistory,
+    editorMode,
+    authorName,
+    setEditorMode,
     setSelectedPlay,
     setSelectedPhase,
     setSelectedToken,
     setSelectedPath,
+    setAuthorName,
     createPlay,
     duplicatePlay,
     deletePlay,
@@ -278,9 +304,12 @@ export function CoachPlaybookStudio() {
     removePath,
     saveVersion,
     restoreVersion,
+    undo,
+    redo,
+    canUndo,
+    canRedo,
   } = usePlaybook();
 
-  const [tool, setTool] = useState<CanvasTool>("SELECT");
   const [presentOpen, setPresentOpen] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
 
@@ -307,16 +336,41 @@ export function CoachPlaybookStudio() {
   // Keyboard shortcuts
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
-      if ((e.target as HTMLElement)?.tagName === "INPUT" || (e.target as HTMLElement)?.tagName === "TEXTAREA") return;
-      const map: Record<string, CanvasTool> = {
-        v: "SELECT", o: "OFFENSE", x: "DEFENSE", b: "BALL", k: "CONE",
-        p: "PASS", d: "DRIBBLE", c: "CUT", s: "SCREEN", h: "HANDOFF",
-      };
-      const t = map[e.key.toLowerCase()];
-      if (t) {
-        setTool(t);
+      const target = e.target as HTMLElement | null;
+      const tag = target?.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA" || target?.isContentEditable) return;
+
+      const meta = e.metaKey || e.ctrlKey;
+      // Undo / Redo
+      if (meta && !e.shiftKey && (e.key === "z" || e.key === "Z")) {
+        e.preventDefault();
+        undo();
         return;
       }
+      if (
+        (meta && e.shiftKey && (e.key === "z" || e.key === "Z")) ||
+        (meta && (e.key === "y" || e.key === "Y"))
+      ) {
+        e.preventDefault();
+        redo();
+        return;
+      }
+
+      if (e.key === "Escape") {
+        setEditorMode("SELECT");
+        return;
+      }
+
+      // Tool shortcuts (no modifier)
+      if (!meta && !e.altKey) {
+        const mode = KEY_TO_MODE[e.key.toLowerCase()];
+        if (mode) {
+          e.preventDefault();
+          setEditorMode(mode);
+          return;
+        }
+      }
+
       if (e.key === "Delete" || e.key === "Backspace") {
         if (selectedTokenId && play && phase) {
           removeToken(play.id, phase.id, selectedTokenId);
@@ -327,7 +381,17 @@ export function CoachPlaybookStudio() {
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [selectedTokenId, selectedPathId, play, phase, removeToken, removePath]);
+  }, [
+    selectedTokenId,
+    selectedPathId,
+    play,
+    phase,
+    removeToken,
+    removePath,
+    setEditorMode,
+    undo,
+    redo,
+  ]);
 
   // Playback
   const playback = usePlayback(play);
@@ -387,10 +451,18 @@ export function CoachPlaybookStudio() {
                   </Link>
                 );
               })()}
+              <Input
+                value={authorName ?? ""}
+                onChange={(e) => setAuthorName(e.target.value)}
+                placeholder="Your name"
+                className="h-9 w-[140px] text-[12px]"
+                aria-label="Author name for version history"
+              />
               <Button
                 onClick={() => {
-                  saveVersion(play.id);
-                  toast.success("Saved version");
+                  const ok = saveVersion(play.id);
+                  if (ok) toast.success("Saved version");
+                  else toast.error("Couldn't save: snapshot failed validation");
                 }}
                 variant="outline"
                 size="sm"
@@ -432,11 +504,12 @@ export function CoachPlaybookStudio() {
               {TOOLS.map((t) => (
                 <button
                   key={t.key}
-                  onClick={() => setTool(t.key)}
+                  onClick={() => setEditorMode(t.key)}
                   title={`${t.label} (${t.shortcut})`}
+                  aria-pressed={editorMode === t.key}
                   className={`h-9 px-2.5 rounded-md text-[12px] inline-flex items-center gap-1.5 border transition ${
-                    tool === t.key
-                      ? "bg-primary text-primary-foreground border-primary"
+                    editorMode === t.key
+                      ? "bg-primary text-primary-foreground border-primary shadow-[0_0_0_2px_rgba(251,191,36,0.25)]"
                       : "border-border bg-background hover:border-primary/50"
                   }`}
                 >
@@ -446,6 +519,26 @@ export function CoachPlaybookStudio() {
                 </button>
               ))}
               <div className="ml-auto flex items-center gap-2">
+                <Button
+                  onClick={() => undo()}
+                  size="sm"
+                  variant="ghost"
+                  className="h-9 px-2"
+                  disabled={!canUndo()}
+                  title="Undo (⌘Z)"
+                >
+                  ↶
+                </Button>
+                <Button
+                  onClick={() => redo()}
+                  size="sm"
+                  variant="ghost"
+                  className="h-9 px-2"
+                  disabled={!canRedo()}
+                  title="Redo (⌘⇧Z)"
+                >
+                  ↷
+                </Button>
                 <FormationDrawer
                   onPick={(formationId) => {
                     addPhase(play.id, formationId);
@@ -468,7 +561,7 @@ export function CoachPlaybookStudio() {
             <div ref={containerRef} className="rounded-xl border border-border bg-card overflow-hidden flex items-center justify-center" style={{ minHeight: 500 }}>
               <PlayCanvas
                 phase={phase}
-                tool={tool}
+                editorMode={editorMode}
                 selectedTokenId={selectedTokenId}
                 selectedPathId={selectedPathId}
                 width={canvasSize.width}
@@ -477,10 +570,15 @@ export function CoachPlaybookStudio() {
                 onSelectToken={setSelectedToken}
                 onSelectPath={setSelectedPath}
                 onMoveToken={(id, x, y) => updateToken(play.id, phase.id, id, { x, y })}
-                onAddToken={(t) => addToken(play.id, phase.id, t)}
-                onAddPath={(pa) => addPath(play.id, phase.id, pa)}
+                onAddToken={(t) => {
+                  addToken(play.id, phase.id, t);
+                }}
+                onAddPath={(pa) => {
+                  addPath(play.id, phase.id, pa);
+                }}
                 onRemoveToken={(id) => removeToken(play.id, phase.id, id)}
                 onRemovePath={(id) => removePath(play.id, phase.id, id)}
+                onCancelMode={() => setEditorMode("SELECT")}
               />
             </div>
 
@@ -587,9 +685,10 @@ export function CoachPlaybookStudio() {
               versions={versionHistory[play.id] ?? []}
               onRestore={(versionId) => {
                 if (confirm("Restore this version? Your current edits will be replaced (you can save a version first).")) {
-                  restoreVersion(play.id, versionId);
+                  const ok = restoreVersion(play.id, versionId);
                   setHistoryOpen(false);
-                  toast.success("Version restored");
+                  if (ok) toast.success("Version restored");
+                  else toast.error("Couldn't restore: stored snapshot is invalid");
                 }
               }}
             />

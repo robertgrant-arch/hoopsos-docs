@@ -1,40 +1,46 @@
-import { z } from "zod";
-import { playbookStoreSchema, playbookSnapshotSchema } from "./mock/playbookSchema";
-type PlaybookSnapshot = z.infer<typeof playbookSnapshotSchema>;
-
 /**
  * Runtime guards for the Playbook Store.
  *
- * These are deliberately additive: they do NOT replace the existing
- * Zustand store in `playbookStore.ts`. They give callers a safe way to
- * validate hydration data and snapshots without breaking the current
- * store contract. The full v2 store migration is tracked in
- * `client/src/components/playbook/MIGRATION.md`.
+ * Thin wrapper around the canonical zod schemas in `mock/playbookSchema.ts`.
+ * Provides safe + throwing variants for callers that want to validate
+ * persisted blobs or play snapshots without depending on Zod directly.
  */
+import { z } from "zod";
+import {
+  persistedPlaybookSchema,
+  playSchema,
+  type PersistedPlaybook,
+  type Play,
+} from "./mock/playbookSchema";
 
 export type GuardResult<T> =
   | { ok: true; data: T }
   | { ok: false; error: z.ZodError };
 
-/** Validate a parsed JSON value against the strict playbook store schema. */
-export function validatePlaybookStore(value: unknown): GuardResult<z.infer<typeof playbookStoreSchema>> {
-  const parsed = playbookStoreSchema.safeParse(value);
+export function validatePersistedPlaybook(value: unknown): GuardResult<PersistedPlaybook> {
+  const parsed = persistedPlaybookSchema.safeParse(value);
+  if (parsed.success) return { ok: true, data: parsed.data };
+  return { ok: false, error: parsed.error };
+}
+
+export function validatePlay(value: unknown): GuardResult<Play> {
+  const parsed = playSchema.safeParse(value);
   if (parsed.success) return { ok: true, data: parsed.data };
   return { ok: false, error: parsed.error };
 }
 
 /**
- * Safe localStorage hydration. Returns the validated value, or null if
- * missing/invalid. On invalid data we log a structured warning so the
- * UI layer can show a recovery prompt rather than crash.
+ * Best-effort localStorage hydration. Returns the validated value, or null
+ * if missing/invalid. Wrapped in try/catch so a corrupt or unavailable
+ * storage backend can never propagate up.
  */
-export function safeLoadFromStorage(key: string): z.infer<typeof playbookStoreSchema> | null {
+export function safeLoadFromStorage(key: string): PersistedPlaybook | null {
   if (typeof window === "undefined") return null;
   try {
     const raw = window.localStorage.getItem(key);
     if (!raw) return null;
     const json = JSON.parse(raw);
-    const result = validatePlaybookStore(json);
+    const result = validatePersistedPlaybook(json);
     if (result.ok) return result.data;
     console.warn("[playbook] persisted store failed schema validation", {
       key,
@@ -48,9 +54,13 @@ export function safeLoadFromStorage(key: string): z.infer<typeof playbookStoreSc
 }
 
 /** Throwing variant for tests / dev-time assertions. */
-export function assertPlaybookStore(value: unknown): asserts value is PlaybookSnapshot {
-  const result = validatePlaybookStore(value);
+export function assertPersistedPlaybook(value: unknown): asserts value is PersistedPlaybook {
+  const result = validatePersistedPlaybook(value);
   if (!result.ok) {
-    throw new Error(`Invalid playbook store: ${result.error.issues.map(i => `${i.path.join(".")}: ${i.message}`).join("; ")}`);
+    throw new Error(
+      `Invalid persisted playbook: ${result.error.issues
+        .map((i) => `${i.path.join(".")}: ${i.message}`)
+        .join("; ")}`,
+    );
   }
 }

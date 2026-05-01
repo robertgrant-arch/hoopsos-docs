@@ -1,84 +1,231 @@
+/**
+ * Playbook domain schema (zod) — canonical runtime contracts.
+ *
+ * This file is the single source of truth for the shape of plays, phases,
+ * tokens, paths, versions, and editor state. Every persistence read and
+ * every saveVersion call must round-trip through these schemas.
+ *
+ * Backward compatibility:
+ *   - Token type names (OFFENSE/DEFENSE/BALL/CONE) are kept uppercase to
+ *     match the existing mock data and rendered components.
+ *   - Path type names (PASS/DRIBBLE/CUT/SCREEN/HANDOFF) are kept uppercase.
+ *   - Optional fields (`locked`, `role`, `teamSide`, `controlX`, `controlY`,
+ *     `label`, `thumbnailDataUrl`) are additive — older snapshots without
+ *     them remain valid.
+ */
 import { z } from "zod";
 
-export const playTokenSchema = z.strictObject({
-  id: z.string(),
-  type: z.enum(["OFFENSE", "DEFENSE", "BALL", "CONE"]),
+/* -------------------------------------------------------------------------- */
+/* Enums                                                                      */
+/* -------------------------------------------------------------------------- */
+
+export const courtTypeSchema = z.enum(["HALF", "FULL"]);
+export const tokenTypeSchema = z.enum(["OFFENSE", "DEFENSE", "BALL", "CONE"]);
+export const pathTypeSchema = z.enum(["PASS", "DRIBBLE", "CUT", "SCREEN", "HANDOFF"]);
+export const phaseLabelSchema = z.enum([
+  "ENTRY",
+  "TRIGGER",
+  "READ_1",
+  "READ_2",
+  "COUNTER",
+  "SAFETY",
+]);
+export const teamSideSchema = z.enum(["HOME", "AWAY", "NEUTRAL"]);
+export const playCategorySchema = z.enum([
+  "PRIMARY",
+  "SLOB",
+  "BLOB",
+  "ATO",
+  "MOTION",
+  "ZONE_OFFENSE",
+  "PRESS_BREAK",
+]);
+
+/* -------------------------------------------------------------------------- */
+/* Domain                                                                     */
+/* -------------------------------------------------------------------------- */
+
+const finite = z.number().finite();
+
+export const playTokenSchema = z.object({
+  id: z.string().min(1),
+  type: tokenTypeSchema,
   label: z.string(),
-  x: z.number().min(0).max(800),
-  y: z.number().min(0).max(600),
+  x: finite,
+  y: finite,
+  locked: z.boolean().optional(),
+  role: z.string().optional(),
+  teamSide: teamSideSchema.optional(),
 });
 
-export const playPathSchema = z.strictObject({
-  id: z.string(),
-  type: z.enum(["PASS", "DRIBBLE", "CUT", "SCREEN", "HANDOFF"]),
-  points: z.array(z.number()).min(4).max(6),
+export const playPathSchema = z.object({
+  id: z.string().min(1),
+  type: pathTypeSchema,
   startTokenId: z.string().optional(),
   endTokenId: z.string().optional(),
+  /** Flat [x1,y1,(cx,cy),x2,y2]. Min 4 (linear) or 6 (quadratic). */
+  points: z.array(finite).min(4),
+  controlX: finite.optional(),
+  controlY: finite.optional(),
+  label: z.string().optional(),
+  locked: z.boolean().optional(),
 });
 
-export const playPhaseSchema = z.strictObject({
-  id: z.string(),
+export const playPhaseSchema = z.object({
+  id: z.string().min(1),
   order: z.number().int().nonnegative(),
-  phase: z.enum(["ENTRY", "TRIGGER", "READ_1", "READ_2", "COUNTER", "SAFETY"]),
+  phase: phaseLabelSchema,
   notes: z.string(),
   tokens: z.array(playTokenSchema),
   paths: z.array(playPathSchema),
+  thumbnailDataUrl: z.string().optional(),
 });
 
-export const playSchema = z.strictObject({
-  id: z.string(),
-  playbookId: z.string(),
+export const playSchema = z.object({
+  id: z.string().min(1),
+  playbookId: z.string().min(1),
   title: z.string(),
   description: z.string(),
-  courtType: z.enum(["HALF", "FULL"]),
-  category: z.enum(["PRIMARY", "SLOB", "BLOB", "ATO", "MOTION", "ZONE_OFFENSE", "PRESS_BREAK"]),
+  courtType: courtTypeSchema,
+  category: playCategorySchema,
   tags: z.array(z.string()),
   createdAt: z.string(),
   updatedAt: z.string(),
   versionLabel: z.string(),
-  phases: z.array(playPhaseSchema),
+  phases: z.array(playPhaseSchema).min(1),
 });
 
-export const playVersionSchema = z.strictObject({
-  id: z.string(),
+export const playVersionSchema = z.object({
+  id: z.string().min(1),
   label: z.string(),
   savedAt: z.string(),
   authorName: z.string(),
   snapshot: playSchema,
 });
 
-export const editorSelectionSchema = z.union([
-  z.strictObject({ type: z.literal("token"), id: z.string() }),
-  z.strictObject({ type: z.literal("path"), id: z.string() }),
+/* -------------------------------------------------------------------------- */
+/* Editor types                                                               */
+/* -------------------------------------------------------------------------- */
+
+export const editorModeSchema = z.enum([
+  "IDLE",
+  "SELECT",
+  "DRAG_TOKEN",
+  "DRAW_PATH",
+  "PAN",
+  "PRESENT",
+  "ADD_OFFENSE",
+  "ADD_DEFENSE",
+  "ADD_BALL",
+  "ADD_CONE",
+  "DRAW_PASS",
+  "DRAW_DRIBBLE",
+  "DRAW_CUT",
+  "DRAW_SCREEN",
+  "DRAW_HANDOFF",
 ]);
 
-export const editorStateSchema = z.strictObject({
-  selectedPlayId: z.string().nullable(),
-  selectedPhaseId: z.string().nullable(),
-  selectedTokenId: z.string().nullable(),
-  selectedPathId: z.string().nullable(),
+export const selectionStateSchema = z.discriminatedUnion("kind", [
+  z.object({ kind: z.literal("none") }),
+  z.object({ kind: z.literal("token"), tokenId: z.string().min(1) }),
+  z.object({ kind: z.literal("path"), pathId: z.string().min(1) }),
+]);
+
+export const pendingPathDraftSchema = z.object({
+  pathType: pathTypeSchema,
+  fromTokenId: z.string().min(1),
+  /** Live cursor position in court coords for ghost line preview. */
+  cursorX: finite,
+  cursorY: finite,
 });
 
-export const playbookSnapshotSchema = z.strictObject({
+export const undoEntrySchema = z.object({
+  id: z.string().min(1),
+  ts: z.number().int().nonnegative(),
+  /** Stable label for telemetry & QA. */
+  label: z.string(),
+  playId: z.string().min(1),
+  /** Snapshot of the play *before* the mutation. */
+  before: playSchema,
+});
+
+/* -------------------------------------------------------------------------- */
+/* Persistence                                                                */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Persisted store shape (subset of full store state). The runtime store has
+ * additional ephemeral fields (editorMode, pendingPathDraft, undo/redo stacks,
+ * transient selection) that we DO NOT persist — they reset to safe defaults
+ * on hydration so a stale draft can never wedge the canvas.
+ */
+export const persistedPlaybookSchema = z.object({
+  schemaVersion: z.literal(2),
   plays: z.array(playSchema),
   versionHistory: z.record(z.string(), z.array(playVersionSchema)),
   selectedPlayId: z.string().nullable(),
   selectedPhaseId: z.string().nullable(),
-  selectedTokenId: z.string().nullable(),
-  selectedPathId: z.string().nullable(),
-  authorName: z.string(),
+  authorName: z.string().nullable(),
 });
 
-export const playbookStoreSchema = z.strictObject({
-  ...playbookSnapshotSchema.shape,
-  past: z.array(playbookSnapshotSchema),
-  future: z.array(playbookSnapshotSchema),
-});
+/* -------------------------------------------------------------------------- */
+/* Inferred types                                                             */
+/* -------------------------------------------------------------------------- */
 
+export type CourtType = z.infer<typeof courtTypeSchema>;
+export type TokenType = z.infer<typeof tokenTypeSchema>;
+export type PathType = z.infer<typeof pathTypeSchema>;
+export type PhaseLabel = z.infer<typeof phaseLabelSchema>;
+export type TeamSide = z.infer<typeof teamSideSchema>;
+export type PlayCategory = z.infer<typeof playCategorySchema>;
 export type PlayToken = z.infer<typeof playTokenSchema>;
 export type PlayPath = z.infer<typeof playPathSchema>;
 export type PlayPhase = z.infer<typeof playPhaseSchema>;
 export type Play = z.infer<typeof playSchema>;
 export type PlayVersion = z.infer<typeof playVersionSchema>;
-export type EditorSelection = z.infer<typeof editorSelectionSchema>;
-export type EditorState = z.infer<typeof editorStateSchema>;
+export type EditorMode = z.infer<typeof editorModeSchema>;
+export type SelectionState = z.infer<typeof selectionStateSchema>;
+export type PendingPathDraft = z.infer<typeof pendingPathDraftSchema>;
+export type UndoEntry = z.infer<typeof undoEntrySchema>;
+export type PersistedPlaybook = z.infer<typeof persistedPlaybookSchema>;
+
+/* -------------------------------------------------------------------------- */
+/* Safe parse helpers                                                         */
+/* -------------------------------------------------------------------------- */
+
+export type ParseResult<T> =
+  | { ok: true; data: T }
+  | { ok: false; error: z.ZodError };
+
+export function safeParsePlay(value: unknown): ParseResult<Play> {
+  const r = playSchema.safeParse(value);
+  return r.success ? { ok: true, data: r.data } : { ok: false, error: r.error };
+}
+
+export function safeParsePlaySnapshot(value: unknown): ParseResult<Play> {
+  return safeParsePlay(value);
+}
+
+export function safeParsePersistedPlaybook(
+  value: unknown,
+): ParseResult<PersistedPlaybook> {
+  const r = persistedPlaybookSchema.safeParse(value);
+  return r.success ? { ok: true, data: r.data } : { ok: false, error: r.error };
+}
+
+export function safeParsePlayVersion(value: unknown): ParseResult<PlayVersion> {
+  const r = playVersionSchema.safeParse(value);
+  return r.success ? { ok: true, data: r.data } : { ok: false, error: r.error };
+}
+
+/** Throw-on-failure variant for tests / dev-time assertions. */
+export function assertPlaySnapshot(value: unknown): asserts value is Play {
+  const r = safeParsePlay(value);
+  if (!r.ok) {
+    throw new Error(
+      `Invalid play snapshot: ${r.error.issues
+        .map((i) => `${i.path.join(".")}: ${i.message}`)
+        .join("; ")}`,
+    );
+  }
+}
