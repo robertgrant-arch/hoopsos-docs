@@ -39,6 +39,7 @@ import {
 // Practice Plan Builder (full v2)
 import CoachPracticePlanBuilder from "@/pages/app/coach/PracticePlanBuilder";
 import CoachPlaybookStudio from "@/pages/app/coach/PlaybookStudio";
+import CoachPlaybookStudioV3 from "@/pages/app/coach/PlaybookStudioV3";
 import PlayQuizRunner from "@/pages/app/player/PlayQuiz";
 
 // Billing (Prompt 16)
@@ -124,6 +125,7 @@ function Router() {
       <Route path="/app/coach/bookings" component={guard(CoachBookings)} />
       <Route path="/app/coach/messages" component={guard(CoachDashboard)} />
       <Route path="/app/coach/playbook" component={guard(CoachPlaybookStudio)} />
+      <Route path="/app/coach/playbook-v3" component={guard(CoachPlaybookStudioV3)} />
 
       {/* Team */}
       <Route path="/app/team" component={TeamDashboard} />
@@ -141,6 +143,7 @@ function Router() {
 
       {/* Playbook */}
       <Route path="/app/playbook" component={CoachPlaybookStudio} />
+      <Route path="/app/playbook-v3" component={CoachPlaybookStudioV3} />
       <Route path="/app/playbook/legacy" component={PlaybookStudio} />
       <Route path="/app/player/quizzes/:id" component={PlayQuizRunner} />
       <Route path="/app/player/quizzes" component={PlayQuizRunner} />
