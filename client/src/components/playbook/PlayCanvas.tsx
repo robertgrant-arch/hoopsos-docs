@@ -3,14 +3,14 @@
  *
  * Interaction model is a deterministic state machine driven by the store's
  * `editorMode`. Every event handler reads the current mode and routes to
- * the matching code path. The previous version mixed local component
- * state with stage-level handlers and let the Stage's mousedown wipe
- * the in-flight path draft on every click — this rewrite eliminates
- * that class of bug entirely:
+ * the matching code path:
  *
- *   • Token events stop propagation so they cannot bubble up to the Stage.
- *   • The Stage handler only acts on TRUE empty-stage clicks (target ===
- *     stage OR target.name() === "court-bg").
+ *   • Token events stop propagation so they cannot bubble up to the Stage
+ *     (except in polyline modes — see below).
+ *   • The Stage handler only acts on TRUE empty-stage clicks for the
+ *     two-click flows (PASS/SCREEN/HANDOFF). For polyline flows
+ *     (CUT/DRIBBLE) it runs on any target so the user can start a drag
+ *     anywhere — including on top of a token.
  *   • A window-level mouseup cleanup discards stuck drafts when the user
  *     releases outside the canvas.
  *   • Escape cancels the draft and returns to SELECT.
@@ -24,8 +24,12 @@
  *   ADD_DEFENSE     — click empty area to drop defensive token
  *   ADD_BALL        — click to (re)place ball
  *   ADD_CONE        — click to drop a cone
- *   DRAW_PASS / DRAW_DRIBBLE / DRAW_CUT / DRAW_SCREEN / DRAW_HANDOFF
+ *   DRAW_PASS / DRAW_SCREEN / DRAW_HANDOFF
  *                   — click one token, then click another to commit
+ *                     (anchored two-click flow)
+ *   DRAW_CUT / DRAW_DRIBBLE
+ *                   — press anywhere, drag to trace a free-form polyline,
+ *                     release to commit (PR #8)
  */
 import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { Stage, Layer, Group, Rect, Circle, Line, Text, Shape } from "react-konva";
@@ -71,6 +75,23 @@ const DRAW_MODE_TO_PATH: Partial<Record<EditorMode, PathType>> = {
   DRAW_HANDOFF: "HANDOFF",
 };
 
+/**
+ * Modes that use the free-form polyline drag-draw flow (PR #8).
+ * Mouse/touch press + drag traces a multi-point polyline; release commits.
+ * All other DRAW_* modes use the anchored two-click flow.
+ */
+const POLYLINE_MODES: ReadonlySet<EditorMode> = new Set<EditorMode>([
+  "DRAW_CUT",
+  "DRAW_DRIBBLE",
+]);
+
+/**
+ * Minimum squared distance (court units²) between successive polyline
+ * sample points. Sub-threshold pointer moves are dropped to keep paths
+ * tidy and bound the persisted point count.
+ */
+const POLYLINE_MIN_STEP_SQ = 16; // 4 court units
+
 const clamp = (v: number, lo: number, hi: number) => Math.min(Math.max(v, lo), hi);
 
 function nextLabel(tokens: PlayToken[], type: TokenType): string {
@@ -109,6 +130,39 @@ function controlPointFor(sx: number, sy: number, ex: number, ey: number): { cx: 
 }
 
 /**
+ * Trace a flat [x0,y0,x1,y1,...] points array onto a Canvas path. Selects
+ * the right primitive based on length:
+ *
+ *   • 4 points  → straight line segment (legacy SCREEN cap, simple paths)
+ *   • 6 points  → quadratic bezier (anchored two-click PASS / etc.)
+ *   • 8+ points → multi-segment polyline (free-form CUT / DRIBBLE drag)
+ *
+ * Caller is responsible for calling `ctx.beginPath()` and `ctx.strokeShape()`
+ * (or equivalent stroke). Returns nothing.
+ */
+function tracePath(ctx: CanvasPath, pts: number[]): void {
+  if (pts.length < 4) return;
+  // CanvasPath in the DOM lib lacks moveTo/lineTo/quadraticCurveTo on the
+  // narrowest declaration in some setups — Konva's scene context implements
+  // all of them; we rely on the runtime contract here.
+  const c = ctx as CanvasPath & {
+    moveTo: (x: number, y: number) => void;
+    lineTo: (x: number, y: number) => void;
+    quadraticCurveTo: (cx: number, cy: number, x: number, y: number) => void;
+  };
+  c.moveTo(pts[0], pts[1]);
+  if (pts.length === 6) {
+    c.quadraticCurveTo(pts[2], pts[3], pts[4], pts[5]);
+    return;
+  }
+  // Linear fall-through covers length 4 (single segment) AND length >= 8
+  // (polyline) — both are stroked as a chain of line segments.
+  for (let i = 2; i + 1 < pts.length; i += 2) {
+    c.lineTo(pts[i], pts[i + 1]);
+  }
+}
+
+/**
  * Sample the tangent angle at the END of the rendered path so arrowheads
  * point in the actual direction of travel, not the chord.
  */
@@ -131,7 +185,13 @@ function endTangentAngle(points: number[]): number {
   return 0;
 }
 
-type PendingDraft = {
+/**
+ * Anchored two-click draft (PASS / SCREEN / HANDOFF). The path snaps to
+ * the start token and previews a quadratic curve to the cursor until the
+ * user clicks a second token.
+ */
+type AnchoredDraft = {
+  kind: "anchored";
   pathType: PathType;
   fromTokenId: string;
   fromX: number;
@@ -139,6 +199,20 @@ type PendingDraft = {
   cursorX: number;
   cursorY: number;
 };
+
+/**
+ * Free-form polyline draft (CUT / DRIBBLE — PR #8). The user presses,
+ * drags, and releases to trace an arbitrary number of segments.
+ * `points` is a flat [x0,y0,x1,y1,…] array matching the persisted
+ * PlayPath schema.
+ */
+type PolylineDraft = {
+  kind: "polyline";
+  pathType: PathType;
+  points: number[];
+};
+
+type PendingDraft = AnchoredDraft | PolylineDraft;
 
 type Props = {
   phase: PlayPhase;
@@ -191,6 +265,8 @@ export function PlayCanvas({
 
   const drawPathType = DRAW_MODE_TO_PATH[editorMode];
   const isDrawMode = !!drawPathType;
+  const isPolylineMode = isDrawMode && POLYLINE_MODES.has(editorMode);
+  const isAnchoredDrawMode = isDrawMode && !isPolylineMode;
   const addTokenType = ADD_MODE_TO_TOKEN[editorMode];
   const isAddTokenMode = !!addTokenType;
   const isSelectMode = editorMode === "SELECT";
@@ -253,7 +329,16 @@ export function PlayCanvas({
   }
 
   function handleStageMouseDown(e: Konva.KonvaEventObject<MouseEvent | TouchEvent>) {
-    if (!isEmptyStageTarget(e)) return; // never act on token-targeted clicks
+    // Polyline modes (CUT / DRIBBLE) start on ANY target so the user can
+    // press anywhere — including on top of a token — and drag a free-form
+    // path. This branch runs BEFORE the empty-target guard.
+    if (isPolylineMode && drawPathType) {
+      const { x, y } = clientToCourt();
+      setDraft({ kind: "polyline", pathType: drawPathType, points: [x, y] });
+      return;
+    }
+
+    if (!isEmptyStageTarget(e)) return; // anchored modes never act on token-targeted clicks
     const { x, y } = clientToCourt();
 
     if (isSelectMode) {
@@ -282,7 +367,7 @@ export function PlayCanvas({
       return;
     }
 
-    if (isDrawMode) {
+    if (isAnchoredDrawMode) {
       // Empty-stage click while drawing — cancel any in-flight draft.
       cancelDraft();
       return;
@@ -290,11 +375,35 @@ export function PlayCanvas({
   }
 
   function handleStageMouseMove() {
-    if (!draftRef.current) return;
+    const draft = draftRef.current;
+    if (!draft) return;
     const { x, y } = clientToCourt();
-    if (draftRef.current.cursorX === x && draftRef.current.cursorY === y) return;
-    draftRef.current = { ...draftRef.current, cursorX: x, cursorY: y };
+    if (draft.kind === "anchored") {
+      if (draft.cursorX === x && draft.cursorY === y) return;
+      draftRef.current = { ...draft, cursorX: x, cursorY: y };
+      force();
+      return;
+    }
+    // polyline: append iff distance from last sample exceeds threshold
+    const lastX = draft.points[draft.points.length - 2];
+    const lastY = draft.points[draft.points.length - 1];
+    const dx = x - lastX;
+    const dy = y - lastY;
+    if (dx * dx + dy * dy < POLYLINE_MIN_STEP_SQ) return;
+    draftRef.current = { ...draft, points: [...draft.points, x, y] };
     force();
+  }
+
+  function handleStageMouseUp() {
+    const draft = draftRef.current;
+    if (!draft) return;
+    if (draft.kind !== "polyline") return; // anchored flow commits via token click, not mouseup
+    if (draft.points.length >= 4) {
+      // Commit a free-form polyline. The store assigns a stable id and
+      // pushes an undo entry.
+      onAddPath({ type: draft.pathType, points: draft.points });
+    }
+    cancelDraft();
   }
 
   /* ---------- token event handlers ---------- */
@@ -303,9 +412,16 @@ export function PlayCanvas({
     t: PlayToken,
     e: Konva.KonvaEventObject<MouseEvent | TouchEvent>,
   ) {
-    // Critical: stop bubble so the Stage handler does not run. Without
-    // this, the previous version wiped the path draft on every token
-    // mousedown.
+    // Polyline modes intentionally let the event BUBBLE so the Stage's
+    // mousedown can seed the polyline draft from this point — including
+    // when the press lands on top of a token.
+    if (isPolylineMode) return;
+
+    // Anchored / select / add-token flows all consume the event so the
+    // Stage handler does not also fire. (Konva's `cancelBubble` stops
+    // propagation but does not affect the Stage handler that already ran
+    // first when the target was the Stage itself — for token-targeted
+    // events, this is what prevents the Stage handler from running at all.)
     e.cancelBubble = true;
 
     if (isSelectMode) {
@@ -313,13 +429,14 @@ export function PlayCanvas({
       return;
     }
 
-    if (isDrawMode) {
+    if (isAnchoredDrawMode) {
       const pathType = drawPathType;
       if (!pathType) return;
       const draft = draftRef.current;
-      if (!draft) {
+      if (!draft || draft.kind !== "anchored") {
         // First click — start the draft anchored at this token.
         setDraft({
+          kind: "anchored",
           pathType,
           fromTokenId: t.id,
           fromX: t.x,
@@ -384,7 +501,6 @@ export function PlayCanvas({
     const style = PATH_STYLE[pa.type];
     const pts = pa.points;
     if (pts.length < 4) return null;
-    const isQuad = pts.length >= 6;
     const ex = pts[pts.length - 2];
     const ey = pts[pts.length - 1];
     const ang = endTangentAngle(pts);
@@ -409,9 +525,7 @@ export function PlayCanvas({
         <Shape
           sceneFunc={(ctx, shape) => {
             ctx.beginPath();
-            ctx.moveTo(pts[0], pts[1]);
-            if (isQuad) ctx.quadraticCurveTo(pts[2], pts[3], pts[4], pts[5]);
-            else ctx.lineTo(pts[2], pts[3]);
+            tracePath(ctx as unknown as CanvasPath, pts);
             ctx.strokeShape(shape);
           }}
           stroke="rgba(0,0,0,0)"
@@ -421,9 +535,7 @@ export function PlayCanvas({
         <Shape
           sceneFunc={(ctx, shape) => {
             ctx.beginPath();
-            ctx.moveTo(pts[0], pts[1]);
-            if (isQuad) ctx.quadraticCurveTo(pts[2], pts[3], pts[4], pts[5]);
-            else ctx.lineTo(pts[2], pts[3]);
+            tracePath(ctx as unknown as CanvasPath, pts);
             if (style.dash) ctx.setLineDash(style.dash);
             ctx.strokeShape(shape);
           }}
@@ -432,6 +544,7 @@ export function PlayCanvas({
           shadowColor={isSelected ? style.stroke : undefined}
           shadowBlur={isSelected ? 8 : 0}
           lineCap={style.cap}
+          lineJoin="round"
         />
         {pa.type === "SCREEN" && (
           <Line
@@ -461,7 +574,9 @@ export function PlayCanvas({
 
   function renderToken(t: PlayToken, opts?: { ghost?: boolean }) {
     const isSelected = t.id === selectedTokenId && !opts?.ghost;
-    const isSource = draftRef.current?.fromTokenId === t.id;
+    const draftCur = draftRef.current;
+    const isSource =
+      !!draftCur && draftCur.kind === "anchored" && draftCur.fromTokenId === t.id;
     const opacity = opts?.ghost ? 0.55 : 1;
     const draggable = isSelectMode && !opts?.ghost && !t.locked;
 
@@ -565,20 +680,43 @@ export function PlayCanvas({
   function renderDraft() {
     const draft = draftRef.current;
     if (!draft) return null;
-    const { cx, cy } = controlPointFor(draft.fromX, draft.fromY, draft.cursorX, draft.cursorY);
-    const points = [draft.fromX, draft.fromY, cx, cy, draft.cursorX, draft.cursorY];
+    if (draft.kind === "anchored") {
+      const { cx, cy } = controlPointFor(
+        draft.fromX,
+        draft.fromY,
+        draft.cursorX,
+        draft.cursorY,
+      );
+      const points = [draft.fromX, draft.fromY, cx, cy, draft.cursorX, draft.cursorY];
+      return (
+        <Shape
+          listening={false}
+          sceneFunc={(ctx, shape) => {
+            ctx.beginPath();
+            tracePath(ctx as unknown as CanvasPath, points);
+            ctx.setLineDash([6, 4]);
+            ctx.strokeShape(shape);
+          }}
+          stroke="rgba(251,191,36,0.7)"
+          strokeWidth={2}
+        />
+      );
+    }
+    // polyline preview — must have at least one segment to draw
+    if (draft.points.length < 4) return null;
     return (
       <Shape
         listening={false}
         sceneFunc={(ctx, shape) => {
           ctx.beginPath();
-          ctx.moveTo(points[0], points[1]);
-          ctx.quadraticCurveTo(points[2], points[3], points[4], points[5]);
+          tracePath(ctx as unknown as CanvasPath, draft.points);
           ctx.setLineDash([6, 4]);
           ctx.strokeShape(shape);
         }}
-        stroke="rgba(251,191,36,0.7)"
+        stroke="rgba(251,191,36,0.85)"
         strokeWidth={2}
+        lineCap="round"
+        lineJoin="round"
       />
     );
   }
@@ -624,6 +762,9 @@ export function PlayCanvas({
         onMouseDown={handleStageMouseDown}
         onTouchStart={handleStageMouseDown}
         onMouseMove={handleStageMouseMove}
+        onTouchMove={handleStageMouseMove}
+        onMouseUp={handleStageMouseUp}
+        onTouchEnd={handleStageMouseUp}
       >
         {/* Background layer — bg + paths */}
         <Layer>
