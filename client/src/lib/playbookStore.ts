@@ -32,6 +32,7 @@ import {
   safeParsePlaySnapshot,
   type CutStyle,
   type EditorMode,
+  type PassType,
   type PendingPathDraft,
   type Play,
   type PlayPath,
@@ -105,6 +106,12 @@ type PlaybookState = {
   selection: SelectionState;
   editorMode: EditorMode;
   cutStyleSelection: CutStyle;
+  passTypeSelection: PassType;
+  snapEnabled: boolean;
+  /** Playback speed multiplier (e.g. 0.5, 1, 2). */
+  playbackSpeed: number;
+  /** Whether playback loops back to phase 0 when it reaches the end. */
+  playbackLoop: boolean;
   pendingPathDraft: PendingPathDraft | null;
   undoStack: UndoEntry[];
   redoStack: UndoEntry[];
@@ -122,6 +129,10 @@ type PlaybookState = {
   /* editor mode + draft */
   setEditorMode: (mode: EditorMode) => void;
   setCutStyleSelection: (style: CutStyle) => void;
+  setPassTypeSelection: (type: PassType) => void;
+  setSnapEnabled: (enabled: boolean) => void;
+  setPlaybackSpeed: (mult: number) => void;
+  setPlaybackLoop: (enabled: boolean) => void;
   setPendingPathDraft: (draft: PendingPathDraft | null) => void;
   updatePendingPathDraftCursor: (x: number, y: number) => void;
 
@@ -230,6 +241,62 @@ function moveToken(
 }
 
 /**
+ * Propagate a single token-position change forward across subsequent phases.
+ *
+ * For each phase after the source phase, IF the token currently sits at
+ * `oldPos` (i.e. the phase was inheriting that position), update it to
+ * `newPos`. If the token is at a different position (explicit override
+ * authored by the coach), STOP — that override and everything after it
+ * is left alone. This matches user mental model: edits to phase N
+ * automatically flow into phases N+1, N+2... until they hit a phase
+ * where the coach deliberately chose a different layout.
+ */
+function propagateTokenForward(
+  phases: PlayPhase[],
+  startIndex: number,
+  tokenId: string,
+  oldPos: { x: number; y: number },
+  newPos: { x: number; y: number },
+): PlayPhase[] {
+  if (oldPos.x === newPos.x && oldPos.y === newPos.y) return phases;
+  const out = phases.slice();
+  for (let i = startIndex + 1; i < out.length; i++) {
+    const ph = out[i];
+    const t = ph.tokens.find((x) => x.id === tokenId);
+    if (!t) break; // token doesn't exist in this phase; stop
+    if (t.x !== oldPos.x || t.y !== oldPos.y) break; // override — stop
+    out[i] = { ...ph, tokens: moveToken(ph.tokens, tokenId, newPos.x, newPos.y) };
+  }
+  return out;
+}
+
+/**
+ * Compute (oldTokens → newTokens) deltas as a list of token-id + old/new
+ * position pairs. Only tokens that actually moved are returned.
+ */
+function tokenDeltas(
+  oldTokens: PlayToken[],
+  newTokens: PlayToken[],
+): Array<{ id: string; oldPos: { x: number; y: number }; newPos: { x: number; y: number } }> {
+  const deltas: Array<{
+    id: string;
+    oldPos: { x: number; y: number };
+    newPos: { x: number; y: number };
+  }> = [];
+  for (const newT of newTokens) {
+    const oldT = oldTokens.find((t) => t.id === newT.id);
+    if (!oldT) continue;
+    if (oldT.x === newT.x && oldT.y === newT.y) continue;
+    deltas.push({
+      id: newT.id,
+      oldPos: { x: oldT.x, y: oldT.y },
+      newPos: { x: newT.x, y: newT.y },
+    });
+  }
+  return deltas;
+}
+
+/**
  * Apply the physical effect of a newly-committed path to the phase's tokens.
  *
  * Pass     → ball moves to receiver's current position.
@@ -296,6 +363,10 @@ function buildInitial(): Pick<
   | "selection"
   | "editorMode"
   | "cutStyleSelection"
+  | "passTypeSelection"
+  | "snapEnabled"
+  | "playbackSpeed"
+  | "playbackLoop"
   | "pendingPathDraft"
   | "undoStack"
   | "redoStack"
@@ -312,6 +383,10 @@ function buildInitial(): Pick<
     selection: { kind: "none" },
     editorMode: "SELECT",
     cutStyleSelection: "STRAIGHT" as CutStyle,
+    passTypeSelection: "CHEST" as PassType,
+    snapEnabled: true,
+    playbackSpeed: 1,
+    playbackLoop: false,
     pendingPathDraft: null,
     undoStack: [],
     redoStack: [],
@@ -392,6 +467,11 @@ export const usePlaybook = create<PlaybookState>()(
           set({ editorMode: mode, pendingPathDraft: null });
         },
         setCutStyleSelection: (style) => set({ cutStyleSelection: style }),
+        setPassTypeSelection: (type) => set({ passTypeSelection: type }),
+        setSnapEnabled: (enabled) => set({ snapEnabled: enabled }),
+        setPlaybackSpeed: (mult) =>
+          set({ playbackSpeed: Math.max(0.25, Math.min(4, mult)) }),
+        setPlaybackLoop: (enabled) => set({ playbackLoop: enabled }),
         setPendingPathDraft: (draft) => set({ pendingPathDraft: draft }),
         updatePendingPathDraftCursor: (x, y) => {
           const cur = get().pendingPathDraft;
@@ -626,14 +706,30 @@ export const usePlaybook = create<PlaybookState>()(
         updateToken: (playId, phaseId, tokenId, patch) => {
           captureUndo("update-token", playId);
           set({
-            plays: mapPlay(get().plays, playId, (p) =>
-              bumpUpdated(
-                mapPhase(p, phaseId, (ph) => ({
-                  ...ph,
-                  tokens: ph.tokens.map((t) => (t.id === tokenId ? { ...t, ...patch } : t)),
-                })),
-              ),
-            ),
+            plays: mapPlay(get().plays, playId, (p) => {
+              const phaseIdx = p.phases.findIndex((ph) => ph.id === phaseId);
+              if (phaseIdx === -1) return p;
+              const oldPhase = p.phases[phaseIdx];
+              const newTokens = oldPhase.tokens.map((t) =>
+                t.id === tokenId ? { ...t, ...patch } : t,
+              );
+              const newPhase: PlayPhase = { ...oldPhase, tokens: newTokens };
+              // Compute deltas and propagate forward only when an x/y change
+              // happens — label-only or other-attr edits stay in this phase.
+              const deltas = tokenDeltas(oldPhase.tokens, newTokens);
+              let phases = p.phases.slice();
+              phases[phaseIdx] = newPhase;
+              for (const d of deltas) {
+                phases = propagateTokenForward(
+                  phases,
+                  phaseIdx,
+                  d.id,
+                  d.oldPos,
+                  d.newPos,
+                );
+              }
+              return bumpUpdated({ ...p, phases });
+            }),
           });
         },
 
@@ -671,20 +767,33 @@ export const usePlaybook = create<PlaybookState>()(
           const id = `pa_${nanoid(5)}`;
           const committed: PlayPath = { ...path, id };
           set({
-            plays: mapPlay(get().plays, playId, (p) =>
-              bumpUpdated(
-                mapPhase(p, phaseId, (ph) => {
-                  // 1) Append the new path to the phase.
-                  const withPath: PlayPhase = {
-                    ...ph,
-                    paths: [...ph.paths, committed],
-                  };
-                  // 2) Apply the action's physical effect to the tokens so
-                  //    the phase's end-state reflects what just happened.
-                  return applyActionEffectsToPhase(withPath, committed);
-                }),
-              ),
-            ),
+            plays: mapPlay(get().plays, playId, (p) => {
+              const phaseIdx = p.phases.findIndex((ph) => ph.id === phaseId);
+              if (phaseIdx === -1) return p;
+              const oldPhase = p.phases[phaseIdx];
+              // 1) Append the new path to the phase.
+              const withPath: PlayPhase = {
+                ...oldPhase,
+                paths: [...oldPhase.paths, committed],
+              };
+              // 2) Apply the action's physical effect to the tokens.
+              const newPhase = applyActionEffectsToPhase(withPath, committed);
+              // 3) Compute which tokens moved.
+              const deltas = tokenDeltas(oldPhase.tokens, newPhase.tokens);
+              // 4) Replace the source phase, then propagate each delta forward.
+              let phases = p.phases.slice();
+              phases[phaseIdx] = newPhase;
+              for (const d of deltas) {
+                phases = propagateTokenForward(
+                  phases,
+                  phaseIdx,
+                  d.id,
+                  d.oldPos,
+                  d.newPos,
+                );
+              }
+              return bumpUpdated({ ...p, phases });
+            }),
             selectedPathId: id,
             selectedTokenId: null,
             selection: { kind: "path", pathId: id },
@@ -863,6 +972,7 @@ export const usePlaybook = create<PlaybookState>()(
           // Always reset ephemeral on hydration.
           editorMode: "SELECT" as EditorMode,
           cutStyleSelection: "STRAIGHT" as CutStyle,
+          passTypeSelection: "CHEST" as PassType,
           pendingPathDraft: null,
           undoStack: [],
           redoStack: [],

@@ -38,12 +38,14 @@ import { HalfCourt } from "@/components/court/HalfCourt";
 import type {
   CutStyle,
   EditorMode,
+  PassType,
   PathType,
   PlayPath,
   PlayPhase,
   PlayToken,
   TokenType,
 } from "@/lib/mock/playbookSchema";
+import { snapPoint } from "@/lib/playbookSnap";
 
 const STAGE_W = 800;
 const STAGE_H = 600;
@@ -245,6 +247,10 @@ type Props = {
   editorMode: EditorMode;
   /** Active CutStyle from the toolbar — applied to any new CUT path. */
   cutStyle: CutStyle;
+  /** Active PassType — applied to any new PASS path. */
+  passType: PassType;
+  /** When true, snap path endpoints + token drops to court key spots. */
+  snapEnabled: boolean;
   selectedTokenId: string | null;
   selectedPathId: string | null;
   width: number;
@@ -265,6 +271,8 @@ export function PlayCanvas({
   phase,
   editorMode,
   cutStyle,
+  passType,
+  snapEnabled,
   selectedTokenId,
   selectedPathId,
   width,
@@ -309,6 +317,23 @@ export function PlayCanvas({
       x: clamp(pos.x / scale, 0, STAGE_W),
       y: clamp(pos.y / scale, 0, STAGE_H),
     };
+  }
+
+  /**
+   * Apply snap-to-court if the toolbar toggle is on. Tokens already in
+   * `phase.tokens` (other than the optional `excludeTokenId`) are also
+   * candidates so two paths can converge on the same player without floor
+   * snapping interfering.
+   */
+  function maybeSnap(
+    p: { x: number; y: number },
+    excludeTokenId?: string,
+  ): { x: number; y: number } {
+    if (!snapEnabled) return p;
+    const others = phase.tokens
+      .filter((t) => t.id !== excludeTokenId)
+      .map((t) => ({ x: t.x, y: t.y }));
+    return snapPoint(p, others);
   }
 
   /* ---------- draft helpers ---------- */
@@ -378,26 +403,53 @@ export function PlayCanvas({
     }
 
     if (isAddTokenMode && addTokenType) {
+      const snapped = maybeSnap({ x, y });
       // BALL has at-most-one semantics; the store also enforces this, but
       // re-placing an existing ball when in ADD_BALL mode is the friendly UX.
       if (addTokenType === "BALL") {
         const existing = phase.tokens.find((t) => t.type === "BALL");
         if (existing) {
-          onMoveToken(existing.id, x, y);
+          onMoveToken(existing.id, snapped.x, snapped.y);
           return;
         }
       }
       onAddToken({
         type: addTokenType,
         label: nextLabel(phase.tokens, addTokenType),
-        x,
-        y,
+        x: snapped.x,
+        y: snapped.y,
       });
       return;
     }
 
     if (isAnchoredDrawMode) {
-      // Empty-stage click while drawing — cancel any in-flight draft.
+      const draft = draftRef.current;
+      // SCREEN second-click on EMPTY SPACE commits the screen at that
+      // point on the floor. (PASS / HANDOFF still require token-to-token
+      // because both the from and to are players, not floor locations.)
+      if (
+        editorMode === "DRAW_SCREEN" &&
+        draft &&
+        draft.kind === "anchored"
+      ) {
+        const start = phase.tokens.find((tk) => tk.id === draft.fromTokenId);
+        if (!start) {
+          cancelDraft();
+          return;
+        }
+        const snapped = maybeSnap({ x, y }, draft.fromTokenId);
+        const { cx, cy } = controlPointFor(start.x, start.y, snapped.x, snapped.y);
+        onAddPath({
+          type: "SCREEN",
+          points: [start.x, start.y, cx, cy, snapped.x, snapped.y],
+          startTokenId: start.id,
+          controlX: cx,
+          controlY: cy,
+        });
+        cancelDraft();
+        return;
+      }
+      // Other anchored modes: empty-stage click cancels the draft.
       cancelDraft();
       return;
     }
@@ -434,11 +486,21 @@ export function PlayCanvas({
       const startX = draft.points[0];
       const startY = draft.points[1];
       const startToken = nearestTokenWithin(phase.tokens, startX, startY, 30);
-      // Commit a free-form polyline. The store assigns a stable id and
-      // pushes an undo entry.
+      // Snap the polyline ENDPOINT to a key court spot (or onto another
+      // player's spot) when the toolbar toggle is on. We replace the last
+      // sample point with the snapped position so the action lands cleanly.
+      const lastIdx = draft.points.length - 2;
+      const ex = draft.points[lastIdx];
+      const ey = draft.points[lastIdx + 1];
+      const snapped = maybeSnap({ x: ex, y: ey }, startToken?.id);
+      const points = [
+        ...draft.points.slice(0, lastIdx),
+        snapped.x,
+        snapped.y,
+      ];
       const commit: Omit<PlayPath, "id"> = {
         type: draft.pathType,
-        points: draft.points,
+        points,
         ...(startToken ? { startTokenId: startToken.id } : {}),
         ...(draft.pathType === "CUT" ? { cutStyle } : {}),
       };
@@ -506,6 +568,9 @@ export function PlayCanvas({
         endTokenId: t.id,
         controlX: cx,
         controlY: cy,
+        // Tag a PASS with the active passType so the renderer + action
+        // layer + auto-quizzes can distinguish bounce/lob/skip later.
+        ...(draft.pathType === "PASS" ? { passType } : {}),
       });
       cancelDraft();
       return;
@@ -533,7 +598,15 @@ export function PlayCanvas({
   }
 
   function handleTokenDragEnd(t: PlayToken, e: Konva.KonvaEventObject<DragEvent>) {
-    onMoveToken(t.id, clamp(e.target.x(), 0, STAGE_W), clamp(e.target.y(), 0, STAGE_H));
+    const rawX = clamp(e.target.x(), 0, STAGE_W);
+    const rawY = clamp(e.target.y(), 0, STAGE_H);
+    const snapped = maybeSnap({ x: rawX, y: rawY }, t.id);
+    // Also visually snap the dragged group so it doesn't briefly render
+    // at the un-snapped position before the store update flushes.
+    if (snapped.x !== rawX || snapped.y !== rawY) {
+      e.target.position({ x: snapped.x, y: snapped.y });
+    }
+    onMoveToken(t.id, snapped.x, snapped.y);
   }
 
   /* ---------- render helpers ---------- */
@@ -652,6 +725,7 @@ export function PlayCanvas({
     }
 
     if (t.type === "OFFENSE") {
+      const role = t.role; // PG/SG/SF/PF/C if set
       return (
         <Group {...groupProps}>
           <Circle
@@ -671,6 +745,18 @@ export function PlayCanvas({
             offsetX={t.label.length * 5.5}
             offsetY={10}
           />
+          {role && (
+            <Text
+              text={role}
+              fontSize={9}
+              fontStyle="bold"
+              fontFamily="ui-monospace, SFMono-Regular, monospace"
+              fill="#7c2d12"
+              y={20}
+              offsetX={role.length * 2.7}
+              offsetY={0}
+            />
+          )}
         </Group>
       );
     }

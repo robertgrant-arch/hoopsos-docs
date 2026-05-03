@@ -54,6 +54,21 @@ export const cutStyleSchema = z.enum([
   "FLARE",
 ]);
 
+/**
+ * Pass quality. Stored on PlayPath as `passType` for paths with type === "PASS".
+ *   CHEST   — direct chest pass (default).
+ *   BOUNCE  — bounce pass (dotted rendering).
+ *   LOB     — high lob (curve emphasized).
+ *   SKIP    — long skip pass across the court.
+ */
+export const passTypeSchema = z.enum(["CHEST", "BOUNCE", "LOB", "SKIP"]);
+
+/**
+ * Player role on the floor (basketball position). Optional on PlayToken;
+ * unset means "no specific role assigned."
+ */
+export const roleSchema = z.enum(["PG", "SG", "SF", "PF", "C"]);
+
 /* -------------------------------------------------------------------------- */
 /* Domain                                                                     */
 /* -------------------------------------------------------------------------- */
@@ -67,6 +82,9 @@ export const playTokenSchema = z.object({
   x: finite,
   y: finite,
   locked: z.boolean().optional(),
+  /** Optional basketball position label. Was previously a freeform string;
+   *  kept loose here for backward-compat with any existing data, but the
+   *  UI exposes only the canonical `roleSchema` values. */
   role: z.string().optional(),
   teamSide: teamSideSchema.optional(),
 });
@@ -76,6 +94,8 @@ export const playPathSchema = z.object({
   type: pathTypeSchema,
   startTokenId: z.string().optional(),
   endTokenId: z.string().optional(),
+  /** For SCREEN paths: id of the player benefiting from the screen ("for whom"). */
+  screenedForTokenId: z.string().optional(),
   /** Flat [x1,y1,(cx,cy),x2,y2]. Min 4 (linear) or 6 (quadratic). */
   points: z.array(finite).min(4),
   controlX: finite.optional(),
@@ -84,6 +104,8 @@ export const playPathSchema = z.object({
   locked: z.boolean().optional(),
   /** Only meaningful when type === "CUT". Defaults to STRAIGHT if absent. */
   cutStyle: cutStyleSchema.optional(),
+  /** Only meaningful when type === "PASS". Defaults to CHEST if absent. */
+  passType: passTypeSchema.optional(),
 });
 
 export const playPhaseSchema = z.object({
@@ -193,6 +215,8 @@ export type PathType = z.infer<typeof pathTypeSchema>;
 export type PhaseLabel = z.infer<typeof phaseLabelSchema>;
 export type TeamSide = z.infer<typeof teamSideSchema>;
 export type CutStyle = z.infer<typeof cutStyleSchema>;
+export type PassType = z.infer<typeof passTypeSchema>;
+export type Role = z.infer<typeof roleSchema>;
 export type PlayCategory = z.infer<typeof playCategorySchema>;
 export type PlayToken = z.infer<typeof playTokenSchema>;
 export type PlayPath = z.infer<typeof playPathSchema>;

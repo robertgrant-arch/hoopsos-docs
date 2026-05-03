@@ -58,7 +58,12 @@ import {
   type Play,
   type PlayPhase,
 } from "@/lib/mock/playbook";
-import type { CutStyle, EditorMode } from "@/lib/mock/playbookSchema";
+import type {
+  CutStyle,
+  EditorMode,
+  PassType,
+  Role,
+} from "@/lib/mock/playbookSchema";
 import { actionForPathId, describeAction } from "@/lib/playbookActions";
 import { usePlaybook } from "@/lib/playbookStore";
 import PlayCanvas from "@/components/playbook/PlayCanvas";
@@ -283,9 +288,17 @@ export function CoachPlaybookStudio() {
     versionHistory,
     editorMode,
     cutStyleSelection,
+    passTypeSelection,
+    snapEnabled,
+    playbackSpeed,
+    playbackLoop,
     authorName,
     setEditorMode,
     setCutStyleSelection,
+    setPassTypeSelection,
+    setSnapEnabled,
+    setPlaybackSpeed,
+    setPlaybackLoop,
     setSelectedPlay,
     setSelectedPhase,
     setSelectedToken,
@@ -380,6 +393,33 @@ export function CoachPlaybookStudio() {
         } else if (selectedPathId && play && phase) {
           removePath(play.id, phase.id, selectedPathId);
         }
+        return;
+      }
+
+      // Arrow-key nudge: when a token is selected, move by 5 stage units
+      // (or 1 with Shift). Wraps within [0, STAGE_W] × [0, STAGE_H].
+      if (
+        selectedTokenId &&
+        play &&
+        phase &&
+        (e.key === "ArrowUp" ||
+          e.key === "ArrowDown" ||
+          e.key === "ArrowLeft" ||
+          e.key === "ArrowRight")
+      ) {
+        e.preventDefault();
+        const t = phase.tokens.find((tk) => tk.id === selectedTokenId);
+        if (!t) return;
+        const step = e.shiftKey ? 1 : 5;
+        let dx = 0,
+          dy = 0;
+        if (e.key === "ArrowUp") dy = -step;
+        if (e.key === "ArrowDown") dy = step;
+        if (e.key === "ArrowLeft") dx = -step;
+        if (e.key === "ArrowRight") dx = step;
+        const nx = Math.max(0, Math.min(800, t.x + dx));
+        const ny = Math.max(0, Math.min(600, t.y + dy));
+        updateToken(play.id, phase.id, selectedTokenId, { x: nx, y: ny });
       }
     }
     window.addEventListener("keydown", onKey);
@@ -396,8 +436,11 @@ export function CoachPlaybookStudio() {
     redo,
   ]);
 
-  // Playback
-  const playback = usePlayback(play);
+  // Playback (speed + loop come from store-level prefs)
+  const playback = usePlayback(play, {
+    speed: playbackSpeed,
+    loop: playbackLoop,
+  });
 
   // Phase reorder via dnd-kit
   function handlePhaseDragEnd(e: DragEndEvent) {
@@ -557,14 +600,32 @@ export function CoachPlaybookStudio() {
                 >
                   <Plus className="w-4 h-4 mr-1" /> Phase
                 </Button>
+                <button
+                  onClick={() => setSnapEnabled(!snapEnabled)}
+                  title="Snap path endpoints + token drops to court key spots"
+                  aria-pressed={snapEnabled}
+                  className={`h-9 px-2.5 rounded-md text-[11px] inline-flex items-center gap-1.5 border transition ${
+                    snapEnabled
+                      ? "bg-primary text-primary-foreground border-primary"
+                      : "border-border bg-background hover:border-primary/50"
+                  }`}
+                >
+                  Snap
+                </button>
               </div>
             </div>
 
-            {/* CutStyle picker — only when DRAW_CUT is active */}
+            {/* Style pickers — show only when relevant draw mode is active */}
             {editorMode === "DRAW_CUT" && (
               <CutStylePicker
                 value={cutStyleSelection}
                 onChange={setCutStyleSelection}
+              />
+            )}
+            {editorMode === "DRAW_PASS" && (
+              <PassTypePicker
+                value={passTypeSelection}
+                onChange={setPassTypeSelection}
               />
             )}
 
@@ -574,6 +635,8 @@ export function CoachPlaybookStudio() {
                 phase={phase}
                 editorMode={editorMode}
                 cutStyle={cutStyleSelection}
+                passType={passTypeSelection}
+                snapEnabled={snapEnabled}
                 selectedTokenId={selectedTokenId}
                 selectedPathId={selectedPathId}
                 width={canvasSize.width}
@@ -606,11 +669,41 @@ export function CoachPlaybookStudio() {
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
+                  {/* Speed picker */}
+                  <div className="flex items-center gap-0.5 rounded-md border border-border p-0.5">
+                    {[0.5, 1, 2].map((s) => (
+                      <button
+                        key={s}
+                        onClick={() => setPlaybackSpeed(s)}
+                        aria-pressed={playbackSpeed === s}
+                        className={`h-7 px-2 rounded text-[10.5px] font-mono ${
+                          playbackSpeed === s
+                            ? "bg-primary text-primary-foreground"
+                            : "text-muted-foreground hover:text-foreground"
+                        }`}
+                      >
+                        {s}×
+                      </button>
+                    ))}
+                  </div>
+                  {/* Loop toggle */}
+                  <button
+                    onClick={() => setPlaybackLoop(!playbackLoop)}
+                    title="Loop playback"
+                    aria-pressed={playbackLoop}
+                    className={`h-7 px-2 rounded-md text-[10.5px] font-mono border ${
+                      playbackLoop
+                        ? "bg-primary text-primary-foreground border-primary"
+                        : "border-border bg-background hover:border-primary/50"
+                    }`}
+                  >
+                    Loop
+                  </button>
                   {!playback.isPlaying ? (
                     <Button
                       size="sm"
                       onClick={playback.play}
-                      disabled={play.phases.length < 2}
+                      disabled={play.phases.length < 1}
                       className="h-8"
                     >
                       <PlayIcon className="w-3.5 h-3.5 mr-1" /> Play
@@ -839,6 +932,12 @@ function RightRail({
               />
             </div>
           )}
+          {selectedToken.type === "OFFENSE" && (
+            <RolePicker
+              value={selectedToken.role}
+              onChange={(r) => onUpdateToken(selectedToken.id, { role: r })}
+            />
+          )}
         </div>
       )}
 
@@ -882,9 +981,11 @@ function RightRail({
           <div className="font-semibold text-foreground mb-1">Tips</div>
           <ul className="space-y-1 list-disc pl-4">
             <li>Press <span className="font-mono text-foreground">V</span> to select, then drag tokens.</li>
-            <li>Press <span className="font-mono text-foreground">P/D/C/S/H</span>, click a token, then click another to draw.</li>
+            <li>Press <span className="font-mono text-foreground">P</span> (Pass) / <span className="font-mono text-foreground">H</span> (Handoff): click passer, click receiver.</li>
+            <li>Press <span className="font-mono text-foreground">C</span> (Cut) / <span className="font-mono text-foreground">D</span> (Dribble): drag from a player to anywhere.</li>
+            <li>Press <span className="font-mono text-foreground">S</span> (Screen): click the screener, then click the spot on the floor where the screen is set.</li>
             <li>Press <span className="font-mono text-foreground">Delete</span> to remove a selection.</li>
-            <li>Add phases to animate the play across reads.</li>
+            <li>Press <span className="font-mono text-foreground">Play</span> to animate — passes follow the arc, cuts trace the polyline.</li>
           </ul>
         </div>
       )}
@@ -932,6 +1033,95 @@ function CutStylePicker({
           {opt.label}
         </button>
       ))}
+    </div>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+/* Pass type picker                                                            */
+/* -------------------------------------------------------------------------- */
+
+const PASS_TYPE_OPTIONS: { key: PassType; label: string; hint: string }[] = [
+  { key: "CHEST", label: "Chest", hint: "Direct chest pass" },
+  { key: "BOUNCE", label: "Bounce", hint: "Bounce pass — hard to deflect" },
+  { key: "LOB", label: "Lob", hint: "High lob — over a defender" },
+  { key: "SKIP", label: "Skip", hint: "Skip pass — across the floor" },
+];
+
+function PassTypePicker({
+  value,
+  onChange,
+}: {
+  value: PassType;
+  onChange: (v: PassType) => void;
+}) {
+  return (
+    <div className="rounded-xl border border-border bg-card p-2 flex items-center gap-1 flex-wrap">
+      <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground px-2">
+        Pass type
+      </span>
+      {PASS_TYPE_OPTIONS.map((opt) => (
+        <button
+          key={opt.key}
+          onClick={() => onChange(opt.key)}
+          title={opt.hint}
+          aria-pressed={value === opt.key}
+          className={`h-8 px-2.5 rounded-md text-[11.5px] inline-flex items-center gap-1.5 border transition ${
+            value === opt.key
+              ? "bg-primary text-primary-foreground border-primary"
+              : "border-border bg-background hover:border-primary/50"
+          }`}
+        >
+          {opt.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+/* Role picker (selected offense token)                                        */
+/* -------------------------------------------------------------------------- */
+
+const ROLE_OPTIONS: Role[] = ["PG", "SG", "SF", "PF", "C"];
+
+function RolePicker({
+  value,
+  onChange,
+}: {
+  value: string | undefined;
+  onChange: (v: Role | undefined) => void;
+}) {
+  return (
+    <div>
+      <div className="text-[10px] uppercase tracking-wider font-mono text-muted-foreground mb-1">
+        Role
+      </div>
+      <div className="flex items-center gap-1 flex-wrap">
+        <button
+          onClick={() => onChange(undefined)}
+          className={`h-7 px-2 rounded text-[11px] font-mono border ${
+            !value
+              ? "bg-primary text-primary-foreground border-primary"
+              : "border-border bg-background hover:border-primary/50"
+          }`}
+        >
+          —
+        </button>
+        {ROLE_OPTIONS.map((r) => (
+          <button
+            key={r}
+            onClick={() => onChange(r)}
+            className={`h-7 px-2 rounded text-[11px] font-mono border ${
+              value === r
+                ? "bg-primary text-primary-foreground border-primary"
+                : "border-border bg-background hover:border-primary/50"
+            }`}
+          >
+            {r}
+          </button>
+        ))}
+      </div>
     </div>
   );
 }
