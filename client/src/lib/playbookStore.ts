@@ -41,6 +41,7 @@ import {
   type SelectionState,
   type UndoEntry,
 } from "@/lib/mock/playbookSchema";
+import { actionFromPath } from "@/lib/playbookActions";
 
 const PERSIST_KEY = "hoopsos-playbook";
 const PERSIST_VERSION = 2;
@@ -213,6 +214,70 @@ function mapPlay(plays: Play[], id: string, fn: (p: Play) => Play): Play[] {
 /** Update a phase in place via callback. */
 function mapPhase(play: Play, phaseId: string, fn: (ph: PlayPhase) => PlayPhase): Play {
   return { ...play, phases: play.phases.map((ph) => (ph.id === phaseId ? fn(ph) : ph)) };
+}
+
+/**
+ * Update a single token's position. Returns a new tokens array; if the token
+ * doesn't exist in the array, the array is returned unchanged.
+ */
+function moveToken(
+  tokens: PlayToken[],
+  tokenId: string,
+  x: number,
+  y: number,
+): PlayToken[] {
+  return tokens.map((t) => (t.id === tokenId ? { ...t, x, y } : t));
+}
+
+/**
+ * Apply the physical effect of a newly-committed path to the phase's tokens.
+ *
+ * Pass     → ball moves to receiver's current position.
+ * Cut      → cutting player moves to the path endpoint.
+ * Dribble  → dribbler AND the ball move to the path endpoint.
+ * Handoff  → both participants AND the ball move to the handoff `at` point.
+ * Screen   → screener moves to the screen `at` point (recipient is unchanged).
+ *
+ * This is what makes "draw a pass and the ball ends up at the receiver" work
+ * across phases: subsequent phases inherit the updated end-state via the
+ * existing `addPhase` clone-from-previous logic.
+ */
+function applyActionEffectsToPhase(
+  phase: PlayPhase,
+  committedPath: PlayPath,
+): PlayPhase {
+  const action = actionFromPath(committedPath);
+  if (!action) return phase;
+
+  const ball = phase.tokens.find((t) => t.type === "BALL");
+  let next = phase.tokens;
+  const pts = committedPath.points;
+  const ex = pts[pts.length - 2];
+  const ey = pts[pts.length - 1];
+
+  switch (action.kind) {
+    case "cut":
+      next = moveToken(next, action.player, ex, ey);
+      break;
+    case "dribble":
+      next = moveToken(next, action.player, ex, ey);
+      if (ball) next = moveToken(next, ball.id, ex, ey);
+      break;
+    case "pass": {
+      const receiver = phase.tokens.find((t) => t.id === action.to);
+      if (receiver && ball) next = moveToken(next, ball.id, receiver.x, receiver.y);
+      break;
+    }
+    case "handoff":
+      next = moveToken(next, action.from, ex, ey);
+      next = moveToken(next, action.to, ex, ey);
+      if (ball) next = moveToken(next, ball.id, ex, ey);
+      break;
+    case "screen":
+      if (action.screener) next = moveToken(next, action.screener, ex, ey);
+      break;
+  }
+  return next === phase.tokens ? phase : { ...phase, tokens: next };
 }
 
 /* -------------------------------------------------------------------------- */
@@ -604,13 +669,20 @@ export const usePlaybook = create<PlaybookState>()(
           }
           captureUndo("add-path", playId);
           const id = `pa_${nanoid(5)}`;
+          const committed: PlayPath = { ...path, id };
           set({
             plays: mapPlay(get().plays, playId, (p) =>
               bumpUpdated(
-                mapPhase(p, phaseId, (ph) => ({
-                  ...ph,
-                  paths: [...ph.paths, { ...path, id }],
-                })),
+                mapPhase(p, phaseId, (ph) => {
+                  // 1) Append the new path to the phase.
+                  const withPath: PlayPhase = {
+                    ...ph,
+                    paths: [...ph.paths, committed],
+                  };
+                  // 2) Apply the action's physical effect to the tokens so
+                  //    the phase's end-state reflects what just happened.
+                  return applyActionEffectsToPhase(withPath, committed);
+                }),
               ),
             ),
             selectedPathId: id,
