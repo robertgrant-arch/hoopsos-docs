@@ -30,6 +30,7 @@ import {
 import {
   safeParsePersistedPlaybook,
   safeParsePlaySnapshot,
+  type CutStyle,
   type EditorMode,
   type PendingPathDraft,
   type Play,
@@ -102,6 +103,7 @@ type PlaybookState = {
   selectedPathId: string | null;
   selection: SelectionState;
   editorMode: EditorMode;
+  cutStyleSelection: CutStyle;
   pendingPathDraft: PendingPathDraft | null;
   undoStack: UndoEntry[];
   redoStack: UndoEntry[];
@@ -118,6 +120,7 @@ type PlaybookState = {
 
   /* editor mode + draft */
   setEditorMode: (mode: EditorMode) => void;
+  setCutStyleSelection: (style: CutStyle) => void;
   setPendingPathDraft: (draft: PendingPathDraft | null) => void;
   updatePendingPathDraftCursor: (x: number, y: number) => void;
 
@@ -227,6 +230,7 @@ function buildInitial(): Pick<
   | "selectedPathId"
   | "selection"
   | "editorMode"
+  | "cutStyleSelection"
   | "pendingPathDraft"
   | "undoStack"
   | "redoStack"
@@ -242,6 +246,7 @@ function buildInitial(): Pick<
     selectedPathId: null,
     selection: { kind: "none" },
     editorMode: "SELECT",
+    cutStyleSelection: "STRAIGHT" as CutStyle,
     pendingPathDraft: null,
     undoStack: [],
     redoStack: [],
@@ -321,6 +326,7 @@ export const usePlaybook = create<PlaybookState>()(
           // origin from PASS does not leak into CUT.
           set({ editorMode: mode, pendingPathDraft: null });
         },
+        setCutStyleSelection: (style) => set({ cutStyleSelection: style }),
         setPendingPathDraft: (draft) => set({ pendingPathDraft: draft }),
         updatePendingPathDraftCursor: (x, y) => {
           const cur = get().pendingPathDraft;
@@ -784,6 +790,7 @@ export const usePlaybook = create<PlaybookState>()(
           ...current,
           // Always reset ephemeral on hydration.
           editorMode: "SELECT" as EditorMode,
+          cutStyleSelection: "STRAIGHT" as CutStyle,
           pendingPathDraft: null,
           undoStack: [],
           redoStack: [],

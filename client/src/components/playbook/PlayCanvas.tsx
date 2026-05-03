@@ -36,6 +36,7 @@ import { Stage, Layer, Group, Rect, Circle, Line, Text, Shape } from "react-konv
 import type Konva from "konva";
 import { HalfCourt } from "@/components/court/HalfCourt";
 import type {
+  CutStyle,
   EditorMode,
   PathType,
   PlayPath,
@@ -163,6 +164,31 @@ function tracePath(ctx: CanvasPath, pts: number[]): void {
 }
 
 /**
+ * Return the closest non-ball token within `maxDist` of (x, y), or null.
+ * Used to attribute a free-form polyline path to the player it started from.
+ */
+function nearestTokenWithin(
+  tokens: PlayToken[],
+  x: number,
+  y: number,
+  maxDist: number,
+): PlayToken | null {
+  let best: PlayToken | null = null;
+  let bestD = maxDist;
+  for (const t of tokens) {
+    if (t.type === "BALL") continue; // a cut/dribble belongs to a player, not the ball
+    const dx = t.x - x;
+    const dy = t.y - y;
+    const d = Math.hypot(dx, dy);
+    if (d < bestD) {
+      bestD = d;
+      best = t;
+    }
+  }
+  return best;
+}
+
+/**
  * Sample the tangent angle at the END of the rendered path so arrowheads
  * point in the actual direction of travel, not the chord.
  */
@@ -217,6 +243,8 @@ type PendingDraft = AnchoredDraft | PolylineDraft;
 type Props = {
   phase: PlayPhase;
   editorMode: EditorMode;
+  /** Active CutStyle from the toolbar — applied to any new CUT path. */
+  cutStyle: CutStyle;
   selectedTokenId: string | null;
   selectedPathId: string | null;
   width: number;
@@ -236,6 +264,7 @@ type Props = {
 export function PlayCanvas({
   phase,
   editorMode,
+  cutStyle,
   selectedTokenId,
   selectedPathId,
   width,
@@ -399,9 +428,21 @@ export function PlayCanvas({
     if (!draft) return;
     if (draft.kind !== "polyline") return; // anchored flow commits via token click, not mouseup
     if (draft.points.length >= 4) {
+      // Find the closest token to the START of the drag — if within ~1.2x
+      // the offense token radius, attribute the path to that player so the
+      // action layer can resolve it as a cut/dribble by player X.
+      const startX = draft.points[0];
+      const startY = draft.points[1];
+      const startToken = nearestTokenWithin(phase.tokens, startX, startY, 30);
       // Commit a free-form polyline. The store assigns a stable id and
       // pushes an undo entry.
-      onAddPath({ type: draft.pathType, points: draft.points });
+      const commit: Omit<PlayPath, "id"> = {
+        type: draft.pathType,
+        points: draft.points,
+        ...(startToken ? { startTokenId: startToken.id } : {}),
+        ...(draft.pathType === "CUT" ? { cutStyle } : {}),
+      };
+      onAddPath(commit);
     }
     cancelDraft();
   }

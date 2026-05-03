@@ -58,7 +58,8 @@ import {
   type Play,
   type PlayPhase,
 } from "@/lib/mock/playbook";
-import type { EditorMode } from "@/lib/mock/playbookSchema";
+import type { CutStyle, EditorMode } from "@/lib/mock/playbookSchema";
+import { actionForPathId, describeAction } from "@/lib/playbookActions";
 import { usePlaybook } from "@/lib/playbookStore";
 import PlayCanvas from "@/components/playbook/PlayCanvas";
 import { PlayThumbnail } from "@/components/court/PlayThumbnail";
@@ -281,8 +282,10 @@ export function CoachPlaybookStudio() {
     selectedPathId,
     versionHistory,
     editorMode,
+    cutStyleSelection,
     authorName,
     setEditorMode,
+    setCutStyleSelection,
     setSelectedPlay,
     setSelectedPhase,
     setSelectedToken,
@@ -557,11 +560,20 @@ export function CoachPlaybookStudio() {
               </div>
             </div>
 
+            {/* CutStyle picker — only when DRAW_CUT is active */}
+            {editorMode === "DRAW_CUT" && (
+              <CutStylePicker
+                value={cutStyleSelection}
+                onChange={setCutStyleSelection}
+              />
+            )}
+
             {/* Canvas */}
             <div ref={containerRef} className="rounded-xl border border-border bg-card overflow-hidden flex items-center justify-center" style={{ minHeight: 500 }}>
               <PlayCanvas
                 phase={phase}
                 editorMode={editorMode}
+                cutStyle={cutStyleSelection}
                 selectedTokenId={selectedTokenId}
                 selectedPathId={selectedPathId}
                 width={canvasSize.width}
@@ -843,7 +855,25 @@ function RightRail({
               <Trash2 className="w-3.5 h-3.5" />
             </Button>
           </div>
-          <div className="text-[12px] font-mono text-muted-foreground">{selectedPath.type}</div>
+          {(() => {
+            const action = actionForPathId(phase, selectedPath.id);
+            if (!action) {
+              return (
+                <div className="text-[12px] font-mono text-muted-foreground">
+                  {selectedPath.type} <span className="opacity-60">· (not attributed)</span>
+                </div>
+              );
+            }
+            return (
+              <>
+                <div className="text-[13px] font-semibold">{describeAction(action, phase.tokens)}</div>
+                <div className="text-[10.5px] font-mono text-muted-foreground">
+                  {selectedPath.type}
+                  {selectedPath.cutStyle ? ` · ${selectedPath.cutStyle}` : ""}
+                </div>
+              </>
+            );
+          })()}
         </div>
       )}
 
@@ -858,6 +888,50 @@ function RightRail({
           </ul>
         </div>
       )}
+    </div>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+/* Cut style picker                                                            */
+/* -------------------------------------------------------------------------- */
+
+const CUT_STYLE_OPTIONS: { key: CutStyle; label: string; hint: string }[] = [
+  { key: "STRAIGHT", label: "Straight", hint: "Direct, no bend" },
+  { key: "CURVE", label: "Curl", hint: "Curve toward the ball" },
+  { key: "VCUT", label: "V-cut", hint: "Plant + sharp change of direction" },
+  { key: "LCUT", label: "L-cut", hint: "Right-angle cut" },
+  { key: "BACKDOOR", label: "Backdoor", hint: "Reverse cut behind defender" },
+  { key: "FLARE", label: "Flare", hint: "Cut away from the ball" },
+];
+
+function CutStylePicker({
+  value,
+  onChange,
+}: {
+  value: CutStyle;
+  onChange: (s: CutStyle) => void;
+}) {
+  return (
+    <div className="rounded-xl border border-border bg-card p-2 flex items-center gap-1 flex-wrap">
+      <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground px-2">
+        Cut style
+      </span>
+      {CUT_STYLE_OPTIONS.map((opt) => (
+        <button
+          key={opt.key}
+          onClick={() => onChange(opt.key)}
+          title={opt.hint}
+          aria-pressed={value === opt.key}
+          className={`h-8 px-2.5 rounded-md text-[11.5px] inline-flex items-center gap-1.5 border transition ${
+            value === opt.key
+              ? "bg-primary text-primary-foreground border-primary"
+              : "border-border bg-background hover:border-primary/50"
+          }`}
+        >
+          {opt.label}
+        </button>
+      ))}
     </div>
   );
 }

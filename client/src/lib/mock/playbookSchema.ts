@@ -41,6 +41,19 @@ export const playCategorySchema = z.enum([
   "PRESS_BREAK",
 ]);
 
+/**
+ * Semantic cut variants. Stored on PlayPath as `cutStyle` for any path
+ * with type === "CUT". Used by the action layer + auto-quiz generator.
+ */
+export const cutStyleSchema = z.enum([
+  "STRAIGHT",
+  "CURVE",
+  "VCUT",
+  "LCUT",
+  "BACKDOOR",
+  "FLARE",
+]);
+
 /* -------------------------------------------------------------------------- */
 /* Domain                                                                     */
 /* -------------------------------------------------------------------------- */
@@ -69,6 +82,8 @@ export const playPathSchema = z.object({
   controlY: finite.optional(),
   label: z.string().optional(),
   locked: z.boolean().optional(),
+  /** Only meaningful when type === "CUT". Defaults to STRAIGHT if absent. */
+  cutStyle: cutStyleSchema.optional(),
 });
 
 export const playPhaseSchema = z.object({
@@ -177,6 +192,7 @@ export type TokenType = z.infer<typeof tokenTypeSchema>;
 export type PathType = z.infer<typeof pathTypeSchema>;
 export type PhaseLabel = z.infer<typeof phaseLabelSchema>;
 export type TeamSide = z.infer<typeof teamSideSchema>;
+export type CutStyle = z.infer<typeof cutStyleSchema>;
 export type PlayCategory = z.infer<typeof playCategorySchema>;
 export type PlayToken = z.infer<typeof playTokenSchema>;
 export type PlayPath = z.infer<typeof playPathSchema>;
