@@ -40,8 +40,8 @@ import {
 import CoachPracticePlanBuilder from "@/pages/app/coach/PracticePlanBuilder";
 import CoachPlaybookStudio from "@/pages/app/coach/PlaybookStudio";
 import CoachPlaybookStudioV3 from "@/pages/app/coach/PlaybookStudioV3";
-import FilmAnalysisPages from "@/pages/app/coach/FilmAnalysisPages";
-const { FilmRoomPage, FilmUploadPage, FilmSessionPage, PlayerHighlightsPage } = FilmAnalysisPages;
+import { FilmRoomPage, FilmUploadPage, FilmSessionPage, PlayerHighlightsPage } from "@/pages/app/coach/FilmAnalysisPages";
+
 import PlayQuizRunner from "@/pages/app/player/PlayQuiz";
 
 // Billing (Prompt 16)
