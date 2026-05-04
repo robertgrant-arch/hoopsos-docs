@@ -19,7 +19,7 @@ import type {
   FilmSession,
   PlayerHighlight,
   CreateSessionInput,
-} from "@shared/film-analysis/types";
+} from "@shared/film-analysis/mock";
 
 interface UseFilmAnalysisResult {
   sessions: FilmSession[];
