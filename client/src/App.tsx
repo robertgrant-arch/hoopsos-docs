@@ -40,6 +40,8 @@ import {
 import CoachPracticePlanBuilder from "@/pages/app/coach/PracticePlanBuilder";
 import CoachPlaybookStudio from "@/pages/app/coach/PlaybookStudio";
 import CoachPlaybookStudioV3 from "@/pages/app/coach/PlaybookStudioV3";
+import FilmAnalysisPages from "@/pages/app/coach/FilmAnalysisPages";
+const { FilmRoomPage, FilmUploadPage, FilmSessionPage, PlayerHighlightsPage } = FilmAnalysisPages;
 import PlayQuizRunner from "@/pages/app/player/PlayQuiz";
 
 // Billing (Prompt 16)
@@ -140,6 +142,10 @@ function Router() {
       <Route path="/app/film" component={FilmRoomHome} />
       <Route path="/app/film/clips/:id" component={FilmClipDetail} />
       <Route path="/app/film/inbox" component={FilmInbox} />
+              <Route path="/app/coach/film" component={guard(FilmRoomPage)} />
+        <Route path="/app/coach/film/upload" component={guard(FilmUploadPage)} />
+        <Route path="/app/coach/film/sessions/:id" component={guard(FilmSessionPage)} />
+        <Route path="/app/player/highlights" component={PlayerHighlightsPage} />
 
       {/* Playbook */}
       <Route path="/app/playbook" component={CoachPlaybookStudio} />
