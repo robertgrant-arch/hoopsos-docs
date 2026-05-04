@@ -1,8 +1,8 @@
 /**
  * FilmAnalysisRoutes.tsx
  *
- * Route definitions for the Film AI Analysis module using wouter (same as
- * App.tsx). Paths mirror the coach film room surface.
+ * Optional wouter routes aligned with App.tsx paths. Prefer registering
+ * these in App.tsx (as today); this file is for copy-paste / experiments.
  */
 
 import * as React from "react";
@@ -17,13 +17,14 @@ import {
 export function FilmAnalysisRoutes(): React.ReactNode {
   return (
     <>
-      <Route path="/coach/film" component={FilmRoomPage} />
-      <Route path="/coach/film/upload" component={FilmUploadPage} />
-      <Route path="/coach/film/:sessionId" component={FilmSessionPage} />
+      <Route path="/app/coach/film" component={FilmRoomPage} />
+      <Route path="/app/coach/film/upload" component={FilmUploadPage} />
+      <Route path="/app/coach/film/sessions/:id" component={FilmSessionPage} />
       <Route
-        path="/player/highlights/:playerId"
+        path="/app/player/highlights/:playerId"
         component={PlayerHighlightsPage}
       />
+      <Route path="/app/player/highlights" component={PlayerHighlightsPage} />
     </>
   );
 }

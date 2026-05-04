@@ -145,6 +145,7 @@ function Router() {
               <Route path="/app/coach/film" component={guard(FilmRoomPage)} />
         <Route path="/app/coach/film/upload" component={guard(FilmUploadPage)} />
         <Route path="/app/coach/film/sessions/:id" component={guard(FilmSessionPage)} />
+        <Route path="/app/player/highlights/:playerId" component={PlayerHighlightsPage} />
         <Route path="/app/player/highlights" component={PlayerHighlightsPage} />
 
       {/* Playbook */}
