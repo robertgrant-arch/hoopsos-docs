@@ -381,6 +381,69 @@ export interface CVProviderAdapter {
   cancel(handle: ProviderJobHandle): Promise<void>;
 }
 
+// ── Video pipeline adapter (server/modules/film-analysis/pipeline) ─
+
+export type PipelineStage =
+  | "METADATA_EXTRACTION"
+  | "CALIBRATION"
+  | "PLAYER_DETECTION"
+  | "IDENTITY_TRACKING"
+  | "ROSTER_MAPPING"
+  | "POSSESSION_SEGMENTATION"
+  | "EVENT_CLASSIFICATION"
+  | "STAT_VALIDATION"
+  | "CLIP_BOUNDARY_GEN"
+  | "CONFIDENCE_SCORING";
+
+export type SegmentStatus = "PENDING" | "RUNNING" | "COMPLETE" | "FAILED";
+
+export type PipelineJobStatusToken =
+  | "QUEUED"
+  | "RUNNING"
+  | "COMPLETE"
+  | "CANCELLED"
+  | "FAILED";
+
+export interface PipelineJobInput {
+  filmSessionId: string;
+  analysisJobId: string;
+  orgId: string;
+  teamId: string;
+  assetUri: string;
+}
+
+export interface PipelineStatusResponse {
+  externalJobId: string;
+  status: PipelineJobStatusToken;
+  progressPct: number;
+  currentStage: PipelineStage | null;
+  stageStatuses: Partial<Record<PipelineStage, SegmentStatus>>;
+  estimatedCompletionMs: number | null;
+}
+
+export interface PipelineResults {
+  trackedPlayers: Array<{
+    filmSessionId: string;
+    analysisJobId: string;
+    trackingId: string;
+    jerseyNumber: string;
+    teamSide: "HOME" | "AWAY";
+    detectionConfidence: number;
+    appearanceFrames: number;
+    thumbnailPath: string | null;
+  }>;
+  rosterLinks: unknown[];
+  detectedEvents: unknown[];
+  issues: Array<{
+    analysisJobId: string;
+    entityType: string | null;
+    entityId: string | null;
+    issueCode: string;
+    severity: "INFO" | "WARN" | "ERROR";
+    message: string;
+  }>;
+}
+
 // ── API request/response shapes ──────────────────────────────
 
 export interface InitiateUploadRequest {

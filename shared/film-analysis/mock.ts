@@ -49,6 +49,7 @@ export interface FilmSession {
   teamStats: TeamGameStats;
   timeline: TimelineEvent[];
   playerStats: PlayerStatLineUI[];
+  createdAt?: string;
 }
 
 export interface PlayerHighlight {

@@ -8,13 +8,14 @@
 //   const repo = createRepository({ orgId, userId });
 //   const sessions = await repo.filmSessions.list({ limit: 20 });
 
-import { and, desc, eq, isNull, sql } from "drizzle-orm";
+import { and, desc, eq, isNull } from "drizzle-orm";
 import { getDb, type Db } from "./client";
 import {
   analysisJobs,
   annotations,
   filmAssets,
   filmSessions,
+  orgMembers,
   type NewAnalysisJob,
   type NewAnnotation,
   type NewFilmAsset,
@@ -29,10 +30,25 @@ export interface RepoContext {
 
 export function createRepository(ctx: RepoContext) {
   const db = ctx.db ?? getDb();
-  const orgScope = (col: { name: string }) =>
-    eq(sql.identifier(col.name), ctx.orgId);
 
   return {
+    orgMembers: {
+      async getMembership() {
+        const rows = await db
+          .select()
+          .from(orgMembers)
+          .where(
+            and(
+              eq(orgMembers.orgId, ctx.orgId),
+              eq(orgMembers.userId, ctx.userId),
+              isNull(orgMembers.deletedAt),
+            ),
+          )
+          .limit(1);
+        return rows[0] ?? null;
+      },
+    },
+
     filmSessions: {
       async list(opts: { limit?: number; offset?: number } = {}) {
         const limit = Math.min(opts.limit ?? 50, 200);
@@ -86,6 +102,29 @@ export function createRepository(ctx: RepoContext) {
             ),
           );
       },
+      async update(
+        id: string,
+        patch: Partial<
+          Pick<
+            typeof filmSessions.$inferInsert,
+            | "title"
+            | "description"
+            | "kind"
+            | "status"
+            | "opponent"
+            | "homeAway"
+            | "playedAt"
+            | "payload"
+          >
+        >,
+      ) {
+        await db
+          .update(filmSessions)
+          .set({ ...patch, updatedAt: new Date() })
+          .where(
+            and(eq(filmSessions.id, id), eq(filmSessions.orgId, ctx.orgId)),
+          );
+      },
     },
 
     filmAssets: {
@@ -108,6 +147,38 @@ export function createRepository(ctx: RepoContext) {
           .returning();
         return row;
       },
+      async getById(id: string) {
+        const rows = await db
+          .select()
+          .from(filmAssets)
+          .where(
+            and(
+              eq(filmAssets.id, id),
+              eq(filmAssets.orgId, ctx.orgId),
+              isNull(filmAssets.deletedAt),
+            ),
+          )
+          .limit(1);
+        return rows[0] ?? null;
+      },
+      async update(
+        id: string,
+        patch: Partial<
+          Pick<
+            typeof filmAssets.$inferInsert,
+            | "sessionId"
+            | "status"
+            | "mimeType"
+            | "sizeBytes"
+            | "payload"
+          >
+        >,
+      ) {
+        await db
+          .update(filmAssets)
+          .set({ ...patch, updatedAt: new Date() })
+          .where(and(eq(filmAssets.id, id), eq(filmAssets.orgId, ctx.orgId)));
+      },
     },
 
     analysisJobs: {
@@ -119,6 +190,7 @@ export function createRepository(ctx: RepoContext) {
             and(
               eq(analysisJobs.sessionId, sessionId),
               eq(analysisJobs.orgId, ctx.orgId),
+              isNull(analysisJobs.deletedAt),
             ),
           )
           .orderBy(desc(analysisJobs.createdAt));

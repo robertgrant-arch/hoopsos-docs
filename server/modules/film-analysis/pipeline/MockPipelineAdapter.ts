@@ -13,7 +13,7 @@ import type {
   PipelineJobInput,
   PipelineStatusResponse,
   PipelineResults,
-  AnalysisJobStatus,
+  PipelineJobStatusToken,
   PipelineStage,
   SegmentStatus,
 } from "../../../../shared/film-analysis/types";
@@ -65,7 +65,7 @@ export class MockPipelineAdapter implements VideoPipelineAdapter {
     if (job.cancelled) {
       return {
         externalJobId,
-        status: "CANCELLED" as AnalysisJobStatus,
+        status: "CANCELLED" satisfies PipelineJobStatusToken,
         progressPct: 0,
         currentStage: null,
         stageStatuses: {},
@@ -79,7 +79,7 @@ export class MockPipelineAdapter implements VideoPipelineAdapter {
       STAGE_ORDER.length - 1,
       Math.floor((pct / 100) * STAGE_ORDER.length)
     );
-    const status: AnalysisJobStatus = pct >= 100 ? "COMPLETE" : "RUNNING";
+    const status: PipelineJobStatusToken = pct >= 100 ? "COMPLETE" : "RUNNING";
 
     const stageStatuses: Partial<Record<PipelineStage, SegmentStatus>> = {};
     STAGE_ORDER.forEach((stage, i) => {
