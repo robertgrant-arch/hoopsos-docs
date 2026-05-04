@@ -45,7 +45,7 @@ export const submitReviewSchema = z.object({
         ]),
         entityId: z.string().min(1),
         decision: z.enum(["APPROVED", "CORRECTED", "REJECTED"]),
-        correctedValue: z.record(z.unknown()).optional(),
+        correctedValue: z.record(z.string(), z.unknown()).optional(),
         notes: z.string().max(1024).optional(),
       })
     )

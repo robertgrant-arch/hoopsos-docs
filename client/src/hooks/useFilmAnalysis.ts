@@ -19,7 +19,18 @@ import type {
   FilmSession,
   PlayerHighlight,
   CreateSessionInput,
+  TeamGameStats,
 } from "@shared/film-analysis/mock";
+
+const emptyTeamStats: TeamGameStats = {
+  points: 0,
+  fgPct: 0,
+  threePct: 0,
+  rebounds: 0,
+  assists: 0,
+  turnovers: 0,
+  pace: 0,
+};
 
 interface UseFilmAnalysisResult {
   sessions: FilmSession[];
@@ -55,6 +66,10 @@ export function useFilmAnalysis(): UseFilmAnalysisResult {
         gameDate: input.gameDate,
         status: "processing",
         progressPct: 5,
+        durationSec: 0,
+        teamStats: { ...emptyTeamStats },
+        timeline: [],
+        playerStats: [],
         createdAt: new Date().toISOString(),
       };
       setSessions((prev) => [newSession, ...prev]);

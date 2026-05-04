@@ -97,7 +97,7 @@ export function FilmRoomPage() {
 
 function SessionCard({ session }: { session: FilmSession }) {
   return (
-    <Link href={`/app/coach/film/${session.id}`}>
+    <Link href={`/app/coach/film/sessions/${session.id}`}>
       <a>
         <Card className="hover:shadow-md transition-shadow cursor-pointer">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -140,7 +140,7 @@ export function FilmUploadPage() {
       gameDate: new Date().toISOString(),
     });
     setSubmitting(false);
-    setLocation(`/app/coach/film/${session.id}`);
+    setLocation(`/app/coach/film/sessions/${session.id}`);
   }
 
   return (
@@ -187,8 +187,8 @@ export function FilmUploadPage() {
 /* ---------- FilmSessionPage ---------- */
 
 export function FilmSessionPage() {
-  const [, params] = useRoute<{ sessionId: string }>("/app/coach/film/:sessionId");
-  const sessionId = params?.sessionId ?? "";
+  const [, params] = useRoute<{ id: string }>("/app/coach/film/sessions/:id");
+  const sessionId = params?.id ?? "";
   const { getSession } = useFilmAnalysis();
   const session = getSession(sessionId);
 
@@ -317,7 +317,9 @@ function PlayerStatsPanel({ session }: { session: FilmSession }) {
 /* ---------- PlayerHighlightsPage ---------- */
 
 export function PlayerHighlightsPage() {
-  const [, params] = useRoute<{ playerId: string }>("/app/player/highlights/:playerId");
+  const [, params] = useRoute<{ playerId: string }>(
+    "/app/player/highlights/:playerId",
+  );
   const playerId = params?.playerId ?? "";
   const { getPlayerHighlights } = useFilmAnalysis();
   const highlights = getPlayerHighlights(playerId);

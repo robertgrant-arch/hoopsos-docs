@@ -5,3 +5,8 @@
 export { getDb, resetDb, type Db } from "./client";
 export * as schema from "./schema";
 export * from "./schema";
+export {
+  createRepository,
+  type RepoContext,
+  type Repository,
+} from "./repository";
