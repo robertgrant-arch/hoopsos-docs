@@ -2,25 +2,21 @@
  * FilmAnalysisPages.tsx
  *
  * Coach-facing Film AI Analysis frontend module for HoopsOS.
- * Layered into the existing Coach HQ pages folder following the
- * naming convention used by AppPages.tsx / PlayerPages.tsx / DocsHome.tsx.
+ * Layered into the existing Coach HQ pages folder.
  *
- * Exports a set of route-level page components:
+ * Uses wouter (the router used by the rest of this app) — see App.tsx.
+ *
+ * Exports route-level page components:
  *   - FilmRoomPage         (list of sessions, upload entry point)
  *   - FilmUploadPage       (conceptual upload + ingest trigger)
  *   - FilmSessionPage      (single session: status, team stats, timeline)
  *   - PlayerHighlightsPage (player-facing highlight reel surface)
  *
- * Data is sourced from the shared mock layer (shared/film-analysis/mock)
- * via the useFilmAnalysis hook so that real API integration is a
- * one-line swap (replace the hook's data source with fetch/SWR).
- *
- * Design system: reuses HoopsOS Tailwind tokens + shadcn/ui primitives
- * already used elsewhere in client/src/components.
+ * Data is sourced from the shared mock layer via the useFilmAnalysis hook.
  */
 
 import * as React from "react";
-import { Link, useParams, useNavigate } from "react-router-dom";
+import { Link, useLocation, useRoute } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -63,7 +59,7 @@ function formatClock(seconds: number) {
 
 export function FilmRoomPage() {
   const { sessions, isLoading } = useFilmAnalysis();
-  const navigate = useNavigate();
+  const [, setLocation] = useLocation();
 
   return (
     <div className="p-6 space-y-6">
@@ -75,7 +71,7 @@ export function FilmRoomPage() {
             insights, timeline events, and highlight reels.
           </p>
         </div>
-        <Button onClick={() => navigate("/coach/film/upload")}>
+        <Button onClick={() => setLocation("/app/coach/film/upload")}>
           Upload Film
         </Button>
       </div>
@@ -101,24 +97,27 @@ export function FilmRoomPage() {
 
 function SessionCard({ session }: { session: FilmSession }) {
   return (
-    <Link to={`/coach/film/${session.id}`}>
-      <Card className="hover:shadow-md transition-shadow cursor-pointer">
-        <CardHeader className="flex flex-row items-center justify-between pb-2">
-          <CardTitle className="text-base truncate">{session.title}</CardTitle>
-          <StatusBadge status={session.status} />
-        </CardHeader>
-        <CardContent className="space-y-2">
-          <div className="text-sm text-muted-foreground">
-            {new Date(session.gameDate).toLocaleDateString()} · {session.opponent ?? "Practice"}
-          </div>
-          {session.status === "processing" && (
-            <Progress value={session.progressPct ?? 0} />
-          )}
-          <div className="text-xs text-muted-foreground">
-            {session.durationSec ? formatClock(session.durationSec) : "—"} duration
-          </div>
-        </CardContent>
-      </Card>
+    <Link href={`/app/coach/film/${session.id}`}>
+      <a>
+        <Card className="hover:shadow-md transition-shadow cursor-pointer">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-base truncate">{session.title}</CardTitle>
+            <StatusBadge status={session.status} />
+          </CardHeader>
+          <CardContent className="space-y-2">
+            <div className="text-sm text-muted-foreground">
+              {new Date(session.gameDate).toLocaleDateString()} ·{" "}
+              {session.opponent ?? "Practice"}
+            </div>
+            {session.status === "processing" && (
+              <Progress value={session.progressPct ?? 0} />
+            )}
+            <div className="text-xs text-muted-foreground">
+              {session.durationSec ? formatClock(session.durationSec) : "—"} duration
+            </div>
+          </CardContent>
+        </Card>
+      </a>
     </Link>
   );
 }
@@ -127,7 +126,7 @@ function SessionCard({ session }: { session: FilmSession }) {
 
 export function FilmUploadPage() {
   const { createSession } = useFilmAnalysis();
-  const navigate = useNavigate();
+  const [, setLocation] = useLocation();
   const [title, setTitle] = React.useState("");
   const [opponent, setOpponent] = React.useState("");
   const [submitting, setSubmitting] = React.useState(false);
@@ -141,7 +140,7 @@ export function FilmUploadPage() {
       gameDate: new Date().toISOString(),
     });
     setSubmitting(false);
-    navigate(`/coach/film/${session.id}`);
+    setLocation(`/app/coach/film/${session.id}`);
   }
 
   return (
@@ -188,9 +187,10 @@ export function FilmUploadPage() {
 /* ---------- FilmSessionPage ---------- */
 
 export function FilmSessionPage() {
-  const { sessionId } = useParams<{ sessionId: string }>();
+  const [, params] = useRoute<{ sessionId: string }>("/app/coach/film/:sessionId");
+  const sessionId = params?.sessionId ?? "";
   const { getSession } = useFilmAnalysis();
-  const session = getSession(sessionId!);
+  const session = getSession(sessionId);
 
   if (!session) {
     return <div className="p-6">Session not found.</div>;
@@ -202,7 +202,8 @@ export function FilmSessionPage() {
         <div>
           <h1 className="text-2xl font-semibold">{session.title}</h1>
           <p className="text-sm text-muted-foreground">
-            {new Date(session.gameDate).toLocaleDateString()} · {session.opponent ?? "Practice"}
+            {new Date(session.gameDate).toLocaleDateString()} ·{" "}
+            {session.opponent ?? "Practice"}
           </p>
         </div>
         <StatusBadge status={session.status} />
@@ -301,11 +302,10 @@ function PlayerStatsPanel({ session }: { session: FilmSession }) {
                 {p.minutes} min · {p.points} pts · {p.rebounds} reb · {p.assists} ast
               </div>
             </div>
-            <Link
-              to={`/player/highlights/${p.playerId}?sessionId=${session.id}`}
-              className="text-sm text-blue-600 hover:underline"
-            >
-              View highlights →
+            <Link href={`/app/player/highlights/${p.playerId}`}>
+              <a className="text-sm text-blue-600 hover:underline">
+                View highlights →
+              </a>
             </Link>
           </CardContent>
         </Card>
@@ -317,9 +317,10 @@ function PlayerStatsPanel({ session }: { session: FilmSession }) {
 /* ---------- PlayerHighlightsPage ---------- */
 
 export function PlayerHighlightsPage() {
-  const { playerId } = useParams<{ playerId: string }>();
+  const [, params] = useRoute<{ playerId: string }>("/app/player/highlights/:playerId");
+  const playerId = params?.playerId ?? "";
   const { getPlayerHighlights } = useFilmAnalysis();
-  const highlights = getPlayerHighlights(playerId!);
+  const highlights = getPlayerHighlights(playerId);
 
   return (
     <div className="p-6 space-y-4">
