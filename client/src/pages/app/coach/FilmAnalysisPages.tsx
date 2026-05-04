@@ -29,7 +29,7 @@ import type {
   TimelineEvent,
   PlayerHighlight,
   TeamGameStats,
-} from "@shared/film-analysis/types";
+} from "@shared/film-analysis/mock";
 
 /* ---------- helpers ---------- */
 
