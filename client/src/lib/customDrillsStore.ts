@@ -59,6 +59,42 @@ type CustomDrillsState = {
 let _seq = 0;
 const newId = () => `drl_custom_${Date.now().toString(36)}_${(_seq++).toString(36)}`;
 
+function asString(value: unknown, fallback = ""): string {
+  return typeof value === "string" ? value : fallback;
+}
+function asNumber(value: unknown, fallback: number): number {
+  return typeof value === "number" && Number.isFinite(value) ? value : fallback;
+}
+function asStringArray(value: unknown): string[] {
+  return Array.isArray(value) ? value.filter((v): v is string => typeof v === "string") : [];
+}
+function sanitizeDrill(input: Partial<Drill>): Drill {
+  const now = new Date().toISOString();
+  return {
+    id: asString(input.id, newId()),
+    categoryId: asString(input.categoryId, "cat_warmup"),
+    title: asString(input.title, "Untitled Drill"),
+    description: asString(input.description, ""),
+    defaultDurationMin: asNumber(input.defaultDurationMin, 10),
+    intensity: (asString(input.intensity, "MEDIUM") as DrillIntensity),
+    surface: (asString(input.surface, "HALF_COURT") as DrillSurface),
+    minPlayers: asNumber(input.minPlayers, 1),
+    maxPlayers: asNumber(input.maxPlayers, 12),
+    equipment: asStringArray(input.equipment),
+    coachesNeeded: asNumber(input.coachesNeeded, 1),
+    videoUrl: input.videoUrl ? asString(input.videoUrl) : undefined,
+    diagramUrl: input.diagramUrl ? asString(input.diagramUrl) : undefined,
+    coachingPoints: asStringArray(input.coachingPoints),
+    tags: asStringArray(input.tags),
+    ownerCoachId: input.ownerCoachId ? asString(input.ownerCoachId) : undefined,
+    orgId: input.orgId ? asString(input.orgId) : undefined,
+    isCustom: true,
+    visibility: (asString(input.visibility, "private") as DrillVisibility),
+    createdAt: asString(input.createdAt, now),
+    updatedAt: asString(input.updatedAt, now),
+  };
+}
+
 export const useCustomDrillsStore = create<CustomDrillsState>()(
   persist(
     (set, get) => ({
@@ -66,7 +102,7 @@ export const useCustomDrillsStore = create<CustomDrillsState>()(
 
       create: (input, ownerCoachId, orgId) => {
         const now = new Date().toISOString();
-        const drill: Drill = {
+        const drill: Drill = sanitizeDrill({
           id: newId(),
           categoryId: input.categoryId,
           title: input.title,
@@ -88,7 +124,7 @@ export const useCustomDrillsStore = create<CustomDrillsState>()(
           visibility: input.visibility,
           createdAt: now,
           updatedAt: now,
-        };
+        });
         set({ drills: [drill, ...get().drills] });
         return drill;
       },
@@ -97,7 +133,7 @@ export const useCustomDrillsStore = create<CustomDrillsState>()(
         set({
           drills: get().drills.map((d) =>
             d.id === drillId
-              ? { ...d, ...patch, updatedAt: new Date().toISOString() }
+              ? sanitizeDrill({ ...d, ...patch, updatedAt: new Date().toISOString() })
               : d,
           ),
         });
@@ -107,17 +143,29 @@ export const useCustomDrillsStore = create<CustomDrillsState>()(
         set({ drills: get().drills.filter((d) => d.id !== drillId) });
       },
 
-      byId: (drillId) => get().drills.find((d) => d.id === drillId),
+      byId: (drillId) => {
+        const found = get().drills.find((d) => d.id === drillId);
+        return found ? sanitizeDrill(found) : undefined;
+      },
 
       forCoach: (coachId, orgId) =>
-        get().drills.filter((d) => {
+        get().drills.map(sanitizeDrill).filter((d) => {
           if (d.visibility === "public") return true;
           if (d.visibility === "org" && orgId && d.orgId === orgId) return true;
           if (d.ownerCoachId === coachId) return true;
           return false;
         }),
     }),
-    { name: "hoopsos.customDrills.v1" },
+    {
+      name: "hoopsos.customDrills.v1",
+      merge: (persistedState, currentState) => {
+        const persisted = persistedState as Partial<CustomDrillsState> | undefined;
+        const drills = Array.isArray(persisted?.drills)
+          ? persisted!.drills.map((d) => sanitizeDrill(d))
+          : [];
+        return { ...currentState, ...persisted, drills };
+      },
+    },
   ),
 );
 

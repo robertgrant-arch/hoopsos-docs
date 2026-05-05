@@ -38,6 +38,8 @@ import {
 
 // Practice Plan Builder (full v2)
 import CoachPracticePlanBuilder from "@/pages/app/coach/PracticePlanBuilder";
+import DrillLibraryPage from "@/pages/app/coach/DrillLibraryPage";
+import CoachWodPlanner from "@/pages/app/coach/CoachWodPlanner";
 import CoachPlaybookStudio from "@/pages/app/coach/PlaybookStudio";
 import CoachPlaybookStudioV3 from "@/pages/app/coach/PlaybookStudioV3";
 import { FilmRoomPage, FilmUploadPage, FilmSessionPage, PlayerHighlightsPage } from "@/pages/app/coach/FilmAnalysisPages";
@@ -123,6 +125,8 @@ function Router() {
       <Route path="/app/coach/queue/:id" component={guard(CoachQueueDetail)} />
       <Route path="/app/coach/assignments" component={guard(CoachAssignments)} />
       <Route path="/app/coach/practice-plans" component={guard(CoachPracticePlanBuilder)} />
+      <Route path="/app/coach/drills" component={guard(DrillLibraryPage)} />
+      <Route path="/app/coach/wods" component={guard(CoachWodPlanner)} />
       <Route path="/app/coach/practice-plans/legacy" component={guard(CoachPracticePlans)} />
       <Route path="/app/coach/bookings" component={guard(CoachBookings)} />
       <Route path="/app/coach/messages" component={guard(CoachDashboard)} />

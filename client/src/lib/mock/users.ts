@@ -42,9 +42,9 @@ export const demoUsers: DemoUser[] = [
   {
     id: "u_coach_1",
     role: "COACH",
-    name: "Marcus Reed",
-    handle: "@coach_reed",
-    avatar: "MR",
+    name: "Bob Grant",
+    handle: "@coach_grant",
+    avatar: "BG",
     title: "Head Coach · Texas Elite Varsity",
     orgId: "org_texas_elite",
     teamId: "team_varsity",

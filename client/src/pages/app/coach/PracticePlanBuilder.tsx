@@ -341,15 +341,18 @@ function DrillLibraryDrawer({
 
   const filtered = useMemo(() => {
     return sourceList.filter((d) => {
+      const title = typeof d.title === "string" ? d.title : "";
+      const description = typeof d.description === "string" ? d.description : "";
+      const tags = Array.isArray(d.tags) ? d.tags : [];
       if (activeCat !== "ALL" && d.categoryId !== activeCat) return false;
       if (activeIntensity !== "ALL" && d.intensity !== activeIntensity) return false;
       if (activeSurface !== "ALL" && d.surface !== activeSurface) return false;
       if (search.trim()) {
         const q = search.toLowerCase();
         if (
-          !d.title.toLowerCase().includes(q) &&
-          !d.description.toLowerCase().includes(q) &&
-          !d.tags.some((t) => t.toLowerCase().includes(q))
+          !title.toLowerCase().includes(q) &&
+          !description.toLowerCase().includes(q) &&
+          !tags.some((t) => t.toLowerCase().includes(q))
         ) {
           return false;
         }
