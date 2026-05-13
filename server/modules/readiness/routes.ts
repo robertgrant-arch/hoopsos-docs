@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { requireOrg } from "../../auth/tenant";
 import { createRepository } from "@shared/db";
+import { inngest } from "../../inngest/client";
 
 export function registerReadinessRoutes(router: Router) {
   router.post("/", async (req, res) => {
@@ -24,6 +25,29 @@ export function registerReadinessRoutes(router: Router) {
         note,
         flagged,
       });
+
+      if (flagged) {
+        try {
+          await inngest.send({
+            name: "readiness/flagged",
+            data: {
+              checkinId: record.id,
+              orgId: ctx.orgId,
+              playerId: ctx.userId,
+              playerName: "Unknown",
+              coachUserId: ctx.userId, // This is the player's user — TODO: look up coach
+              fatigue,
+              sleep,
+              soreness,
+              note,
+            },
+          });
+        } catch (err) {
+          // Don't fail the request if Inngest isn't configured
+          console.warn("Inngest not available:", err);
+        }
+      }
+
       res.status(201).json(record);
     } catch (e: any) {
       res.status(e.status ?? 500).json({ error: e.message });

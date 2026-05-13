@@ -217,8 +217,8 @@ export function FilmPlaylistPage() {
     <AppShell>
       <PageHeader
         title={PLAYLIST.title}
-        description={PLAYLIST.description}
-        back={{ href: "/app/coach/film", label: "Film Room" }}
+        subtitle={PLAYLIST.description}
+        eyebrow="← Film Room"
       />
 
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 p-6">

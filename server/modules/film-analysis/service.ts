@@ -115,6 +115,11 @@ export interface FilmAnalysisService {
     userId: string,
     body: CreateExportRequest & { sessionId?: string },
   ): Promise<ExportRequest>;
+
+  handleMuxWebhook(event: {
+    type: string;
+    data: Record<string, unknown>;
+  }): Promise<void>;
 }
 
 export { DbFilmAnalysisService } from "./db-service";

@@ -220,7 +220,7 @@ export function TeamDashboard() {
   const visibleAlerts = ALERTS.filter((a) => !dismissedAlerts.has(a.id));
 
   function dismissAlert(id: string) {
-    setDismissedAlerts((prev) => new Set([...prev, id]));
+    setDismissedAlerts((prev) => new Set(Array.from(prev).concat(id)));
   }
 
   return (

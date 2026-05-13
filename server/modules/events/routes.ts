@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { requireOrg } from "../../auth/tenant";
 import { createRepository } from "@shared/db";
+import { inngest } from "../../inngest/client";
 
 export function registerEventRoutes(router: Router) {
   router.get("/", async (req, res) => {
@@ -106,6 +107,35 @@ export function registerEventRoutes(router: Router) {
           recordedByUserId: ctx.userId,
         })),
       );
+
+      // After saving attendance...
+      const absentPlayers = records
+        .filter((r: any) => r.status === "absent")
+        .map((r: any) => ({
+          playerId: r.playerId,
+          playerName: r.playerName ?? r.playerId,
+          parentPhone: r.parentPhone,
+          parentEmail: r.parentEmail,
+        }));
+
+      if (absentPlayers.length > 0) {
+        try {
+          await inngest.send({
+            name: "attendance/submitted",
+            data: {
+              eventId: req.params.id,
+              orgId: ctx.orgId,
+              eventTitle: "Practice", // TODO: load event title from DB
+              eventDate: new Date().toLocaleDateString(),
+              absentPlayers,
+              coachUserId: ctx.userId,
+            },
+          });
+        } catch (err) {
+          console.warn("Inngest event failed:", err);
+        }
+      }
+
       res.status(201).json(saved);
     } catch (e: any) {
       res.status(e.status ?? 500).json({ error: e.message });

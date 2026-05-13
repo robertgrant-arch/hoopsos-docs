@@ -150,7 +150,7 @@ export function CoachInboxPage() {
   const [dismissed, setDismissed] = useState<Set<string>>(new Set());
 
   const dismiss = (id: string) =>
-    setDismissed((prev) => new Set([...prev, id]));
+    setDismissed((prev) => new Set(Array.from(prev).concat(id)));
 
   const markAllRead = () =>
     setDismissed(new Set(ITEMS.map((i) => i.id)));

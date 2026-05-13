@@ -460,7 +460,7 @@ export function createRepository(ctx: RepoContext) {
         }
         if (opts.status) {
           conditions.push(
-            eq(assignments.status, opts.status as typeof assignments.$inferInsert["status"]),
+            eq(assignments.status, opts.status as "draft" | "submitted" | "overdue" | "in_progress" | "assigned" | "reviewed"),
           );
         }
         return db

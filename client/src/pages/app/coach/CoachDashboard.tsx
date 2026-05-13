@@ -341,7 +341,7 @@ export function CoachDashboard() {
                             Modify WOD
                           </Button>
                           <button
-                            onClick={() => setReadinessDismissed((s) => new Set([...s, r.id]))}
+                            onClick={() => setReadinessDismissed((s) => new Set(Array.from(s).concat(r.id)))}
                             className="text-muted-foreground hover:text-foreground transition"
                             aria-label="Dismiss"
                           >

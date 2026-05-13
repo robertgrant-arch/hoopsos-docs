@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link, useRoute } from "wouter";
+import { MuxVideoPlayer } from "@/components/film/MuxVideoPlayer";
 import {
   Play,
   Pause,
@@ -41,6 +42,9 @@ const SESSION = {
   opponent: "Toms River North",
   result: "W 58–51",
   status: "analyzed" as const,
+  // When a real Mux asset is ready this will be populated from the API.
+  // Set to a non-null string to enable the MuxVideoPlayer in demo mode.
+  muxPlaybackId: null as string | null,
 };
 
 const CLIPS = [
@@ -178,6 +182,7 @@ export function FilmSessionDetail() {
 
   // Video player state
   const [isPlaying, setIsPlaying] = useState(false);
+  const [currentTimeSec, setCurrentTimeSec] = useState(0);
 
   // Right panel tab
   const [activeTab, setActiveTab] = useState<"clips" | "players" | "ai">("clips");
@@ -282,27 +287,38 @@ export function FilmSessionDetail() {
 
               {/* Video area */}
               <div className="relative w-full" style={{ aspectRatio: "16/9" }}>
-                <div className="absolute inset-0 bg-[oklch(0.05_0.005_260)] flex flex-col items-center justify-center gap-3">
-                  {/* Simulated dark scanline overlay */}
-                  <div className="absolute inset-0 opacity-10"
-                    style={{
-                      backgroundImage: "repeating-linear-gradient(0deg, transparent, transparent 2px, oklch(1 0 0 / 0.3) 2px, oklch(1 0 0 / 0.3) 3px)",
-                    }}
+                {SESSION.muxPlaybackId ? (
+                  /* Real Mux player — shown when a playback ID is available */
+                  <MuxVideoPlayer
+                    playbackId={SESSION.muxPlaybackId}
+                    startTime={currentTimeSec}
+                    onTimeUpdate={(t) => setCurrentTimeSec(Math.floor(t))}
+                    className="absolute inset-0 w-full h-full"
                   />
-                  <div
-                    className="relative w-16 h-16 rounded-full border-2 border-white/20 flex items-center justify-center cursor-pointer hover:border-white/40 transition-colors"
-                    onClick={() => setIsPlaying((p) => !p)}
-                  >
-                    {isPlaying ? (
-                      <Pause className="w-7 h-7 text-white/70" />
-                    ) : (
-                      <Play className="w-7 h-7 text-white/70 translate-x-0.5" />
-                    )}
+                ) : (
+                  /* Mock player — fallback for demo mode (no Mux asset yet) */
+                  <div className="absolute inset-0 bg-[oklch(0.05_0.005_260)] flex flex-col items-center justify-center gap-3">
+                    {/* Simulated dark scanline overlay */}
+                    <div className="absolute inset-0 opacity-10"
+                      style={{
+                        backgroundImage: "repeating-linear-gradient(0deg, transparent, transparent 2px, oklch(1 0 0 / 0.3) 2px, oklch(1 0 0 / 0.3) 3px)",
+                      }}
+                    />
+                    <div
+                      className="relative w-16 h-16 rounded-full border-2 border-white/20 flex items-center justify-center cursor-pointer hover:border-white/40 transition-colors"
+                      onClick={() => setIsPlaying((p) => !p)}
+                    >
+                      {isPlaying ? (
+                        <Pause className="w-7 h-7 text-white/70" />
+                      ) : (
+                        <Play className="w-7 h-7 text-white/70 translate-x-0.5" />
+                      )}
+                    </div>
+                    <p className="relative text-white/30 text-sm tracking-wide select-none">
+                      Barnegat vs. Toms River · Apr 28
+                    </p>
                   </div>
-                  <p className="relative text-white/30 text-sm tracking-wide select-none">
-                    Barnegat vs. Toms River · Apr 28
-                  </p>
-                </div>
+                )}
               </div>
 
               {/* Controls */}
@@ -867,7 +883,7 @@ export function FilmSessionDetail() {
                                   variant="ghost"
                                   className="h-7 text-[11px] text-muted-foreground"
                                   onClick={() => {
-                                    setDismissedSuggestions((prev) => new Set([...prev, suggestion.id]));
+                                    setDismissedSuggestions((prev) => new Set(Array.from(prev).concat(suggestion.id)));
                                     toast("Suggestion dismissed");
                                   }}
                                 >

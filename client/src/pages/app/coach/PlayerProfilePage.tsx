@@ -718,7 +718,7 @@ function AIRecommendationCard({
   onAccept,
   onOverride,
 }: {
-  rec: (typeof AI_RECS)[0];
+  rec: Omit<(typeof AI_RECS)[0], "status"> & { status: "pending" | "accepted" | "overridden" };
   onAccept: (id: string) => void;
   onOverride: (id: string, reason: string) => void;
 }) {

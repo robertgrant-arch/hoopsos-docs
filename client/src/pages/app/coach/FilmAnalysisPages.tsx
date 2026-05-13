@@ -17,6 +17,7 @@
 
 import * as React from "react";
 import { Link, useLocation, useRoute } from "wouter";
+import * as UpChunk from "@mux/upchunk";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -124,24 +125,124 @@ function SessionCard({ session }: { session: FilmSession }) {
 
 /* ---------- FilmUploadPage ---------- */
 
+type UploadPhase = "idle" | "uploading" | "processing" | "done";
+
 export function FilmUploadPage() {
-  const { createSession } = useFilmAnalysis();
   const [, setLocation] = useLocation();
+
   const [title, setTitle] = React.useState("");
   const [opponent, setOpponent] = React.useState("");
-  const [submitting, setSubmitting] = React.useState(false);
+  const [file, setFile] = React.useState<File | null>(null);
+  const [uploadProgress, setUploadProgress] = React.useState(0);
+  const [phase, setPhase] = React.useState<UploadPhase>("idle");
+  const [sessionId, setSessionId] = React.useState<string | null>(null);
+  const [errorMsg, setErrorMsg] = React.useState<string | null>(null);
+
+  // Poll for session status once upload is done and Mux is processing.
+  React.useEffect(() => {
+    if (phase !== "processing" || !sessionId) return;
+
+    let stopped = false;
+    const interval = setInterval(async () => {
+      try {
+        const res = await fetch(`/api/film-analysis/sessions/${sessionId}`, {
+          credentials: "include",
+        });
+        if (!res.ok) return;
+        const data = (await res.json()) as { status?: string };
+        if (data.status === "ready" && !stopped) {
+          stopped = true;
+          clearInterval(interval);
+          setPhase("done");
+          setLocation(`/app/coach/film/sessions/${sessionId}`);
+        }
+      } catch {
+        // ignore transient fetch errors during polling
+      }
+    }, 3000);
+
+    return () => {
+      stopped = true;
+      clearInterval(interval);
+    };
+  }, [phase, sessionId, setLocation]);
+
+  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const picked = e.target.files?.[0] ?? null;
+    setFile(picked);
+    setErrorMsg(null);
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setSubmitting(true);
-    const session = await createSession({
-      title,
-      opponent,
-      gameDate: new Date().toISOString(),
-    });
-    setSubmitting(false);
-    setLocation(`/app/coach/film/sessions/${session.id}`);
+    if (!file) {
+      setErrorMsg("Please select a video file.");
+      return;
+    }
+
+    setErrorMsg(null);
+    setPhase("uploading");
+    setUploadProgress(0);
+
+    try {
+      // 1. Request a Mux direct-upload URL from our server.
+      const initiateRes = await fetch("/api/film-analysis/uploads/initiate", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          filename: file.name,
+          mimeType: file.type || "video/mp4",
+          sizeBytes: file.size,
+          title,
+          opponent,
+        }),
+      });
+
+      if (!initiateRes.ok) {
+        const err = (await initiateRes.json().catch(() => ({}))) as {
+          error?: string;
+        };
+        throw new Error(err.error ?? `Server error ${initiateRes.status}`);
+      }
+
+      const { assetId, uploadUrl } = (await initiateRes.json()) as {
+        assetId: string;
+        uploadUrl: string;
+        expiresAt: string;
+      };
+
+      setSessionId(assetId); // assetId doubles as the handle we'll poll with
+
+      // 2. Upload the file directly to Mux using UpChunk (chunked, resumable).
+      await new Promise<void>((resolve, reject) => {
+        const upload = UpChunk.createUpload({
+          endpoint: uploadUrl,
+          file,
+          chunkSize: 5120, // 5 MB chunks
+        });
+
+        upload.on("progress", (evt: { detail: number }) => {
+          setUploadProgress(Math.round(evt.detail));
+        });
+
+        upload.on("success", () => resolve());
+        upload.on("error", (evt: { detail: string }) =>
+          reject(new Error(evt.detail)),
+        );
+      });
+
+      // 3. Upload done — Mux is now transcoding. Poll until ready.
+      setPhase("processing");
+    } catch (err) {
+      setPhase("idle");
+      setErrorMsg(
+        err instanceof Error ? err.message : "Upload failed. Please try again.",
+      );
+    }
   }
+
+  const isSubmitting = phase === "uploading" || phase === "processing";
 
   return (
     <div className="p-6 max-w-xl mx-auto">
@@ -157,6 +258,7 @@ export function FilmUploadPage() {
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder="vs. Eagles - 11/14"
                 required
+                disabled={isSubmitting}
               />
             </div>
             <div>
@@ -166,16 +268,80 @@ export function FilmUploadPage() {
                 value={opponent}
                 onChange={(e) => setOpponent(e.target.value)}
                 placeholder="Eagles"
+                disabled={isSubmitting}
               />
             </div>
-            <div className="rounded-md border-2 border-dashed p-8 text-center text-sm text-muted-foreground">
-              Drag & drop video file here
-              <div className="text-xs mt-1">
-                (Conceptual — backend ingest is mocked in this build)
-              </div>
+
+            {/* File picker */}
+            <div>
+              <label className="text-sm font-medium">Video File</label>
+              <label
+                className={`mt-1 flex flex-col items-center justify-center rounded-md border-2 border-dashed p-8 text-center cursor-pointer transition-colors ${
+                  isSubmitting
+                    ? "opacity-50 cursor-not-allowed"
+                    : "hover:border-primary/60"
+                }`}
+              >
+                <input
+                  type="file"
+                  accept="video/*"
+                  className="sr-only"
+                  onChange={handleFileChange}
+                  disabled={isSubmitting}
+                />
+                {file ? (
+                  <span className="text-sm font-medium truncate max-w-full">
+                    {file.name}
+                  </span>
+                ) : (
+                  <>
+                    <span className="text-sm text-muted-foreground">
+                      Click to select or drag &amp; drop
+                    </span>
+                    <span className="text-xs text-muted-foreground mt-1">
+                      MP4, MOV, MKV — up to 10 GB
+                    </span>
+                  </>
+                )}
+              </label>
             </div>
-            <Button type="submit" disabled={submitting} className="w-full">
-              {submitting ? "Creating session…" : "Start Analysis"}
+
+            {/* Upload progress */}
+            {phase === "uploading" && (
+              <div className="space-y-1">
+                <div className="flex justify-between text-xs text-muted-foreground">
+                  <span>Uploading…</span>
+                  <span>{uploadProgress}%</span>
+                </div>
+                <Progress value={uploadProgress} />
+              </div>
+            )}
+
+            {/* Processing state */}
+            {phase === "processing" && (
+              <div className="rounded-md bg-blue-50 dark:bg-blue-950/30 px-4 py-3 text-sm text-blue-700 dark:text-blue-300">
+                Processing video… This may take a few minutes. You'll be
+                redirected automatically when ready.
+              </div>
+            )}
+
+            {/* Error */}
+            {errorMsg && (
+              <div className="rounded-md bg-red-50 dark:bg-red-950/30 px-4 py-3 text-sm text-red-700 dark:text-red-300">
+                {errorMsg}
+              </div>
+            )}
+
+            <Button
+              type="submit"
+              disabled={isSubmitting || !file}
+              className="w-full"
+            >
+              {phase === "uploading"
+                ? `Uploading… ${uploadProgress}%`
+                : phase === "processing"
+                  ? "Processing video…"
+                  : "Start Upload"}
             </Button>
           </form>
         </CardContent>

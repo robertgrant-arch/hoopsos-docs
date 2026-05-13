@@ -3,6 +3,7 @@ import { createServer } from "http";
 import path from "path";
 import { fileURLToPath } from "url";
 import { clerkMiddleware } from "@clerk/express";
+import { serve } from "inngest/express";
 import { registerFilmAnalysisRoutes } from "./modules/film-analysis/routes";
 import { DbFilmAnalysisService } from "./modules/film-analysis/service";
 import { registerMeRoute } from "./routes/me";
@@ -11,6 +12,10 @@ import { registerAssignmentRoutes } from "./modules/assignments/routes";
 import { registerPracticePlanRoutes } from "./modules/practice-plans/routes";
 import { registerEventRoutes } from "./modules/events/routes";
 import { registerReadinessRoutes } from "./modules/readiness/routes";
+import { registerMessagingRoutes } from "./modules/messaging/routes";
+import { registerWebhookRoutes } from "./routes/webhooks";
+import { inngest } from "./inngest/client";
+import { analyzeFilmFn, readinessAlertFn, attendanceNotifyFn } from "./inngest";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -18,6 +23,13 @@ const __dirname = path.dirname(__filename);
 async function startServer() {
   const app = express();
   const server = createServer(app);
+
+  // Webhook routes MUST be registered before express.json() so that
+  // express.raw() inside registerWebhookRoutes can capture the raw body
+  // for Mux HMAC signature verification.
+  const webhookRouter = express.Router();
+  registerWebhookRoutes(webhookRouter);
+  app.use("/webhooks", webhookRouter);
 
   // Parse JSON bodies for all API routes.
   app.use(express.json());
@@ -60,6 +72,20 @@ async function startServer() {
   const readinessRouter = express.Router();
   registerReadinessRoutes(readinessRouter);
   app.use("/api/readiness", readinessRouter);
+
+  // Messaging (threads + SMS)
+  const messagingRouter = express.Router();
+  registerMessagingRoutes(messagingRouter);
+  app.use("/api/messages", messagingRouter);
+
+  // Inngest serve handler — must be before static files so the catch-all doesn't swallow it
+  app.use(
+    "/api/inngest",
+    serve({
+      client: inngest,
+      functions: [analyzeFilmFn, readinessAlertFn, attendanceNotifyFn],
+    })
+  );
 
   // Serve static files from dist/public in production
   const staticPath =
