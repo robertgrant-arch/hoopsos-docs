@@ -49,6 +49,7 @@ import PlayerProfilePage from "@/pages/app/coach/PlayerProfilePage";
 import PlayerDevelopmentView from "@/pages/app/player/PlayerDevelopmentView";
 import FilmSessionDetail from "@/pages/app/coach/FilmSessionDetail";
 import FilmPlaylistPage from "@/pages/app/coach/FilmPlaylistPage";
+import TeamSchedulePage from "@/pages/app/team/TeamSchedulePage";
 import { PlayStudyList, PlayStudyPage } from "@/pages/app/player/PlayStudy";
 
 import PlayQuizRunner from "@/pages/app/player/PlayQuiz";
@@ -144,6 +145,7 @@ function Router() {
 
       {/* Team */}
       <Route path="/app/team" component={TeamDashboard} />
+      <Route path="/app/team/schedule" component={TeamSchedulePage} />
       <Route path="/app/team/invite" component={TeamInvite} />
       <Route path="/app/team/billing" component={TeamBilling} />
 

@@ -68,6 +68,7 @@ const NAV: Record<Role, NavItem[]> = {
   ],
   TEAM_ADMIN: [
     { href: "/app/team", label: "Org Dashboard", icon: <LayoutDashboard className="w-4 h-4" /> },
+    { href: "/app/team/schedule", label: "Schedule", icon: <Calendar className="w-4 h-4" /> },
     { href: "/app/team/teams", label: "Teams", icon: <Users className="w-4 h-4" /> },
     { href: "/app/team/roster", label: "All Athletes", icon: <UserIcon className="w-4 h-4" /> },
     { href: "/app/team/invite", label: "Invite", icon: <Users className="w-4 h-4" /> },

@@ -720,68 +720,7 @@ export function CoachBookings() {
    TEAM / ORG ADMIN
    ========================================================================== */
 
-export function TeamDashboard() {
-  const discountedCount = roster.filter((a) => a.hasDiscount).length;
-  return (
-    <AppShell>
-      <div className="px-6 lg:px-10 py-8 max-w-[1400px] mx-auto">
-        <PageHeader
-          eyebrow="Organization · Texas Elite Basketball"
-          title="Program Command Center"
-          subtitle="2 teams · 12 athletes · 3 coaches · Team Pro active"
-          actions={
-            <Link href="/app/team/invite">
-              <a className="inline-flex items-center gap-2 h-9 px-4 rounded-md bg-primary text-primary-foreground font-semibold text-[12.5px] uppercase tracking-[0.08em] hover:brightness-110 transition">
-                <Mail className="w-4 h-4" /> Invite Members
-              </a>
-            </Link>
-          }
-        />
-        <div className="grid md:grid-cols-4 gap-3 mb-10">
-          <StatCard label="Seats" value="25 / 25" trend="Team Pro plan" accent="primary" icon={<Users className="w-4 h-4" />} />
-          <StatCard label="Athletes" value={roster.length} trend="Across 2 teams" icon={<UserCheck className="w-4 h-4" />} />
-          <StatCard label="50% Discounts Active" value={discountedCount} trend="Auto-granted" accent="success" icon={<Sparkles className="w-4 h-4" />} />
-          <StatCard label="MRR Covered" value="$247.50" trend="Athletes save $120/mo" accent="indigo" icon={<DollarSign className="w-4 h-4" />} />
-        </div>
-        <div className="grid lg:grid-cols-2 gap-6">
-          <div className="rounded-xl border border-border bg-card">
-            <div className="px-5 py-4 border-b border-border">
-              <h3 className="display text-[17px]">Teams</h3>
-            </div>
-            <div className="divide-y divide-border">
-              {org.teams.map((t) => (
-                <div key={t.id} className="px-5 py-4 flex items-center justify-between">
-                  <div>
-                    <div className="font-medium text-[14px]">{t.name}</div>
-                    <div className="text-[11.5px] text-muted-foreground mt-0.5">
-                      {t.seasonLabel} · Head coach Marcus Reed
-                    </div>
-                  </div>
-                  <Link href="/app/coach/roster">
-                    <a className="text-[12px] text-primary hover:underline">View →</a>
-                  </Link>
-                </div>
-              ))}
-            </div>
-          </div>
-          <div className="rounded-xl border border-border bg-gradient-to-br from-[oklch(0.18_0.03_150)] to-card p-6">
-            <div className="text-[11px] uppercase tracking-[0.14em] font-mono text-[oklch(0.75_0.18_150)] mb-2">
-              Entitlement Engine
-            </div>
-            <h3 className="display text-2xl mb-3">50% off, automatically.</h3>
-            <p className="text-[13.5px] text-muted-foreground leading-relaxed mb-4">
-              Every athlete on your active roster gets 50% off Player Core — the moment they
-              accept your invite. Revoked automatically if they leave the roster or your plan cancels.
-            </p>
-            <div className="text-[12px] text-[oklch(0.75_0.18_150)] font-mono">
-              12 athletes saving $120/month each
-            </div>
-          </div>
-        </div>
-      </div>
-    </AppShell>
-  );
-}
+export { TeamDashboard } from "./team/TeamDashboard";
 
 export function TeamInvite() {
   return (
