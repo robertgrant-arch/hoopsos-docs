@@ -70,7 +70,6 @@ import {
   FilmRoomHome,
   FilmClipDetail,
   FilmInbox,
-  PlaybookStudio,
   LiveHome,
   LiveEventDetail,
   LearnHome,
@@ -130,7 +129,7 @@ function Router() {
       <Route path="/app/coach/practice-plans/legacy" component={guard(CoachPracticePlans)} />
       <Route path="/app/coach/bookings" component={guard(CoachBookings)} />
       <Route path="/app/coach/messages" component={guard(CoachDashboard)} />
-      <Route path="/app/coach/playbook" component={guard(CoachPlaybookStudio)} />
+      <Route path="/app/coach/playbook" component={guard(CoachPlaybookStudioV3)} />
       <Route path="/app/coach/playbook-v3" component={guard(CoachPlaybookStudioV3)} />
 
       {/* Team */}
@@ -153,9 +152,9 @@ function Router() {
         <Route path="/app/player/highlights" component={PlayerHighlightsPage} />
 
       {/* Playbook */}
-      <Route path="/app/playbook" component={CoachPlaybookStudio} />
+      <Route path="/app/playbook" component={CoachPlaybookStudioV3} />
       <Route path="/app/playbook-v3" component={CoachPlaybookStudioV3} />
-      <Route path="/app/playbook/legacy" component={PlaybookStudio} />
+      <Route path="/app/playbook/legacy" component={CoachPlaybookStudio} />
       <Route path="/app/player/quizzes/:id" component={PlayQuizRunner} />
       <Route path="/app/player/quizzes" component={PlayQuizRunner} />
 
