@@ -2,6 +2,9 @@ import express from "express";
 import { createServer } from "http";
 import path from "path";
 import { fileURLToPath } from "url";
+import { clerkMiddleware } from "@clerk/express";
+import { registerFilmAnalysisRoutes } from "./modules/film-analysis/routes";
+import { DbFilmAnalysisService } from "./modules/film-analysis/service";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -9,6 +12,18 @@ const __dirname = path.dirname(__filename);
 async function startServer() {
   const app = express();
   const server = createServer(app);
+
+  // Parse JSON bodies for all API routes.
+  app.use(express.json());
+
+  // Clerk session middleware — populates getAuth(req) for requireOrg().
+  // Must run before any route that calls requireOrg().
+  app.use(clerkMiddleware());
+
+  // Film analysis API — mounted before static files so the catch-all doesn't swallow it.
+  const filmRouter = express.Router();
+  registerFilmAnalysisRoutes(filmRouter, new DbFilmAnalysisService());
+  app.use("/api/film-analysis", filmRouter);
 
   // Serve static files from dist/public in production
   const staticPath =
