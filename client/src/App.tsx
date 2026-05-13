@@ -47,6 +47,8 @@ import MessagesPage from "@/pages/app/coach/MessagesPage";
 import CoachInboxPage from "@/pages/app/coach/CoachInboxPage";
 import PlayerProfilePage from "@/pages/app/coach/PlayerProfilePage";
 import PlayerDevelopmentView from "@/pages/app/player/PlayerDevelopmentView";
+import FilmSessionDetail from "@/pages/app/coach/FilmSessionDetail";
+import FilmPlaylistPage from "@/pages/app/coach/FilmPlaylistPage";
 import { PlayStudyList, PlayStudyPage } from "@/pages/app/player/PlayStudy";
 
 import PlayQuizRunner from "@/pages/app/player/PlayQuiz";
@@ -155,7 +157,8 @@ function Router() {
       <Route path="/app/film/inbox" component={FilmInbox} />
               <Route path="/app/coach/film" component={guard(FilmRoomPage)} />
         <Route path="/app/coach/film/upload" component={guard(FilmUploadPage)} />
-        <Route path="/app/coach/film/sessions/:id" component={guard(FilmSessionPage)} />
+        <Route path="/app/coach/film/sessions/:id" component={guard(FilmSessionDetail)} />
+        <Route path="/app/coach/film/playlists/:id" component={guard(FilmPlaylistPage)} />
         <Route path="/app/player/highlights/:playerId" component={PlayerHighlightsPage} />
         <Route path="/app/player/highlights" component={PlayerHighlightsPage} />
         <Route path="/app/player/plays/:id/study" component={PlayStudyPage} />
