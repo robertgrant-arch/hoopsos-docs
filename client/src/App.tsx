@@ -44,6 +44,7 @@ import CoachPlaybookStudio from "@/pages/app/coach/PlaybookStudio";
 import CoachPlaybookStudioV3 from "@/pages/app/coach/PlaybookStudioV3";
 import { FilmRoomPage, FilmUploadPage, FilmSessionPage, PlayerHighlightsPage } from "@/pages/app/coach/FilmAnalysisPages";
 import MessagesPage from "@/pages/app/coach/MessagesPage";
+import CoachInboxPage from "@/pages/app/coach/CoachInboxPage";
 import { PlayStudyList, PlayStudyPage } from "@/pages/app/player/PlayStudy";
 
 import PlayQuizRunner from "@/pages/app/player/PlayQuiz";
@@ -121,6 +122,7 @@ function Router() {
 
       {/* Coach HQ - auth required */}
       <Route path="/app/coach" component={guard(CoachDashboard)} />
+      <Route path="/app/coach/inbox" component={guard(CoachInboxPage)} />
       <Route path="/app/coach/roster" component={guard(CoachRoster)} />
       <Route path="/app/coach/queue" component={guard(CoachQueue)} />
       <Route path="/app/coach/queue/:id" component={guard(CoachQueueDetail)} />

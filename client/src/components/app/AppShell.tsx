@@ -24,6 +24,7 @@ import {
   LogOut,
   User as UserIcon,
   Heart,
+  Inbox,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { ROLE_META, type Role } from "@/lib/mock/users";
@@ -49,6 +50,7 @@ const NAV: Record<Role, NavItem[]> = {
   ],
   COACH: [
     { href: "/app/coach", label: "Dashboard", icon: <LayoutDashboard className="w-4 h-4" /> },
+    { href: "/app/coach/inbox", label: "Inbox", icon: <Inbox className="w-4 h-4" /> },
     { href: "/app/coach/roster", label: "Roster", icon: <Users className="w-4 h-4" /> },
     { href: "/app/coach/queue", label: "Review Queue", icon: <ListChecks className="w-4 h-4" /> },
     { href: "/app/coach/assignments", label: "Assignments", icon: <ClipboardList className="w-4 h-4" /> },
