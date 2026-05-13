@@ -43,6 +43,8 @@ import CoachWodPlanner from "@/pages/app/coach/CoachWodPlanner";
 import CoachPlaybookStudio from "@/pages/app/coach/PlaybookStudio";
 import CoachPlaybookStudioV3 from "@/pages/app/coach/PlaybookStudioV3";
 import { FilmRoomPage, FilmUploadPage, FilmSessionPage, PlayerHighlightsPage } from "@/pages/app/coach/FilmAnalysisPages";
+import MessagesPage from "@/pages/app/coach/MessagesPage";
+import { PlayStudyList, PlayStudyPage } from "@/pages/app/player/PlayStudy";
 
 import PlayQuizRunner from "@/pages/app/player/PlayQuiz";
 
@@ -128,7 +130,7 @@ function Router() {
       <Route path="/app/coach/wods" component={guard(CoachWodPlanner)} />
       <Route path="/app/coach/practice-plans/legacy" component={guard(CoachPracticePlans)} />
       <Route path="/app/coach/bookings" component={guard(CoachBookings)} />
-      <Route path="/app/coach/messages" component={guard(CoachDashboard)} />
+      <Route path="/app/coach/messages" component={guard(MessagesPage)} />
       <Route path="/app/coach/playbook" component={guard(CoachPlaybookStudioV3)} />
       <Route path="/app/coach/playbook-v3" component={guard(CoachPlaybookStudioV3)} />
 
@@ -150,6 +152,8 @@ function Router() {
         <Route path="/app/coach/film/sessions/:id" component={guard(FilmSessionPage)} />
         <Route path="/app/player/highlights/:playerId" component={PlayerHighlightsPage} />
         <Route path="/app/player/highlights" component={PlayerHighlightsPage} />
+        <Route path="/app/player/plays/:id/study" component={PlayStudyPage} />
+        <Route path="/app/player/plays" component={PlayStudyList} />
 
       {/* Playbook */}
       <Route path="/app/playbook" component={CoachPlaybookStudioV3} />
