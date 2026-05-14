@@ -11,6 +11,7 @@ import { registerEventRoutes } from "./modules/events/routes";
 import { registerReadinessRoutes } from "./modules/readiness/routes";
 import { registerMessagingRoutes } from "./modules/messaging/routes";
 import { registerWearableRoutes } from "./modules/wearables/routes";
+import { registerWodRoutes } from "./modules/wods/routes";
 import { registerWebhookRoutes } from "./routes/webhooks";
 import { inngest } from "./inngest/client";
 import { analyzeFilmFn, readinessAlertFn, attendanceNotifyFn } from "./inngest";
@@ -62,6 +63,10 @@ export function createApp() {
   const wearablesRouter = express.Router();
   registerWearableRoutes(wearablesRouter);
   app.use("/api/wearables", wearablesRouter);
+
+  const wodsRouter = express.Router();
+  registerWodRoutes(wodsRouter);
+  app.use("/api/wods", wodsRouter);
 
   app.use(
     "/api/inngest",
