@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="96" fill="#0b0d12"/>
+  <!-- Basketball arc lines on dark background -->
+  <circle cx="256" cy="256" r="160" fill="none" stroke="#F59E0B" stroke-width="16"/>
+  <line x1="96" y1="256" x2="416" y2="256" stroke="#F59E0B" stroke-width="16"/>
+  <line x1="256" y1="96" x2="256" y2="416" stroke="#F59E0B" stroke-width="16"/>
+  <path d="M 256 96 Q 336 176 336 256 Q 336 336 256 416" fill="none" stroke="#F59E0B" stroke-width="16"/>
+  <path d="M 256 96 Q 176 176 176 256 Q 176 336 256 416" fill="none" stroke="#F59E0B" stroke-width="16"/>
+</svg>

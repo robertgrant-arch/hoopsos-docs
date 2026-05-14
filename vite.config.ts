@@ -5,6 +5,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { defineConfig, type Plugin, type ViteDevServer } from "vite";
 import { vitePluginManusRuntime } from "vite-plugin-manus-runtime";
+import { VitePWA } from "vite-plugin-pwa";
 
 // =============================================================================
 // Manus Debug Collector - Vite Plugin
@@ -203,7 +204,40 @@ function vitePluginStorageProxy(): Plugin {
   };
 }
 
-const plugins = [react(), tailwindcss(), jsxLocPlugin(), vitePluginManusRuntime(), vitePluginManusDebugCollector(), vitePluginStorageProxy()];
+const pwaPlugin = VitePWA({
+  registerType: "autoUpdate",
+  // Include icon assets in the precache manifest
+  includeAssets: ["icons/*.png", "icons/*.svg"],
+  manifest: {
+    name: "HoopsOS",
+    short_name: "HoopsOS",
+    description: "Elite basketball operations platform for coaches and athletes.",
+    theme_color: "#0b0d12",
+    background_color: "#0b0d12",
+    display: "standalone",
+    orientation: "portrait-primary",
+    scope: "/",
+    start_url: "/app/coach",
+    categories: ["sports", "productivity"],
+    icons: [
+      { src: "/icons/icon.svg", sizes: "any", type: "image/svg+xml", purpose: "any maskable" },
+    ],
+  },
+  workbox: {
+    // Cache app shell and static assets
+    globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2}"],
+    // Serve stale content while revalidating — good for an ops app
+    runtimeCaching: [
+      {
+        urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
+        handler: "CacheFirst",
+        options: { cacheName: "google-fonts-cache", expiration: { maxEntries: 10, maxAgeSeconds: 60 * 60 * 24 * 365 } },
+      },
+    ],
+  },
+});
+
+const plugins = [react(), tailwindcss(), jsxLocPlugin(), vitePluginManusRuntime(), vitePluginManusDebugCollector(), vitePluginStorageProxy(), pwaPlugin];
 
 export default defineConfig({
   plugins,

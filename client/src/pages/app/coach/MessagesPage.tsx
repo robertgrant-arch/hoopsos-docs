@@ -5,7 +5,7 @@
  * Supports a pinned team broadcast thread and individual player DMs.
  */
 import { useState } from "react";
-import { Send, Users, Megaphone, SquarePen } from "lucide-react";
+import { Send, Users, Megaphone, SquarePen, ArrowLeft } from "lucide-react";
 import { AppShell, PageHeader } from "@/components/app/AppShell";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -266,14 +266,15 @@ function formatTs(ts: string): string {
 /* -------------------------------------------------------------------------- */
 
 export function MessagesPage() {
-  const [activeThreadId, setActiveThreadId] = useState<string>(
-    INITIAL_THREADS[0].id
-  );
+  const [activeThreadId, setActiveThreadId] = useState<string | null>(null);
   const [threads, setThreads] = useState<Thread[]>(INITIAL_THREADS);
   const [compose, setCompose] = useState("");
   const [composeOpen, setComposeOpen] = useState(false);
 
-  const activeThread = threads.find((t) => t.id === activeThreadId)!;
+  // On mobile, activeThreadId being set means we're in the thread view.
+  // On desktop, we always show both panels; default to first thread.
+  const desktopActiveId = activeThreadId ?? INITIAL_THREADS[0].id;
+  const activeThread = threads.find((t) => t.id === desktopActiveId);
 
   function handleSend() {
     const body = compose.trim();
@@ -292,7 +293,7 @@ export function MessagesPage() {
 
     setThreads((prev) =>
       prev.map((t) =>
-        t.id === activeThreadId
+        t.id === desktopActiveId
           ? { ...t, messages: [...t.messages, newMsg] }
           : t
       )
@@ -309,7 +310,6 @@ export function MessagesPage() {
 
   function handleThreadClick(id: string) {
     setActiveThreadId(id);
-    // Mark thread as read on open
     setThreads((prev) =>
       prev.map((t) => (t.id === id ? { ...t, unread: 0 } : t))
     );
@@ -317,9 +317,11 @@ export function MessagesPage() {
 
   return (
     <AppShell>
-      <div className="flex h-screen flex-col">
-        {/* Page header area */}
-        <div className="px-6 lg:px-10 pt-8 pb-0">
+      {/* Full-height container — subtracts the AppShell mobile top bar (h-14 = 56px) on mobile */}
+      <div className="flex flex-col" style={{ height: "calc(100dvh - 56px)" }}>
+
+        {/* Desktop-only page header */}
+        <div className="hidden lg:block px-6 lg:px-10 pt-8 pb-0 shrink-0">
           <PageHeader
             eyebrow="Coach HQ"
             title="Messages"
@@ -327,17 +329,16 @@ export function MessagesPage() {
           />
         </div>
 
-        {/* Two-column split */}
-        <div
-          className="flex flex-1 overflow-hidden border-t border-border"
-          style={{ minHeight: 0 }}
-        >
+        {/* Split — stacks on mobile (show list OR thread), side-by-side on lg+ */}
+        <div className="flex flex-1 overflow-hidden border-t border-border" style={{ minHeight: 0 }}>
+
           {/* ---------------------------------------------------------------- */}
-          {/* Left: Thread list                                                */}
+          {/* Thread list — full width on mobile when no thread selected       */}
           {/* ---------------------------------------------------------------- */}
           <div
-            className="shrink-0 border-r border-border flex flex-col overflow-y-auto"
-            style={{ width: 320 }}
+            className={`border-r border-border flex flex-col overflow-hidden
+              ${activeThreadId ? "hidden lg:flex" : "flex w-full"}
+              lg:flex lg:w-80 lg:shrink-0`}
           >
             <div className="px-3 py-2.5 border-b border-border flex items-center justify-between gap-2">
               <div className="text-[10px] uppercase tracking-[0.14em] font-mono text-muted-foreground">
@@ -414,36 +415,45 @@ export function MessagesPage() {
           </div>
 
           {/* ---------------------------------------------------------------- */}
-          {/* Right: Active thread                                             */}
+          {/* Right: Active thread — full-width on mobile when thread selected */}
           {/* ---------------------------------------------------------------- */}
-          <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+          <div className={`flex-1 flex-col min-w-0 overflow-hidden
+            ${activeThreadId ? "flex" : "hidden lg:flex"}`}>
             {/* Thread header */}
-            <div className="px-5 py-3.5 border-b border-border flex items-center gap-3 shrink-0">
-              {activeThread.isTeam ? (
+            <div className="px-4 py-3 border-b border-border flex items-center gap-3 shrink-0">
+              {/* Back button — mobile only */}
+              <button
+                onClick={() => setActiveThreadId(null)}
+                className="lg:hidden w-8 h-8 flex items-center justify-center text-muted-foreground hover:text-foreground shrink-0 -ml-1"
+                aria-label="Back to conversations"
+              >
+                <ArrowLeft className="w-5 h-5" />
+              </button>
+              {activeThread?.isTeam ? (
                 <div className="w-9 h-9 rounded-md bg-primary/20 flex items-center justify-center shrink-0">
                   <Megaphone className="w-4 h-4 text-primary" />
                 </div>
               ) : (
                 <div className="w-9 h-9 rounded-md bg-muted flex items-center justify-center shrink-0 text-[11px] font-bold text-muted-foreground">
-                  {activeThread.avatar}
+                  {activeThread?.avatar}
                 </div>
               )}
               <div>
                 <div className="font-semibold text-[14px]">
-                  {activeThread.label}
+                  {activeThread?.label}
                 </div>
                 <div className="text-[11.5px] text-muted-foreground flex items-center gap-1">
-                  {activeThread.isTeam && (
+                  {activeThread?.isTeam && (
                     <Users className="w-3 h-3 inline-block mr-0.5" />
                   )}
-                  {activeThread.subtitle}
+                  {activeThread?.subtitle}
                 </div>
               </div>
             </div>
 
             {/* Messages list */}
             <div className="flex-1 overflow-y-auto px-5 py-4 space-y-3">
-              {activeThread.messages.map((msg) => (
+              {activeThread?.messages?.map((msg) => (
                 <div
                   key={msg.id}
                   className={`flex ${msg.isCoach ? "justify-end" : "justify-start"}`}
@@ -483,9 +493,9 @@ export function MessagesPage() {
                   onChange={(e) => setCompose(e.target.value)}
                   onKeyDown={handleKeyDown}
                   placeholder={
-                    activeThread.isTeam
+                    activeThread?.isTeam
                       ? "Broadcast a message to the whole team…"
-                      : `Message ${activeThread.label}…`
+                      : `Message ${activeThread?.label}…`
                   }
                   className="resize-none text-[13.5px] min-h-[72px] max-h-[160px]"
                   rows={3}

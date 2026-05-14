@@ -2,24 +2,53 @@
 <html lang="en" class="dark">
   <head>
     <meta charset="UTF-8" />
-    <meta
-      name="viewport"
-      content="width=device-width, initial-scale=1.0, maximum-scale=1" />
-    <title>HoopsOS — Architecture & Engineering Documentation</title>
-    <meta
-      name="description"
-      content="Canonical system design specifications for HoopsOS, the unified basketball development OS. Architecture, schema, auth, design system, Coach HQ, AI feedback, film room, marketplace, billing, and admin." />
+
+    <!-- viewport-fit=cover exposes safe-area-inset-* for notch/home-indicator handling -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+
+    <!-- PWA manifest -->
+    <link rel="manifest" href="/manifest.webmanifest" />
+
+    <!-- Status bar / theme color -->
+    <meta name="theme-color" content="#0b0d12" />
+
+    <!-- iOS PWA -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="HoopsOS" />
+    <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+    <meta name="format-detection" content="telephone=no" />
+
+    <title>HoopsOS</title>
+    <meta name="description" content="Elite basketball operations platform for coaches, athletes, and programs." />
+
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
       href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap"
       rel="stylesheet" />
-    <meta name="theme-color" content="#0b0d12" />
+
+    <style>
+      /* CSS custom properties for safe area insets — consumed in Tailwind via arbitrary values */
+      :root {
+        --sat: env(safe-area-inset-top);
+        --sar: env(safe-area-inset-right);
+        --sab: env(safe-area-inset-bottom);
+        --sal: env(safe-area-inset-left);
+      }
+      /* Prevent overscroll bounce on iOS WebView and standalone PWA */
+      html, body {
+        overscroll-behavior: none;
+        -webkit-overflow-scrolling: touch;
+        height: 100%;
+      }
+      #root {
+        height: 100%;
+      }
+    </style>
   </head>
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
-    <!-- Optional analytics script intentionally disabled in local/dev when
-         VITE_ANALYTICS_* vars are not set to avoid malformed URL requests. -->
   </body>
 </html>

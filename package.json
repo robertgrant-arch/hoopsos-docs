@@ -12,7 +12,12 @@
     "format": "prettier --write .",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
-    "db:studio": "drizzle-kit studio"
+    "db:studio": "drizzle-kit studio",
+    "cap:sync": "pnpm build && cap sync",
+    "cap:ios": "cap open ios",
+    "cap:android": "cap open android",
+    "cap:run:ios": "cap run ios",
+    "cap:run:android": "cap run android"
   },
   "dependencies": {
     "@clerk/clerk-react": "^5.21.0",
@@ -88,6 +93,8 @@
     "twilio": "^5.3.5",
     "use-image": "^1.1.4",
     "vaul": "^1.1.2",
+    "vite-plugin-pwa": "^1.3.0",
+    "workbox-window": "^7.4.1",
     "wouter": "^3.3.5",
     "zod": "^4.1.12",
     "zustand": "^5.0.12"
