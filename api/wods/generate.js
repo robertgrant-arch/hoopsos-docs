@@ -1,27 +1,16 @@
-// Standalone WOD generator — no Express/Clerk/Inngest dependencies.
-// Plain JS avoids TypeScript compilation issues on Vercel.
+// POST /api/wods/generate
+// Standalone — no Express/Clerk/Inngest. Direct fetch to OpenAI.
 
 module.exports = async function handler(req, res) {
-  // CORS headers
   res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+  res.setHeader("Content-Type", "application/json");
 
-  if (req.method === "OPTIONS") {
-    return res.status(200).end();
-  }
-
-  if (req.method === "GET") {
-    return res.json({ openai_key_set: !!process.env.OPENAI_API_KEY, ok: true });
-  }
-
-  if (req.method !== "POST") {
-    return res.status(405).json({ error: "Method not allowed" });
-  }
+  if (req.method === "OPTIONS") return res.status(200).end();
+  if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
 
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) {
-    return res.status(500).json({ error: "OPENAI_API_KEY is not set in Vercel environment variables" });
+    return res.status(500).json({ error: "OPENAI_API_KEY is not configured in Vercel environment variables" });
   }
 
   const body = req.body ?? {};
@@ -70,7 +59,7 @@ Return ONLY valid JSON:
 }`;
 
   try {
-    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+    const openaiRes = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -84,18 +73,15 @@ Return ONLY valid JSON:
       }),
     });
 
-    if (!response.ok) {
-      const errText = await response.text();
-      console.error("[wods] OpenAI error", response.status, errText);
-      return res.status(500).json({ error: `OpenAI API error ${response.status}: ${errText.slice(0, 200)}` });
+    if (!openaiRes.ok) {
+      const errText = await openaiRes.text();
+      return res.status(500).json({ error: `OpenAI ${openaiRes.status}: ${errText.slice(0, 300)}` });
     }
 
-    const data = await response.json();
+    const data = await openaiRes.json();
     const text = data.choices?.[0]?.message?.content ?? "{}";
     return res.json(JSON.parse(text));
   } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
-    console.error("[wods]", message);
-    return res.status(500).json({ error: message });
+    return res.status(500).json({ error: err instanceof Error ? err.message : String(err) });
   }
 };
