@@ -81,6 +81,7 @@ import {
   type PracticePlanBlock,
 } from "@/lib/mock/practice";
 import { usePracticePlans } from "@/lib/practicePlanStore";
+import { usePracticePlanSync } from "@/lib/api/hooks/usePracticePlanSync";
 import { useCustomDrillsStore } from "@/lib/customDrillsStore";
 import { CustomDrillEditor } from "@/components/coach/CustomDrillEditor";
 import { useAuth } from "@/lib/auth";
@@ -988,6 +989,10 @@ export function CoachPracticePlanBuilder() {
   const { plans, activePlanId, setActive, createPlan, duplicatePlan, deletePlan, updatePlan, addBlock, updateBlock, removeBlock, reorderBlocks } =
     usePracticePlans();
   const [printOpen, setPrintOpen] = useState(false);
+  const [mobileTab, setMobileTab] = useState<"plans" | "build" | "details">("build");
+
+  // Sync plans to/from server so they appear on all devices
+  usePracticePlanSync();
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }));
 
@@ -1053,8 +1058,26 @@ export function CoachPracticePlanBuilder() {
           }
         />
 
+        {/* Mobile tab switcher — hidden on desktop where all 3 columns are visible */}
+        <div className="lg:hidden flex border border-border rounded-lg overflow-hidden mb-4">
+          {(["plans", "build", "details"] as const).map((tab) => (
+            <button
+              key={tab}
+              onClick={() => setMobileTab(tab)}
+              className={`flex-1 h-10 text-[12px] font-mono uppercase tracking-wider transition ${
+                mobileTab === tab
+                  ? "bg-primary text-primary-foreground"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              {tab === "plans" ? "Plans" : tab === "build" ? "Build" : "Details"}
+            </button>
+          ))}
+        </div>
+
         <div className="grid lg:grid-cols-[260px_1fr_320px] gap-5">
           {/* Left rail: plan list */}
+          <div className={mobileTab !== "plans" ? "hidden lg:block" : ""}>
           <PlanList
             plans={plans}
             activeId={activePlanId}
@@ -1076,9 +1099,10 @@ export function CoachPracticePlanBuilder() {
               toast.success("Plan deleted");
             }}
           />
+          </div>
 
           {/* Center: timeline */}
-          <div className="rounded-xl border border-border bg-card overflow-hidden">
+          <div className={`rounded-xl border border-border bg-card overflow-hidden ${mobileTab !== "build" ? "hidden lg:block" : ""}`}>
             <div className="p-5 border-b border-border bg-gradient-to-b from-card to-background">
               <div className="flex items-baseline justify-between gap-4 mb-2">
                 <div>
@@ -1159,6 +1183,7 @@ export function CoachPracticePlanBuilder() {
           </div>
 
           {/* Right rail: summary */}
+          <div className={mobileTab !== "details" ? "hidden lg:block" : ""}>
           <PlanSummary
             plan={plan}
             onTitleChange={(v) => updatePlan(plan.id, { title: v })}
@@ -1169,6 +1194,7 @@ export function CoachPracticePlanBuilder() {
             onStatusChange={(v) => updatePlan(plan.id, { status: v })}
             onPrint={() => setPrintOpen(true)}
           />
+          </div>
         </div>
 
         <Dialog open={printOpen} onOpenChange={setPrintOpen}>

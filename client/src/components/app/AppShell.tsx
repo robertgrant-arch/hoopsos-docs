@@ -229,27 +229,31 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       {/* Main content                                                        */}
       {/* ------------------------------------------------------------------ */}
       <main className="flex-1 min-w-0 pb-[calc(4rem+env(safe-area-inset-bottom))] lg:pb-0">
-        {/* Mobile top bar */}
-        <header className="lg:hidden sticky top-0 z-30 flex items-center justify-between px-4 h-14 bg-background border-b border-border"
-          style={{ paddingTop: "env(safe-area-inset-top)" }}>
-          <Logo size={28} />
-          <div className="flex items-center gap-1">
-            <div
-              className="w-8 h-8 rounded flex items-center justify-center text-[11px] font-semibold"
-              style={{
-                background: `${meta.color.replace(")", " / 0.18)")}`,
-                color: meta.color,
-              }}
-            >
-              {user.avatar}
+        {/* Mobile top bar — safe area sits above the fixed-height content row */}
+        <header
+          className="lg:hidden sticky top-0 z-30 bg-background border-b border-border"
+          style={{ paddingTop: "env(safe-area-inset-top)" }}
+        >
+          <div className="h-14 flex items-center justify-between px-4">
+            <Logo size={28} />
+            <div className="flex items-center gap-1">
+              <div
+                className="w-8 h-8 rounded flex items-center justify-center text-[11px] font-semibold"
+                style={{
+                  background: `${meta.color.replace(")", " / 0.18)")}`,
+                  color: meta.color,
+                }}
+              >
+                {user.avatar}
+              </div>
+              <button
+                onClick={() => setMoreOpen(true)}
+                className="w-8 h-8 flex items-center justify-center text-muted-foreground hover:text-foreground"
+                aria-label="Open menu"
+              >
+                <Menu className="w-5 h-5" />
+              </button>
             </div>
-            <button
-              onClick={() => setMoreOpen(true)}
-              className="w-8 h-8 flex items-center justify-center text-muted-foreground hover:text-foreground"
-              aria-label="Open menu"
-            >
-              <Menu className="w-5 h-5" />
-            </button>
           </div>
         </header>
 

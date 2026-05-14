@@ -27,6 +27,11 @@ type State = {
   updateBlock: (planId: string, blockId: string, patch: Partial<PracticePlanBlock>) => void;
   removeBlock: (planId: string, blockId: string) => void;
   reorderBlocks: (planId: string, fromIndex: number, toIndex: number) => void;
+
+  /** Replace local plans with server-fetched plans (server wins). */
+  loadFromServer: (serverPlans: PracticePlan[]) => void;
+  /** Swap a local nanoid plan ID for the server-assigned ID after a POST. */
+  updatePlanId: (oldId: string, newId: string) => void;
 };
 
 export const usePracticePlans = create<State>()(
@@ -154,6 +159,20 @@ export const usePracticePlans = create<State>()(
             blocks.splice(toIndex, 0, moved);
             return { ...p, blocks, updatedAt: new Date().toISOString() };
           }),
+        });
+      },
+
+      loadFromServer: (serverPlans) => {
+        if (serverPlans.length === 0) return;
+        const currentTitle = get().plans.find((p) => p.id === get().activePlanId)?.title;
+        const active = serverPlans.find((p) => p.title === currentTitle) ?? serverPlans[0];
+        set({ plans: serverPlans, activePlanId: active?.id ?? null });
+      },
+
+      updatePlanId: (oldId, newId) => {
+        set({
+          plans: get().plans.map((p) => (p.id === oldId ? { ...p, id: newId } : p)),
+          activePlanId: get().activePlanId === oldId ? newId : get().activePlanId,
         });
       },
     }),
