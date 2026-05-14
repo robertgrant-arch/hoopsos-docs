@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { requireOrg } from "../../auth/tenant";
-import { generateWod } from "../../lib/gemini";
+import { generateWod } from "../../lib/openai";
 
 export function registerWodRoutes(router: Router) {
   router.post("/generate", async (req, res, next) => {
