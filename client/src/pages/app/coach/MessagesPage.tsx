@@ -5,13 +5,13 @@
  * Supports a pinned team broadcast thread and individual player DMs.
  */
 import { useState } from "react";
-import { Link } from "wouter";
-import { Send, Users, Megaphone } from "lucide-react";
+import { Send, Users, Megaphone, SquarePen } from "lucide-react";
 import { AppShell, PageHeader } from "@/components/app/AppShell";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { roster } from "@/lib/mock/data";
+import { NewBroadcastDialog } from "@/components/messaging/NewBroadcastDialog";
 
 /* -------------------------------------------------------------------------- */
 /* Types                                                                       */
@@ -271,6 +271,7 @@ export function MessagesPage() {
   );
   const [threads, setThreads] = useState<Thread[]>(INITIAL_THREADS);
   const [compose, setCompose] = useState("");
+  const [composeOpen, setComposeOpen] = useState(false);
 
   const activeThread = threads.find((t) => t.id === activeThreadId)!;
 
@@ -338,10 +339,19 @@ export function MessagesPage() {
             className="shrink-0 border-r border-border flex flex-col overflow-y-auto"
             style={{ width: 320 }}
           >
-            <div className="px-3 py-3 border-b border-border">
+            <div className="px-3 py-2.5 border-b border-border flex items-center justify-between gap-2">
               <div className="text-[10px] uppercase tracking-[0.14em] font-mono text-muted-foreground">
                 Conversations
               </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-6 w-6 p-0 text-muted-foreground hover:text-foreground"
+                onClick={() => setComposeOpen(true)}
+                title="New message"
+              >
+                <SquarePen className="w-3.5 h-3.5" />
+              </Button>
             </div>
 
             <div className="flex-1 overflow-y-auto py-1">
@@ -496,6 +506,26 @@ export function MessagesPage() {
           </div>
         </div>
       </div>
+
+      <NewBroadcastDialog
+        open={composeOpen}
+        onOpenChange={setComposeOpen}
+        roster={roster}
+        onCreated={(threadId, label) => {
+          // Add the new thread to the top of the thread list and select it
+          const newThread: Thread = {
+            id:       threadId,
+            label,
+            subtitle: "Just sent",
+            avatar:   "BC",
+            messages: [],
+            unread:   0,
+            isTeam:   true,
+          };
+          setThreads((prev) => [newThread, ...prev]);
+          setActiveThreadId(threadId);
+        }}
+      />
     </AppShell>
   );
 }
