@@ -1,40 +1,37 @@
-import type { VercelRequest, VercelResponse } from "@vercel/node";
-import OpenAI from "openai";
+// Standalone WOD generator — no Express/Clerk/Inngest dependencies.
+// Plain JS avoids TypeScript compilation issues on Vercel.
 
-let client: OpenAI | null = null;
-function getClient() {
-  if (!client) {
-    if (!process.env.OPENAI_API_KEY) throw new Error("OPENAI_API_KEY not set");
-    client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+module.exports = async function handler(req, res) {
+  // CORS headers
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+
+  if (req.method === "OPTIONS") {
+    return res.status(200).end();
   }
-  return client;
-}
 
-export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method === "GET") {
-    return res.json({ openai_key_set: !!process.env.OPENAI_API_KEY });
+    return res.json({ openai_key_set: !!process.env.OPENAI_API_KEY, ok: true });
   }
 
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
   }
 
-  const { playerName, position, focusAreas, targetMinutes, intensity, coachNotes, wearableSnapshot } =
-    (req.body ?? {}) as {
-      playerName?: string;
-      position?: string;
-      focusAreas?: string[];
-      targetMinutes?: number;
-      intensity?: "low" | "medium" | "high";
-      coachNotes?: string;
-      wearableSnapshot?: { recoveryScore?: number; sleepScore?: number; strainScore?: number };
-    };
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) {
+    return res.status(500).json({ error: "OPENAI_API_KEY is not set in Vercel environment variables" });
+  }
+
+  const body = req.body ?? {};
+  const { playerName, position, focusAreas, targetMinutes, intensity, coachNotes, wearableSnapshot } = body;
 
   if (!playerName || !focusAreas?.length || !targetMinutes || !intensity) {
     return res.status(400).json({ error: "playerName, focusAreas, targetMinutes, and intensity are required" });
   }
 
-  const mins = Math.min(Math.max(targetMinutes, 15), 120);
+  const mins = Math.min(Math.max(Number(targetMinutes), 15), 120);
 
   const wearableContext = wearableSnapshot
     ? `\nWEARABLE DATA:\n- Recovery: ${wearableSnapshot.recoveryScore ?? "unknown"}/100\n- Sleep: ${wearableSnapshot.sleepScore ?? "unknown"}/100${(wearableSnapshot.recoveryScore ?? 100) < 40 ? "\n⚠️ Low recovery — reduce volume, skip conditioning." : ""}`
@@ -73,18 +70,32 @@ Return ONLY valid JSON:
 }`;
 
   try {
-    const response = await getClient().chat.completions.create({
-      model: process.env.OPENAI_MODEL ?? "gpt-4o",
-      response_format: { type: "json_object" },
-      temperature: 0.7,
-      messages: [{ role: "user", content: prompt }],
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model: process.env.OPENAI_MODEL || "gpt-4o",
+        response_format: { type: "json_object" },
+        temperature: 0.7,
+        messages: [{ role: "user", content: prompt }],
+      }),
     });
 
-    const text = response.choices[0]?.message?.content ?? "{}";
+    if (!response.ok) {
+      const errText = await response.text();
+      console.error("[wods] OpenAI error", response.status, errText);
+      return res.status(500).json({ error: `OpenAI API error ${response.status}: ${errText.slice(0, 200)}` });
+    }
+
+    const data = await response.json();
+    const text = data.choices?.[0]?.message?.content ?? "{}";
     return res.json(JSON.parse(text));
-  } catch (err: unknown) {
+  } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     console.error("[wods]", message);
     return res.status(500).json({ error: message });
   }
-}
+};
