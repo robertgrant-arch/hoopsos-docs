@@ -2,6 +2,7 @@ import { createRepository } from "@shared/db";
 import type { FilmSession as FilmSessionRow } from "@shared/db/schema/film_sessions";
 import type { AnalysisJob as DbAnalysisJobRow } from "@shared/db/schema/analysis_jobs";
 import type { Annotation as AnnotationRow } from "@shared/db/schema/annotations";
+import { createDirectUpload } from "../../lib/mux";
 import {
   AnalysisJobStatus,
   AnalysisStage,
@@ -249,6 +250,11 @@ export class DbFilmAnalysisService implements FilmAnalysisService {
       orgId: input.orgId,
       userId: input.createdBy,
     });
+
+    // Request a direct-upload URL from Mux first so we fail fast if credentials
+    // are missing before writing anything to the DB.
+    const { uploadId, uploadUrl } = await createDirectUpload();
+
     const session = await repo.filmSessions.create({
       title: `Upload: ${input.filename}`,
       kind: "game",
@@ -267,7 +273,11 @@ export class DbFilmAnalysisService implements FilmAnalysisService {
       status: "pending",
       mimeType: input.mimeType,
       sizeBytes: input.sizeBytes,
-      payload: {},
+      // Store the Mux upload ID so the webhook can look up this asset later.
+      payload: {
+        muxUploadId: uploadId,
+        storageProvider: "mux",
+      },
     });
     await repo.filmSessions.update(session.id, {
       payload: {
@@ -278,8 +288,7 @@ export class DbFilmAnalysisService implements FilmAnalysisService {
     });
     return {
       assetId: asset.id,
-      uploadUrl:
-        "https://api.mux.com/video/v1/uploads/direct-upload-url-pending-pr3",
+      uploadUrl,
       expiresAt: new Date(Date.now() + 3_600_000).toISOString(),
     };
   }
@@ -800,5 +809,129 @@ export class DbFilmAnalysisService implements FilmAnalysisService {
       resultUri: null,
       requestedBy: userId,
     };
+  }
+
+  // ── Mux webhook handler ────────────────────────────────────────────────────
+
+  /**
+   * Called by the /webhooks/mux route when Mux sends a video.asset.ready event.
+   *
+   * Looks up the film_asset row whose payload.muxUploadId matches the upload
+   * that created this Mux asset, then stamps the Mux asset ID, playback ID,
+   * and marks both the asset and the parent session as "ready".
+   *
+   * Fires an Inngest event `film/asset.ready` when the inngest package is
+   * available and INNGEST_EVENT_KEY is configured.
+   */
+  async handleMuxWebhook(event: {
+    type: string;
+    data: Record<string, unknown>;
+  }): Promise<void> {
+    if (event.type !== "video.asset.ready") return;
+
+    const data = event.data;
+    const muxAssetId = data.id as string | undefined;
+    const muxUploadId = data.upload_id as string | undefined;
+    if (!muxAssetId) return;
+
+    const playbackIds = data.playback_ids as
+      | Array<{ id: string; policy: string }>
+      | undefined;
+    const muxPlaybackId = playbackIds?.[0]?.id ?? null;
+
+    // We need to find the film_asset with this muxUploadId across all orgs.
+    // Because repo is org-scoped we search using an unscoped DB query instead.
+    // Use a raw Drizzle query via a helper that bypasses org scoping.
+    await this._updateAssetByMuxUploadId(muxUploadId, muxAssetId, muxPlaybackId);
+  }
+
+  /** @internal */
+  private async _updateAssetByMuxUploadId(
+    muxUploadId: string | undefined,
+    muxAssetId: string,
+    muxPlaybackId: string | null,
+  ): Promise<void> {
+    // Import lazily to avoid circular deps at module load time.
+    const { getDb } = await import("@shared/db/client");
+    const { filmAssets, filmSessions } = await import("@shared/db/schema");
+    const { eq, and } = await import("drizzle-orm");
+
+    const db = getDb();
+
+    // Find the asset by muxUploadId stored in its payload.
+    // We query all assets and filter in memory — upload events are rare, so
+    // a full scan with a JSONB filter is acceptable here. A future migration
+    // can add a generated column index if needed.
+    const candidates = await db
+      .select()
+      .from(filmAssets)
+      .where(eq(filmAssets.status, "pending"));
+
+    const asset = candidates.find((a) => {
+      const p = a.payload && typeof a.payload === "object" ? (a.payload as Record<string, unknown>) : {};
+      return p.muxUploadId === muxUploadId || p.muxAssetId === muxAssetId;
+    });
+
+    if (!asset) {
+      // Asset may not exist if upload was initiated outside HoopsOS — log and
+      // return gracefully.
+      console.warn("[mux-webhook] No film_asset found for upload", muxUploadId, "/ asset", muxAssetId);
+      return;
+    }
+
+    // Update the asset record.
+    const assetPayload = (asset.payload && typeof asset.payload === "object")
+      ? (asset.payload as Record<string, unknown>)
+      : {};
+
+    await db
+      .update(filmAssets)
+      .set({
+        status: "ready",
+        providerId: muxAssetId,
+        playbackId: muxPlaybackId ?? undefined,
+        storageProvider: "mux",
+        updatedAt: new Date(),
+        payload: {
+          ...assetPayload,
+          muxAssetId,
+          muxPlaybackId,
+        },
+      })
+      .where(and(eq(filmAssets.id, asset.id), eq(filmAssets.orgId, asset.orgId)));
+
+    // Mark the parent session as ready.
+    await db
+      .update(filmSessions)
+      .set({
+        status: "ready",
+        updatedAt: new Date(),
+      })
+      .where(
+        and(
+          eq(filmSessions.id, asset.sessionId),
+          eq(filmSessions.orgId, asset.orgId),
+        ),
+      );
+
+    // Fire Inngest event if configured (best-effort).
+    if (process.env.INNGEST_EVENT_KEY) {
+      try {
+        const { Inngest } = await import("inngest");
+        const inngest = new Inngest({ id: "hoopsos" });
+        await inngest.send({
+          name: "film/asset.ready",
+          data: {
+            assetId: asset.id,
+            sessionId: asset.sessionId,
+            orgId: asset.orgId,
+            muxAssetId,
+            muxPlaybackId,
+          },
+        });
+      } catch (err) {
+        console.warn("[mux-webhook] Failed to send Inngest event:", err);
+      }
+    }
   }
 }

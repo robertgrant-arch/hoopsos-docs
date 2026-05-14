@@ -43,6 +43,14 @@ import CoachWodPlanner from "@/pages/app/coach/CoachWodPlanner";
 import CoachPlaybookStudio from "@/pages/app/coach/PlaybookStudio";
 import CoachPlaybookStudioV3 from "@/pages/app/coach/PlaybookStudioV3";
 import { FilmRoomPage, FilmUploadPage, FilmSessionPage, PlayerHighlightsPage } from "@/pages/app/coach/FilmAnalysisPages";
+import MessagesPage from "@/pages/app/coach/MessagesPage";
+import CoachInboxPage from "@/pages/app/coach/CoachInboxPage";
+import PlayerProfilePage from "@/pages/app/coach/PlayerProfilePage";
+import PlayerDevelopmentView from "@/pages/app/player/PlayerDevelopmentView";
+import FilmSessionDetail from "@/pages/app/coach/FilmSessionDetail";
+import FilmPlaylistPage from "@/pages/app/coach/FilmPlaylistPage";
+import TeamSchedulePage from "@/pages/app/team/TeamSchedulePage";
+import { PlayStudyList, PlayStudyPage } from "@/pages/app/player/PlayStudy";
 
 import PlayQuizRunner from "@/pages/app/player/PlayQuiz";
 
@@ -70,7 +78,6 @@ import {
   FilmRoomHome,
   FilmClipDetail,
   FilmInbox,
-  PlaybookStudio,
   LiveHome,
   LiveEventDetail,
   LearnHome,
@@ -117,9 +124,12 @@ function Router() {
       <Route path="/app/player/uploads/:id" component={PlayerUploadDetail} />
       <Route path="/app/player/skills" component={PlayerSkills} />
       <Route path="/app/player/achievements" component={PlayerAchievements} />
+      <Route path="/app/player/development" component={PlayerDevelopmentView} />
 
       {/* Coach HQ - auth required */}
       <Route path="/app/coach" component={guard(CoachDashboard)} />
+      <Route path="/app/coach/inbox" component={guard(CoachInboxPage)} />
+      <Route path="/app/coach/players/:id" component={guard(PlayerProfilePage)} />
       <Route path="/app/coach/roster" component={guard(CoachRoster)} />
       <Route path="/app/coach/queue" component={guard(CoachQueue)} />
       <Route path="/app/coach/queue/:id" component={guard(CoachQueueDetail)} />
@@ -129,12 +139,13 @@ function Router() {
       <Route path="/app/coach/wods" component={guard(CoachWodPlanner)} />
       <Route path="/app/coach/practice-plans/legacy" component={guard(CoachPracticePlans)} />
       <Route path="/app/coach/bookings" component={guard(CoachBookings)} />
-      <Route path="/app/coach/messages" component={guard(CoachDashboard)} />
-      <Route path="/app/coach/playbook" component={guard(CoachPlaybookStudio)} />
+      <Route path="/app/coach/messages" component={guard(MessagesPage)} />
+      <Route path="/app/coach/playbook" component={guard(CoachPlaybookStudioV3)} />
       <Route path="/app/coach/playbook-v3" component={guard(CoachPlaybookStudioV3)} />
 
       {/* Team */}
       <Route path="/app/team" component={TeamDashboard} />
+      <Route path="/app/team/schedule" component={TeamSchedulePage} />
       <Route path="/app/team/invite" component={TeamInvite} />
       <Route path="/app/team/billing" component={TeamBilling} />
 
@@ -148,14 +159,17 @@ function Router() {
       <Route path="/app/film/inbox" component={FilmInbox} />
               <Route path="/app/coach/film" component={guard(FilmRoomPage)} />
         <Route path="/app/coach/film/upload" component={guard(FilmUploadPage)} />
-        <Route path="/app/coach/film/sessions/:id" component={guard(FilmSessionPage)} />
+        <Route path="/app/coach/film/sessions/:id" component={guard(FilmSessionDetail)} />
+        <Route path="/app/coach/film/playlists/:id" component={guard(FilmPlaylistPage)} />
         <Route path="/app/player/highlights/:playerId" component={PlayerHighlightsPage} />
         <Route path="/app/player/highlights" component={PlayerHighlightsPage} />
+        <Route path="/app/player/plays/:id/study" component={PlayStudyPage} />
+        <Route path="/app/player/plays" component={PlayStudyList} />
 
       {/* Playbook */}
-      <Route path="/app/playbook" component={CoachPlaybookStudio} />
+      <Route path="/app/playbook" component={CoachPlaybookStudioV3} />
       <Route path="/app/playbook-v3" component={CoachPlaybookStudioV3} />
-      <Route path="/app/playbook/legacy" component={PlaybookStudio} />
+      <Route path="/app/playbook/legacy" component={CoachPlaybookStudio} />
       <Route path="/app/player/quizzes/:id" component={PlayQuizRunner} />
       <Route path="/app/player/quizzes" component={PlayQuizRunner} />
 

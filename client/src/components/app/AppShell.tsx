@@ -24,6 +24,8 @@ import {
   LogOut,
   User as UserIcon,
   Heart,
+  Inbox,
+  Target,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { ROLE_META, type Role } from "@/lib/mock/users";
@@ -38,7 +40,9 @@ const NAV: Record<Role, NavItem[]> = {
     { href: "/app/player/workout", label: "Today's WOD", icon: <Dumbbell className="w-4 h-4" /> },
     { href: "/app/player/uploads", label: "Uploads", icon: <UploadCloud className="w-4 h-4" /> },
     { href: "/app/player/skills", label: "Skill Tracks", icon: <TrendingUp className="w-4 h-4" /> },
+    { href: "/app/player/development", label: "My Development", icon: <Target className="w-4 h-4" /> },
     { href: "/app/player/achievements", label: "Achievements", icon: <Trophy className="w-4 h-4" /> },
+    { href: "/app/player/plays", label: "Study Plays", icon: <BookOpen className="w-4 h-4" /> },
     { href: "/app/billing", label: "Billing", icon: <CreditCard className="w-4 h-4" /> },
     { href: "/app/film/inbox", label: "Film Inbox", icon: <Film className="w-4 h-4" /> },
     { href: "/app/learn", label: "Learn", icon: <BookOpen className="w-4 h-4" /> },
@@ -48,6 +52,7 @@ const NAV: Record<Role, NavItem[]> = {
   ],
   COACH: [
     { href: "/app/coach", label: "Dashboard", icon: <LayoutDashboard className="w-4 h-4" /> },
+    { href: "/app/coach/inbox", label: "Inbox", icon: <Inbox className="w-4 h-4" /> },
     { href: "/app/coach/roster", label: "Roster", icon: <Users className="w-4 h-4" /> },
     { href: "/app/coach/queue", label: "Review Queue", icon: <ListChecks className="w-4 h-4" /> },
     { href: "/app/coach/assignments", label: "Assignments", icon: <ClipboardList className="w-4 h-4" /> },
@@ -63,6 +68,7 @@ const NAV: Record<Role, NavItem[]> = {
   ],
   TEAM_ADMIN: [
     { href: "/app/team", label: "Org Dashboard", icon: <LayoutDashboard className="w-4 h-4" /> },
+    { href: "/app/team/schedule", label: "Schedule", icon: <Calendar className="w-4 h-4" /> },
     { href: "/app/team/teams", label: "Teams", icon: <Users className="w-4 h-4" /> },
     { href: "/app/team/roster", label: "All Athletes", icon: <UserIcon className="w-4 h-4" /> },
     { href: "/app/team/invite", label: "Invite", icon: <Users className="w-4 h-4" /> },
