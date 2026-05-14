@@ -2,7 +2,15 @@ import { Router } from "express";
 import { generateWod } from "../../lib/openai";
 
 export function registerWodRoutes(router: Router) {
-  router.post("/generate", async (req, res, next) => {
+  // Diagnostic — returns env var presence without exposing values
+  router.get("/health", (_req, res) => {
+    res.json({
+      openai_key_set: !!process.env.OPENAI_API_KEY,
+      openai_model: process.env.OPENAI_MODEL ?? "gpt-4o (default)",
+    });
+  });
+
+  router.post("/generate", async (req, res) => {
     try {
       const {
         playerName,
@@ -38,8 +46,11 @@ export function registerWodRoutes(router: Router) {
       });
 
       res.json(result);
-    } catch (err) {
-      next(err);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      const status = (err as { status?: number }).status ?? 500;
+      console.error("[WOD generate]", message);
+      res.status(status).json({ error: message });
     }
   });
 }
