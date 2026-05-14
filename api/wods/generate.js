@@ -1,7 +1,7 @@
 // POST /api/wods/generate
 // Standalone — no Express/Clerk/Inngest. Direct fetch to OpenAI.
 
-module.exports = async function handler(req, res) {
+export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Content-Type", "application/json");
 

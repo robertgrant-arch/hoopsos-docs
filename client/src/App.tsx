@@ -66,6 +66,7 @@ import { BillingAdmin } from "@/pages/app/admin/BillingAdmin";
 import {
   CoachDashboard,
   CoachRoster,
+  CoachParents,
   CoachQueue,
   CoachQueueDetail,
   CoachAssignments,
@@ -142,6 +143,7 @@ function Router() {
       <Route path="/app/coach/inbox" component={guard(CoachInboxPage)} />
       <Route path="/app/coach/players/:id" component={guard(PlayerProfilePage)} />
       <Route path="/app/coach/roster" component={guard(CoachRoster)} />
+      <Route path="/app/coach/parents" component={guard(CoachParents)} />
       <Route path="/app/coach/queue" component={guard(CoachQueue)} />
       <Route path="/app/coach/queue/:id" component={guard(CoachQueueDetail)} />
       <Route path="/app/coach/assignments" component={guard(CoachAssignments)} />

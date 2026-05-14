@@ -29,21 +29,61 @@ export type RosterAthlete = {
   compliance: number; // 0-100 for today's WOD
   hasDiscount: boolean;
   isMinor: boolean;
+  phone?: string;
+  email?: string;
 };
 
 export const roster: RosterAthlete[] = [
-  { id: "a_1", name: "Jalen Carter", initials: "JC", position: "SG", height: "6'4\"", classYear: 2027, level: 7, xp: 2840, streak: 14, lastActive: "Today", compliance: 100, hasDiscount: true, isMinor: true },
-  { id: "a_2", name: "Marcus Williams", initials: "MW", position: "PG", height: "6'1\"", classYear: 2026, level: 9, xp: 4120, streak: 28, lastActive: "Today", compliance: 100, hasDiscount: true, isMinor: false },
-  { id: "a_3", name: "DeAndre Johnson", initials: "DJ", position: "C", height: "6'10\"", classYear: 2027, level: 5, xp: 1950, streak: 3, lastActive: "Today", compliance: 85, hasDiscount: true, isMinor: true },
-  { id: "a_4", name: "Tyrese Brooks", initials: "TB", position: "SF", height: "6'6\"", classYear: 2026, level: 8, xp: 3340, streak: 21, lastActive: "Today", compliance: 92, hasDiscount: true, isMinor: false },
-  { id: "a_5", name: "Isaiah Moore", initials: "IM", position: "PF", height: "6'8\"", classYear: 2027, level: 6, xp: 2120, streak: 0, lastActive: "2d ago", compliance: 0, hasDiscount: true, isMinor: true },
-  { id: "a_6", name: "Khalil Jenkins", initials: "KJ", position: "SG", height: "6'3\"", classYear: 2028, level: 4, xp: 1290, streak: 7, lastActive: "Today", compliance: 66, hasDiscount: true, isMinor: true },
-  { id: "a_7", name: "Miles Thompson", initials: "MT", position: "PG", height: "5'11\"", classYear: 2028, level: 3, xp: 890, streak: 2, lastActive: "Today", compliance: 45, hasDiscount: true, isMinor: true },
-  { id: "a_8", name: "Xavier Reed", initials: "XR", position: "SF", height: "6'5\"", classYear: 2026, level: 7, xp: 2680, streak: 11, lastActive: "Today", compliance: 100, hasDiscount: true, isMinor: false },
-  { id: "a_9", name: "Carter Lopez", initials: "CL", position: "C", height: "6'11\"", classYear: 2027, level: 6, xp: 2310, streak: 9, lastActive: "Today", compliance: 78, hasDiscount: true, isMinor: true },
-  { id: "a_10", name: "Amari Sullivan", initials: "AS", position: "PF", height: "6'7\"", classYear: 2026, level: 8, xp: 3560, streak: 19, lastActive: "Today", compliance: 100, hasDiscount: true, isMinor: false },
-  { id: "a_11", name: "Devin Hayes", initials: "DH", position: "SG", height: "6'2\"", classYear: 2028, level: 5, xp: 1740, streak: 5, lastActive: "1d ago", compliance: 0, hasDiscount: true, isMinor: true },
-  { id: "a_12", name: "Elijah Foster", initials: "EF", position: "PG", height: "6'0\"", classYear: 2027, level: 6, xp: 2250, streak: 12, lastActive: "Today", compliance: 100, hasDiscount: true, isMinor: true },
+  { id: "a_1",  name: "Jalen Carter",    initials: "JC", position: "SG", height: "6'4\"",  classYear: 2027, level: 7, xp: 2840, streak: 14, lastActive: "Today",  compliance: 100, hasDiscount: true,  isMinor: true,  phone: "(512) 555-0181", email: "jcarter@school.edu" },
+  { id: "a_2",  name: "Marcus Williams", initials: "MW", position: "PG", height: "6'1\"",  classYear: 2026, level: 9, xp: 4120, streak: 28, lastActive: "Today",  compliance: 100, hasDiscount: true,  isMinor: false, phone: "(512) 555-0142", email: "m.williams@email.com" },
+  { id: "a_3",  name: "DeAndre Johnson", initials: "DJ", position: "C",  height: "6'10\"", classYear: 2027, level: 5, xp: 1950, streak: 3,  lastActive: "Today",  compliance: 85,  hasDiscount: true,  isMinor: true,  phone: "(214) 555-0193", email: "djohnson@school.edu" },
+  { id: "a_4",  name: "Tyrese Brooks",   initials: "TB", position: "SF", height: "6'6\"",  classYear: 2026, level: 8, xp: 3340, streak: 21, lastActive: "Today",  compliance: 92,  hasDiscount: true,  isMinor: false, phone: "(713) 555-0164", email: "tbrooks@email.com" },
+  { id: "a_5",  name: "Isaiah Moore",    initials: "IM", position: "PF", height: "6'8\"",  classYear: 2027, level: 6, xp: 2120, streak: 0,  lastActive: "2d ago", compliance: 0,   hasDiscount: true,  isMinor: true,  phone: "(972) 555-0127", email: "imoore@school.edu" },
+  { id: "a_6",  name: "Khalil Jenkins",  initials: "KJ", position: "SG", height: "6'3\"",  classYear: 2028, level: 4, xp: 1290, streak: 7,  lastActive: "Today",  compliance: 66,  hasDiscount: true,  isMinor: true,  phone: "(512) 555-0156", email: "kjenkins@school.edu" },
+  { id: "a_7",  name: "Miles Thompson",  initials: "MT", position: "PG", height: "5'11\"", classYear: 2028, level: 3, xp: 890,  streak: 2,  lastActive: "Today",  compliance: 45,  hasDiscount: true,  isMinor: true,  phone: "(214) 555-0179", email: "mthompson@school.edu" },
+  { id: "a_8",  name: "Xavier Reed",     initials: "XR", position: "SF", height: "6'5\"",  classYear: 2026, level: 7, xp: 2680, streak: 11, lastActive: "Today",  compliance: 100, hasDiscount: true,  isMinor: false, phone: "(512) 555-0103", email: "xreed@email.com" },
+  { id: "a_9",  name: "Carter Lopez",    initials: "CL", position: "C",  height: "6'11\"", classYear: 2027, level: 6, xp: 2310, streak: 9,  lastActive: "Today",  compliance: 78,  hasDiscount: true,  isMinor: true,  phone: "(713) 555-0188", email: "clopez@school.edu" },
+  { id: "a_10", name: "Amari Sullivan",  initials: "AS", position: "PF", height: "6'7\"",  classYear: 2026, level: 8, xp: 3560, streak: 19, lastActive: "Today",  compliance: 100, hasDiscount: true,  isMinor: false, phone: "(512) 555-0115", email: "asullivan@email.com" },
+  { id: "a_11", name: "Devin Hayes",     initials: "DH", position: "SG", height: "6'2\"",  classYear: 2028, level: 5, xp: 1740, streak: 5,  lastActive: "1d ago", compliance: 0,   hasDiscount: true,  isMinor: true,  phone: "(972) 555-0137", email: "dhayes@school.edu" },
+  { id: "a_12", name: "Elijah Foster",   initials: "EF", position: "PG", height: "6'0\"",  classYear: 2027, level: 6, xp: 2250, streak: 12, lastActive: "Today",  compliance: 100, hasDiscount: true,  isMinor: true,  phone: "(214) 555-0162", email: "efoster@school.edu" },
+];
+
+// ------------------------------ Parent / Guardian Contacts ------------------------------
+export type ParentContact = {
+  id: string;
+  athleteId: string;
+  name: string;
+  initials: string;
+  relationship: "Mother" | "Father" | "Guardian" | "Stepmother" | "Stepfather" | "Grandparent" | "Other";
+  phone: string;
+  email?: string;
+  isPrimary: boolean;
+  canReceiveMessages: boolean;
+  notes?: string;
+};
+
+export const parentContacts: ParentContact[] = [
+  // Jalen Carter (a_1) — minor
+  { id: "p_1",  athleteId: "a_1",  name: "Denise Carter",    initials: "DC", relationship: "Mother",    phone: "(512) 555-0201", email: "dcarter@gmail.com",      isPrimary: true,  canReceiveMessages: true  },
+  { id: "p_2",  athleteId: "a_1",  name: "Robert Carter",    initials: "RC", relationship: "Father",    phone: "(512) 555-0202", email: "rcarter@gmail.com",      isPrimary: false, canReceiveMessages: true  },
+  // DeAndre Johnson (a_3) — minor
+  { id: "p_3",  athleteId: "a_3",  name: "Tanya Johnson",    initials: "TJ", relationship: "Mother",    phone: "(214) 555-0203", email: "tjohnson@gmail.com",     isPrimary: true,  canReceiveMessages: true  },
+  { id: "p_4",  athleteId: "a_3",  name: "Kevin Johnson",    initials: "KJ", relationship: "Father",    phone: "(214) 555-0204",                                  isPrimary: false, canReceiveMessages: false },
+  // Isaiah Moore (a_5) — minor
+  { id: "p_5",  athleteId: "a_5",  name: "Sandra Moore",     initials: "SM", relationship: "Mother",    phone: "(972) 555-0205", email: "smoore@email.com",       isPrimary: true,  canReceiveMessages: true  },
+  // Khalil Jenkins (a_6) — minor
+  { id: "p_6",  athleteId: "a_6",  name: "Patricia Jenkins", initials: "PJ", relationship: "Mother",    phone: "(512) 555-0206", email: "pjenkins@gmail.com",     isPrimary: true,  canReceiveMessages: true  },
+  { id: "p_7",  athleteId: "a_6",  name: "Tony Jenkins",     initials: "TJ", relationship: "Father",    phone: "(512) 555-0207", email: "tjenkins@gmail.com",     isPrimary: false, canReceiveMessages: true  },
+  // Miles Thompson (a_7) — minor
+  { id: "p_8",  athleteId: "a_7",  name: "Cheryl Thompson",  initials: "CT", relationship: "Mother",    phone: "(214) 555-0208", email: "cthompson@email.com",    isPrimary: true,  canReceiveMessages: true  },
+  { id: "p_9",  athleteId: "a_7",  name: "James Thompson",   initials: "JT", relationship: "Father",    phone: "(214) 555-0209",                                  isPrimary: false, canReceiveMessages: true  },
+  // Carter Lopez (a_9) — minor
+  { id: "p_10", athleteId: "a_9",  name: "Maria Lopez",      initials: "ML", relationship: "Mother",    phone: "(713) 555-0210", email: "mlopez@gmail.com",       isPrimary: true,  canReceiveMessages: true  },
+  // Devin Hayes (a_11) — minor
+  { id: "p_11", athleteId: "a_11", name: "Angela Hayes",     initials: "AH", relationship: "Guardian",  phone: "(972) 555-0211", email: "ahayes@email.com",       isPrimary: true,  canReceiveMessages: true,  notes: "Legal guardian" },
+  // Elijah Foster (a_12) — minor
+  { id: "p_12", athleteId: "a_12", name: "Lisa Foster",      initials: "LF", relationship: "Mother",    phone: "(214) 555-0212", email: "lfoster@gmail.com",      isPrimary: true,  canReceiveMessages: true  },
+  { id: "p_13", athleteId: "a_12", name: "David Foster",     initials: "DF", relationship: "Father",    phone: "(214) 555-0213", email: "dfoster@gmail.com",      isPrimary: false, canReceiveMessages: true  },
 ];
 
 // ------------------------------ Workouts ------------------------------

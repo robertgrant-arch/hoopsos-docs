@@ -77,6 +77,7 @@ const NAV: Record<Role, NavItem[]> = {
     { href: "/app/coach",               label: "Dashboard",      icon: <LayoutDashboard className="w-5 h-5" /> },
     { href: "/app/coach/inbox",         label: "Inbox",          icon: <Inbox className="w-5 h-5" /> },
     { href: "/app/coach/roster",        label: "Roster",         icon: <Users className="w-5 h-5" /> },
+    { href: "/app/coach/parents",       label: "Parents",        icon: <Heart className="w-5 h-5" /> },
     { href: "/app/coach/queue",         label: "Review Queue",   icon: <ListChecks className="w-5 h-5" /> },
     { href: "/app/coach/assignments",   label: "Assignments",    icon: <ClipboardList className="w-5 h-5" /> },
     { href: "/app/coach/wods",          label: "Daily WODs",     icon: <Dumbbell className="w-5 h-5" /> },

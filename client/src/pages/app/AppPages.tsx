@@ -36,6 +36,9 @@ import {
   Search,
   Zap,
   CheckCheck,
+  Phone,
+  UserPlus,
+  MessageCircle,
 } from "lucide-react";
 import { useRef } from "react";
 import { Stage, Layer, Circle, Line, Text as KonvaText, Rect } from "react-konva";
@@ -46,6 +49,7 @@ import { useAuth } from "@/lib/auth";
 import {
   org,
   roster,
+  parentContacts,
   athleteUploads,
   filmRoom,
   clipTimestampComments,
@@ -128,6 +132,14 @@ function Section({
 export { CoachDashboard } from "./coach/CoachDashboard";
 
 export function CoachRoster() {
+  const [search, setSearch] = useState("");
+  const filtered = roster.filter(
+    (a) =>
+      !search.trim() ||
+      a.name.toLowerCase().includes(search.toLowerCase()) ||
+      (a.phone ?? "").includes(search) ||
+      (a.email ?? "").toLowerCase().includes(search.toLowerCase()),
+  );
   return (
     <AppShell>
       <div className="px-6 lg:px-10 py-8 max-w-[1400px] mx-auto">
@@ -136,17 +148,36 @@ export function CoachRoster() {
           title="Texas Elite Varsity"
           subtitle="12 athletes · 2025–2026 season"
           actions={
-            <button className="inline-flex items-center gap-2 h-9 px-4 rounded-md bg-primary text-primary-foreground font-semibold text-[12.5px] uppercase tracking-[0.08em] hover:brightness-110 transition">
-              <Mail className="w-4 h-4" /> Invite Athlete
-            </button>
+            <div className="flex items-center gap-2">
+              <Link href="/app/coach/parents">
+                <a className="inline-flex items-center gap-2 h-9 px-4 rounded-md border border-border text-[12.5px] font-semibold hover:bg-muted transition">
+                  <Heart className="w-4 h-4" /> Parents
+                </a>
+              </Link>
+              <button className="inline-flex items-center gap-2 h-9 px-4 rounded-md bg-primary text-primary-foreground font-semibold text-[12.5px] uppercase tracking-[0.08em] hover:brightness-110 transition">
+                <Mail className="w-4 h-4" /> Invite Athlete
+              </button>
+            </div>
           }
         />
 
-        <div className="rounded-xl border border-border bg-card overflow-hidden">
+        {/* Search */}
+        <div className="relative mb-4 max-w-sm">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search by name, phone, email…"
+            className="w-full pl-9 pr-4 h-9 rounded-md border border-border bg-card text-[13px] placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+          />
+        </div>
+
+        <div className="rounded-xl border border-border bg-card overflow-x-auto">
           <table className="w-full text-[13px]">
             <thead>
               <tr className="border-b border-border text-left">
                 <Th>Athlete</Th>
+                <Th>Phone</Th>
                 <Th>Pos</Th>
                 <Th>HT</Th>
                 <Th>Class</Th>
@@ -154,34 +185,44 @@ export function CoachRoster() {
                 <Th>XP</Th>
                 <Th>Streak</Th>
                 <Th>Today</Th>
-                <Th>Discount</Th>
                 <Th>Last Active</Th>
               </tr>
             </thead>
             <tbody>
-              {roster.map((a: any) => (
+              {filtered.map((a) => (
                 <tr
                   key={a.id}
                   className="border-b border-border last:border-0 hover:bg-muted/40 transition"
                 >
                   <Td>
                     <div className="flex items-center gap-2.5">
-                      <div className="w-7 h-7 rounded-md bg-primary/15 text-primary font-semibold text-[11px] flex items-center justify-center">
+                      <div className="w-7 h-7 rounded-md bg-primary/15 text-primary font-semibold text-[11px] flex items-center justify-center shrink-0">
                         {a.initials}
                       </div>
                       <div>
-                        <div className="font-medium">{a.name}</div>
-                        {a.isMinor && (
+                        <div className="font-medium whitespace-nowrap">{a.name}</div>
+                        {a.isMinor ? (
                           <div className="text-[10.5px] text-muted-foreground">Minor · parent linked</div>
-                        )}
+                        ) : a.email ? (
+                          <div className="text-[10.5px] text-muted-foreground truncate max-w-[140px]">{a.email}</div>
+                        ) : null}
                       </div>
                     </div>
                   </Td>
+                  <Td>
+                    {a.phone ? (
+                      <a href={`tel:${a.phone}`} className="font-mono text-[12px] text-muted-foreground hover:text-foreground transition whitespace-nowrap">
+                        {a.phone}
+                      </a>
+                    ) : (
+                      <span className="text-muted-foreground/40">—</span>
+                    )}
+                  </Td>
                   <Td>{a.position}</Td>
-                  <Td>{a.height}</Td>
+                  <Td className="whitespace-nowrap">{a.height}</Td>
                   <Td>'{a.classYear.toString().slice(2)}</Td>
                   <Td><span className="font-mono">{a.level}</span></Td>
-                  <Td>{a.xp.toLocaleString()}</Td>
+                  <Td className="font-mono">{a.xp.toLocaleString()}</Td>
                   <Td>
                     <span className="inline-flex items-center gap-1">
                       🔥 <span className="font-mono">{a.streak}</span>
@@ -190,20 +231,214 @@ export function CoachRoster() {
                   <Td>
                     <ComplianceChip value={a.compliance} />
                   </Td>
-                  <Td>
-                    {a.hasDiscount ? (
-                      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-sm bg-[oklch(0.55_0.18_150)]/15 text-[oklch(0.75_0.18_150)] text-[10.5px] font-mono uppercase tracking-wider">
-                        50% OFF
-                      </span>
-                    ) : (
-                      "—"
-                    )}
-                  </Td>
-                  <Td className="text-muted-foreground">{a.lastActive}</Td>
+                  <Td className="text-muted-foreground whitespace-nowrap">{a.lastActive}</Td>
                 </tr>
               ))}
+              {filtered.length === 0 && (
+                <tr>
+                  <td colSpan={10} className="px-4 py-10 text-center text-[13px] text-muted-foreground">
+                    No athletes match "{search}"
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
+        </div>
+      </div>
+    </AppShell>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+/* CoachParents                                                                */
+/* -------------------------------------------------------------------------- */
+
+export function CoachParents() {
+  const [search, setSearch] = useState("");
+  const [filterMinors, setFilterMinors] = useState(false);
+
+  const minorIds = new Set(roster.filter((a) => a.isMinor).map((a) => a.id));
+
+  const contacts = parentContacts.filter((p) => {
+    if (filterMinors && !minorIds.has(p.athleteId)) return false;
+    if (!search.trim()) return true;
+    const athlete = roster.find((a) => a.id === p.athleteId);
+    return (
+      p.name.toLowerCase().includes(search.toLowerCase()) ||
+      p.phone.includes(search) ||
+      (p.email ?? "").toLowerCase().includes(search.toLowerCase()) ||
+      (athlete?.name ?? "").toLowerCase().includes(search.toLowerCase())
+    );
+  });
+
+  // Group by athlete
+  const byAthlete = roster
+    .filter((a) => (filterMinors ? a.isMinor : true))
+    .map((a) => ({
+      athlete: a,
+      parents: contacts.filter((p) => p.athleteId === a.id),
+    }))
+    .filter((row) => (search.trim() ? row.parents.length > 0 : true));
+
+  const totalContacts = parentContacts.length;
+  const minorCount = roster.filter((a) => a.isMinor).length;
+
+  return (
+    <AppShell>
+      <div className="px-6 lg:px-10 py-8 max-w-[1400px] mx-auto">
+        <PageHeader
+          eyebrow="Coach HQ · Roster"
+          title="Parent &amp; Guardian Contacts"
+          subtitle={`${totalContacts} contacts across ${minorCount} minor athletes`}
+          actions={
+            <div className="flex items-center gap-2">
+              <Link href="/app/coach/roster">
+                <a className="inline-flex items-center gap-2 h-9 px-4 rounded-md border border-border text-[12.5px] font-semibold hover:bg-muted transition">
+                  <Users className="w-4 h-4" /> Roster
+                </a>
+              </Link>
+              <button className="inline-flex items-center gap-2 h-9 px-4 rounded-md bg-primary text-primary-foreground font-semibold text-[12.5px] uppercase tracking-[0.08em] hover:brightness-110 transition">
+                <UserPlus className="w-4 h-4" /> Add Contact
+              </button>
+            </div>
+          }
+        />
+
+        {/* Filters */}
+        <div className="flex flex-wrap items-center gap-3 mb-5">
+          <div className="relative flex-1 min-w-[220px] max-w-sm">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search by name, phone, or athlete…"
+              className="w-full pl-9 pr-4 h-9 rounded-md border border-border bg-card text-[13px] placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+            />
+          </div>
+          <button
+            onClick={() => setFilterMinors(!filterMinors)}
+            className={`h-9 px-4 rounded-md text-[12.5px] font-medium border transition ${
+              filterMinors
+                ? "bg-primary/10 border-primary text-primary"
+                : "border-border text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            Minors only
+          </button>
+        </div>
+
+        {/* Stats strip */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+          {[
+            { label: "Total contacts", value: totalContacts },
+            { label: "Minor athletes", value: minorCount },
+            { label: "SMS enabled", value: parentContacts.filter((p) => p.canReceiveMessages).length },
+            { label: "Primary contacts", value: parentContacts.filter((p) => p.isPrimary).length },
+          ].map((s) => (
+            <div key={s.label} className="rounded-xl border border-border bg-card p-4">
+              <div className="text-[10px] uppercase tracking-[0.14em] font-mono text-muted-foreground mb-1">{s.label}</div>
+              <div className="text-2xl font-display">{s.value}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* Athlete groups */}
+        <div className="space-y-4">
+          {byAthlete.length === 0 && (
+            <div className="text-center py-12 text-[13px] text-muted-foreground">
+              No contacts match your search.
+            </div>
+          )}
+          {byAthlete.map(({ athlete, parents }) => (
+            <div key={athlete.id} className="rounded-xl border border-border bg-card overflow-hidden">
+              {/* Athlete header */}
+              <div className="px-4 py-3 border-b border-border bg-muted/20 flex items-center gap-3">
+                <div className="w-8 h-8 rounded-md bg-primary/15 text-primary font-semibold text-[11px] flex items-center justify-center shrink-0">
+                  {athlete.initials}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="font-semibold text-[13.5px]">{athlete.name}</div>
+                  <div className="text-[11px] text-muted-foreground font-mono">
+                    {athlete.position} · '{athlete.classYear.toString().slice(2)} · {athlete.phone ?? "no athlete phone"}
+                  </div>
+                </div>
+                <span className="text-[10.5px] font-mono text-muted-foreground bg-muted px-2 py-0.5 rounded">
+                  {parents.length} contact{parents.length !== 1 ? "s" : ""}
+                </span>
+              </div>
+
+              {parents.length === 0 ? (
+                <div className="px-4 py-4 text-[12.5px] text-muted-foreground italic">
+                  No parent contacts on file.
+                </div>
+              ) : (
+                <div className="divide-y divide-border">
+                  {parents.map((p) => (
+                    <div key={p.id} className="px-4 py-3 flex flex-wrap items-center gap-x-6 gap-y-2">
+                      {/* Name + relationship */}
+                      <div className="flex items-center gap-2.5 min-w-[180px]">
+                        <div
+                          className="w-8 h-8 rounded-md flex items-center justify-center text-[11px] font-semibold shrink-0"
+                          style={{ background: "oklch(0.55 0.18 280 / 0.15)", color: "oklch(0.75 0.18 280)" }}
+                        >
+                          {p.initials}
+                        </div>
+                        <div>
+                          <div className="font-medium text-[13px]">{p.name}</div>
+                          <div className="text-[10.5px] text-muted-foreground flex items-center gap-1.5">
+                            <span>{p.relationship}</span>
+                            {p.isPrimary && (
+                              <span className="inline-block px-1 py-px rounded bg-primary/10 text-primary text-[9px] font-mono uppercase tracking-wider">
+                                Primary
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Phone */}
+                      <div className="flex items-center gap-1.5 min-w-[160px]">
+                        <Phone className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                        <a
+                          href={`tel:${p.phone}`}
+                          className="font-mono text-[12.5px] hover:text-primary transition"
+                        >
+                          {p.phone}
+                        </a>
+                      </div>
+
+                      {/* Email */}
+                      {p.email ? (
+                        <div className="flex items-center gap-1.5 min-w-[200px]">
+                          <Mail className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                          <a
+                            href={`mailto:${p.email}`}
+                            className="text-[12.5px] text-muted-foreground hover:text-foreground transition truncate"
+                          >
+                            {p.email}
+                          </a>
+                        </div>
+                      ) : (
+                        <div className="min-w-[200px]" />
+                      )}
+
+                      {/* Flags */}
+                      <div className="flex items-center gap-2 ml-auto">
+                        {p.canReceiveMessages && (
+                          <span className="inline-flex items-center gap-1 text-[10.5px] font-mono text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded">
+                            <MessageCircle className="w-3 h-3" /> SMS on
+                          </span>
+                        )}
+                        {p.notes && (
+                          <span className="text-[11px] text-muted-foreground italic">{p.notes}</span>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          ))}
         </div>
       </div>
     </AppShell>
