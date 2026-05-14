@@ -224,7 +224,7 @@ const pwaPlugin = VitePWA({
     ],
   },
   workbox: {
-    // Cache app shell and static assets
+    maximumFileSizeToCacheInBytes: 5 * 1024 * 1024, // 5 MB — covers the current bundle
     globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2}"],
     // Serve stale content while revalidating — good for an ops app
     runtimeCaching: [
