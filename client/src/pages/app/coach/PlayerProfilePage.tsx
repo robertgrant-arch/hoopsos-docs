@@ -306,9 +306,9 @@ const REVIEWS = [
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
-type Tab = "Overview" | "Skills" | "Development Plan" | "AI Recommendations" | "Reviews";
+type Tab = "Overview" | "Skills" | "Development Plan" | "AI Recommendations" | "Reviews" | "Wearables";
 
-const TABS: Tab[] = ["Overview", "Skills", "Development Plan", "AI Recommendations", "Reviews"];
+const TABS: Tab[] = ["Overview", "Skills", "Development Plan", "AI Recommendations", "Reviews", "Wearables"];
 
 function cssColor(raw: string) {
   // "oklch(0.65_0.18_290)" → "oklch(0.65 0.18 290)"
@@ -878,6 +878,207 @@ function ReviewCard({ review }: { review: (typeof REVIEWS)[0] }) {
   );
 }
 
+// ── Wearables mock data ────────────────────────────────────────────────────────
+
+const WHOOP_METRICS = {
+  recoveryScore: 74,
+  hrv: 68,
+  restingHR: 52,
+  sleepScore: 81,
+  sleepDurationHrs: 8,
+  sleepDurationMins: 14,
+  strain: 11.4,
+};
+
+const WHOOP_HISTORY = [
+  { day: "Mon", score: 62 },
+  { day: "Tue", score: 55 },
+  { day: "Wed", score: 48 },
+  { day: "Thu", score: 71 },
+  { day: "Fri", score: 79 },
+  { day: "Sat", score: 66 },
+  { day: "Sun", score: 74 },
+];
+
+// Set to false to see the empty state
+const PLAYER_HAS_SHARED = true;
+
+function wearableRecoveryColor(score: number): string {
+  if (score >= 67) return "oklch(0.6 0.15 145)";
+  if (score >= 34) return "oklch(0.75 0.15 85)";
+  return "oklch(0.55 0.2 25)";
+}
+
+function WearableMetricCard({
+  label,
+  value,
+  unit,
+  color,
+}: {
+  label: string;
+  value: string;
+  unit?: string;
+  color?: string;
+}) {
+  return (
+    <div className="rounded-xl border border-border bg-card p-4 flex flex-col gap-1.5">
+      <div className="text-[10.5px] text-muted-foreground uppercase tracking-wide font-mono">
+        {label}
+      </div>
+      <div className="flex items-baseline gap-1.5">
+        <span
+          className="text-3xl font-bold leading-none tabular-nums"
+          style={color ? { color } : undefined}
+        >
+          {value}
+        </span>
+        {unit && (
+          <span className="text-[12px] text-muted-foreground font-medium">{unit}</span>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function WearableRecoveryBar({ day, score }: { day: string; score: number }) {
+  const color = wearableRecoveryColor(score);
+  const heightPct = Math.round((score / 100) * 100);
+  return (
+    <div className="flex flex-col items-center gap-1.5 flex-1">
+      <span className="text-[10px] font-mono font-semibold" style={{ color }}>
+        {score}
+      </span>
+      <div className="w-full h-20 flex items-end rounded-sm overflow-hidden bg-muted/40">
+        <div
+          className="w-full rounded-sm transition-all"
+          style={{ height: `${heightPct}%`, background: color, opacity: 0.85 }}
+        />
+      </div>
+      <span className="text-[10px] text-muted-foreground font-mono">{day}</span>
+    </div>
+  );
+}
+
+function CoachWearablesTab({ playerName }: { playerName: string }) {
+  if (!PLAYER_HAS_SHARED) {
+    return (
+      <div className="rounded-xl border border-border bg-card px-6 py-12 flex flex-col items-center text-center gap-3 max-w-md mx-auto mt-4">
+        <div className="text-3xl">📡</div>
+        <h3 className="font-semibold text-[15px]">{playerName} hasn't shared wearable data yet</h3>
+        <p className="text-[13px] text-muted-foreground leading-relaxed">
+          When they connect a device and enable sharing, you'll see their recovery, sleep, and
+          strain metrics here.
+        </p>
+      </div>
+    );
+  }
+
+  const m = WHOOP_METRICS;
+  const recColor = wearableRecoveryColor(m.recoveryScore);
+  const sleepColor = wearableRecoveryColor(m.sleepScore);
+
+  const readinessLabel =
+    m.recoveryScore >= 67 ? "Ready" : m.recoveryScore >= 34 ? "Caution" : "At Risk";
+  const readinessColor =
+    m.recoveryScore >= 67
+      ? "oklch(0.6 0.15 145)"
+      : m.recoveryScore >= 34
+      ? "oklch(0.75 0.15 85)"
+      : "oklch(0.55 0.2 25)";
+  const readinessTip =
+    m.recoveryScore >= 67
+      ? "Today's load can be maintained or increased."
+      : m.recoveryScore >= 34
+      ? "Consider monitoring closely and adjusting today's load."
+      : "Recommend reducing intensity to allow recovery.";
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-center gap-2">
+        <span className="text-lg">💪</span>
+        <span className="font-semibold text-[14px]">Data from WHOOP</span>
+        <span className="text-[12px] text-muted-foreground">· synced 3 min ago</span>
+      </div>
+
+      {/* Readiness summary */}
+      <div
+        className="rounded-xl border px-5 py-4 flex items-start gap-4"
+        style={{
+          background: `${readinessColor.replace(")", " / 0.07)")}`,
+          borderColor: `${readinessColor.replace(")", " / 0.3)")}`,
+        }}
+      >
+        <div
+          className="w-10 h-10 rounded-lg flex items-center justify-center text-[13px] font-bold shrink-0"
+          style={{
+            background: `${readinessColor.replace(")", " / 0.15)")}`,
+            color: readinessColor,
+            border: `1px solid ${readinessColor.replace(")", " / 0.35)")}`,
+          }}
+        >
+          {m.recoveryScore}
+        </div>
+        <div>
+          <div className="font-semibold text-[14px]" style={{ color: readinessColor }}>
+            {playerName.split(" ")[0]} is {readinessLabel} today
+          </div>
+          <p className="text-[13px] text-muted-foreground mt-0.5">{readinessTip}</p>
+        </div>
+      </div>
+
+      {/* Metric cards */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+        <WearableMetricCard
+          label="Recovery Score"
+          value={String(m.recoveryScore)}
+          unit="%"
+          color={recColor}
+        />
+        <WearableMetricCard label="HRV" value={String(m.hrv)} unit="ms" />
+        <WearableMetricCard label="Resting Heart Rate" value={String(m.restingHR)} unit="bpm" />
+        <WearableMetricCard
+          label="Sleep Score"
+          value={String(m.sleepScore)}
+          unit="%"
+          color={sleepColor}
+        />
+        <WearableMetricCard
+          label="Sleep Duration"
+          value={`${m.sleepDurationHrs}h ${m.sleepDurationMins}m`}
+        />
+        <WearableMetricCard label="Strain" value={m.strain.toFixed(1)} unit="/ 21" />
+      </div>
+
+      {/* 7-day recovery trend */}
+      <div className="rounded-xl border border-border bg-card p-5">
+        <div className="text-[11px] uppercase tracking-[0.1em] text-muted-foreground font-mono mb-3">
+          7-Day Recovery Trend
+        </div>
+        <div className="flex items-end gap-2 h-28 px-1">
+          {WHOOP_HISTORY.map((entry) => (
+            <WearableRecoveryBar key={entry.day} day={entry.day} score={entry.score} />
+          ))}
+        </div>
+        <div className="flex items-center gap-5 mt-4 pt-4 border-t border-border">
+          <div className="flex items-center gap-1.5">
+            <div className="w-2.5 h-2.5 rounded-full" style={{ background: "oklch(0.6 0.15 145)" }} />
+            <span className="text-[11px] text-muted-foreground">≥ 67 — Green</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <div className="w-2.5 h-2.5 rounded-full" style={{ background: "oklch(0.75 0.15 85)" }} />
+            <span className="text-[11px] text-muted-foreground">34–66 — Amber</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <div className="w-2.5 h-2.5 rounded-full" style={{ background: "oklch(0.55 0.2 25)" }} />
+            <span className="text-[11px] text-muted-foreground">≤ 33 — Red</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Main Page ──────────────────────────────────────────────────────────────────
 
 export function PlayerProfilePage() {
@@ -1171,6 +1372,9 @@ export function PlayerProfilePage() {
             ))}
           </div>
         )}
+
+        {/* ── Wearables ── */}
+        {activeTab === "Wearables" && <CoachWearablesTab playerName={MOCK_PLAYER.name} />}
 
         {/* ── Reviews ── */}
         {activeTab === "Reviews" && (

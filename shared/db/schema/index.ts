@@ -15,3 +15,4 @@ export * from "./practice_plans";
 export * from "./idps";
 export * from "./readiness";
 export * from "./messages";
+export * from "./wearables";

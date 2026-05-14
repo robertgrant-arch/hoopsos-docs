@@ -47,6 +47,7 @@ import MessagesPage from "@/pages/app/coach/MessagesPage";
 import CoachInboxPage from "@/pages/app/coach/CoachInboxPage";
 import PlayerProfilePage from "@/pages/app/coach/PlayerProfilePage";
 import PlayerDevelopmentView from "@/pages/app/player/PlayerDevelopmentView";
+import PlayerWearablesPage from "@/pages/app/player/PlayerWearablesPage";
 import FilmSessionDetail from "@/pages/app/coach/FilmSessionDetail";
 import FilmPlaylistPage from "@/pages/app/coach/FilmPlaylistPage";
 import TeamSchedulePage from "@/pages/app/team/TeamSchedulePage";
@@ -134,6 +135,7 @@ function Router() {
       <Route path="/app/player/skills" component={PlayerSkills} />
       <Route path="/app/player/achievements" component={PlayerAchievements} />
       <Route path="/app/player/development" component={PlayerDevelopmentView} />
+      <Route path="/app/player/wearables" component={PlayerWearablesPage} />
 
       {/* Coach HQ - auth required */}
       <Route path="/app/coach" component={guard(CoachDashboard)} />

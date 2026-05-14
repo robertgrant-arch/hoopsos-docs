@@ -10,6 +10,7 @@ import { registerPracticePlanRoutes } from "./modules/practice-plans/routes";
 import { registerEventRoutes } from "./modules/events/routes";
 import { registerReadinessRoutes } from "./modules/readiness/routes";
 import { registerMessagingRoutes } from "./modules/messaging/routes";
+import { registerWearableRoutes } from "./modules/wearables/routes";
 import { registerWebhookRoutes } from "./routes/webhooks";
 import { inngest } from "./inngest/client";
 import { analyzeFilmFn, readinessAlertFn, attendanceNotifyFn } from "./inngest";
@@ -57,6 +58,10 @@ export function createApp() {
   const messagingRouter = express.Router();
   registerMessagingRoutes(messagingRouter);
   app.use("/api/messages", messagingRouter);
+
+  const wearablesRouter = express.Router();
+  registerWearableRoutes(wearablesRouter);
+  app.use("/api/wearables", wearablesRouter);
 
   app.use(
     "/api/inngest",

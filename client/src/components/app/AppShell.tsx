@@ -41,6 +41,7 @@ const NAV: Record<Role, NavItem[]> = {
     { href: "/app/player/uploads", label: "Uploads", icon: <UploadCloud className="w-4 h-4" /> },
     { href: "/app/player/skills", label: "Skill Tracks", icon: <TrendingUp className="w-4 h-4" /> },
     { href: "/app/player/development", label: "My Development", icon: <Target className="w-4 h-4" /> },
+    { href: "/app/player/wearables", label: "Wearables", icon: <Activity className="w-4 h-4" /> },
     { href: "/app/player/achievements", label: "Achievements", icon: <Trophy className="w-4 h-4" /> },
     { href: "/app/player/plays", label: "Study Plays", icon: <BookOpen className="w-4 h-4" /> },
     { href: "/app/billing", label: "Billing", icon: <CreditCard className="w-4 h-4" /> },
