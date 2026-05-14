@@ -988,11 +988,12 @@ function PrintView({ plan }: { plan: PracticePlan }) {
 export function CoachPracticePlanBuilder() {
   const { plans, activePlanId, setActive, createPlan, duplicatePlan, deletePlan, updatePlan, addBlock, updateBlock, removeBlock, reorderBlocks } =
     usePracticePlans();
+  const { user } = useAuth();
   const [printOpen, setPrintOpen] = useState(false);
   const [mobileTab, setMobileTab] = useState<"plans" | "build" | "details">("build");
 
   // Sync plans to/from server so they appear on all devices
-  usePracticePlanSync();
+  usePracticePlanSync(user?.id);
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }));
 
