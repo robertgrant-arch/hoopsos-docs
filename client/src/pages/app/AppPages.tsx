@@ -2177,3 +2177,25 @@ export function ExpertDashboard() {
     </div>
   );
 }
+
+function ComingSoon({ title }: { title: string }) {
+  return (
+    <AppShell>
+      <div className="p-8 flex flex-col items-center justify-center min-h-[60vh] text-center">
+        <div className="text-4xl mb-4">🏗️</div>
+        <h1 className="text-2xl font-bold mb-2">{title}</h1>
+        <p className="text-muted-foreground">This section is coming soon.</p>
+      </div>
+    </AppShell>
+  );
+}
+
+export function AdminExperts() { return <ComingSoon title="Expert Verification" />; }
+export function AdminJobs() { return <ComingSoon title="AI Jobs" />; }
+export function ExpertOffers() { return <ComingSoon title="Offers" />; }
+export function ExpertBookings() { return <ComingSoon title="Bookings" />; }
+export function ParentChild() { return <ComingSoon title="My Child" />; }
+export function ParentBilling() { return <ComingSoon title="Billing" />; }
+export function TeamRoster() { return <ComingSoon title="All Athletes" />; }
+export function TeamTeams() { return <ComingSoon title="Teams" />; }
+export function TeamSettings() { return <ComingSoon title="Settings" />; }

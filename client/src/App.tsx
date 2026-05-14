@@ -87,8 +87,17 @@ import {
   AdminUsers,
   AdminModeration,
   AdminAudit,
+  AdminExperts,
+  AdminJobs,
   ParentDashboard,
+  ParentChild,
+  ParentBilling,
   ExpertDashboard,
+  ExpertOffers,
+  ExpertBookings,
+  TeamRoster,
+  TeamTeams,
+  TeamSettings,
 } from "@/pages/app/AppPages";
 
 const guard = (Component: React.ComponentType<any>) => (props: any) => (
@@ -140,6 +149,7 @@ function Router() {
       <Route path="/app/coach/practice-plans/legacy" component={guard(CoachPracticePlans)} />
       <Route path="/app/coach/bookings" component={guard(CoachBookings)} />
       <Route path="/app/coach/messages" component={guard(MessagesPage)} />
+      <Route path="/app/messages" component={guard(MessagesPage)} />
       <Route path="/app/coach/playbook" component={guard(CoachPlaybookStudioV3)} />
       <Route path="/app/coach/playbook-v3" component={guard(CoachPlaybookStudioV3)} />
 
@@ -196,12 +206,23 @@ function Router() {
       <Route path="/app/admin/users" component={AdminUsers} />
       <Route path="/app/admin/moderation" component={AdminModeration} />
       <Route path="/app/admin/audit" component={AdminAudit} />
+      <Route path="/app/admin/experts" component={AdminExperts} />
+      <Route path="/app/admin/jobs" component={AdminJobs} />
 
       {/* Parent */}
       <Route path="/app/parent" component={ParentDashboard} />
+      <Route path="/app/parent/child" component={ParentChild} />
+      <Route path="/app/parent/billing" component={ParentBilling} />
 
       {/* Expert */}
       <Route path="/app/expert" component={ExpertDashboard} />
+      <Route path="/app/expert/offers" component={ExpertOffers} />
+      <Route path="/app/expert/bookings" component={ExpertBookings} />
+
+      {/* Team extras */}
+      <Route path="/app/team/roster" component={TeamRoster} />
+      <Route path="/app/team/teams" component={TeamTeams} />
+      <Route path="/app/team/settings" component={TeamSettings} />
 
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />
