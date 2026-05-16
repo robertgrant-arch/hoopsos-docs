@@ -262,6 +262,14 @@ const COACH_SIDEBAR_SECTIONS: SidebarSection[] = [
     ],
   },
   {
+    title: "ANALYTICS",
+    items: [
+      { href: "/app/coach/effectiveness",        label: "My Effectiveness",   icon: <BarChart2 className="w-4 h-4" />    },
+      { href: "/app/coach/development-outcomes", label: "Player Outcomes",    icon: <TrendingUp className="w-4 h-4" />   },
+      { href: "/app/coach/retention-leaders",    label: "Retention Leaders",  icon: <Users className="w-4 h-4" />        },
+    ],
+  },
+  {
     title: "FILM",
     items: [
       { href: "/app/coach/film",         label: "Film Room",    icon: <Film className="w-4 h-4" />       },
@@ -337,6 +345,7 @@ const NAV: Record<Role, NavItem[]> = {
     { href: "/app/player/recruiting",            label: "Recruiting Profile", icon: <Star className="w-5 h-5" />        },
     { href: "/app/player/resume",                label: "My Resume",          icon: <FileText className="w-5 h-5" />    },
     { href: "/app/player/recruiting/visibility", label: "Privacy Settings",   icon: <Shield className="w-5 h-5" />     },
+    { href: "/app/player/vdv",                   label: "My VDV Score",       icon: <TrendingUp className="w-5 h-5" />  },
   ],
   COACH: [], // handled via COACH_SIDEBAR_SECTIONS + COACH_TABS
   TEAM_ADMIN: [
@@ -369,6 +378,15 @@ const NAV: Record<Role, NavItem[]> = {
     { href: "/app/director/recruiter-access",   label: "Recruiter Activity",  icon: <Activity className="w-5 h-5" />      },
     { href: "/app/director/recruiting-crm",     label: "School Relations",    icon: <Users className="w-5 h-5" />         },
     { href: "/app/recruiter",                   label: "Recruiter Portal",    icon: <GraduationCap className="w-5 h-5" /> },
+    { href: "/app/director/program-health",     label: "Program Health",      icon: <Activity className="w-5 h-5" />      },
+    { href: "/app/admin/operations-metrics",    label: "Operations Metrics",  icon: <BarChart2 className="w-5 h-5" />     },
+    { href: "/app/club/growth",                 label: "Club Growth",         icon: <TrendingUp className="w-5 h-5" />    },
+    { href: "/app/analytics/vdv",               label: "VDV Command Center",  icon: <Database className="w-5 h-5" />      },
+    { href: "/app/analytics/north-star",        label: "North Star KPIs",     icon: <Star className="w-5 h-5" />          },
+    { href: "/app/analytics/activation",        label: "Activation Heat Map", icon: <BarChart2 className="w-5 h-5" />    },
+    { href: "/app/analytics/data-quality",      label: "Data Quality",        icon: <Shield className="w-5 h-5" />        },
+    { href: "/app/analytics/warnings",          label: "Warning Metrics",     icon: <AlertTriangle className="w-5 h-5" /> },
+    { href: "/app/analytics/enterprise",        label: "Enterprise Expansion",icon: <TrendingUp className="w-5 h-5" />    },
   ],
   EXPERT: [
     { href: "/app/expert",          label: "Dashboard", icon: <LayoutDashboard className="w-5 h-5" /> },
@@ -390,6 +408,7 @@ const NAV: Record<Role, NavItem[]> = {
     { href: "/app/family/privacy",         label: "Privacy Settings", icon: <Shield className="w-5 h-5" />    },
     { href: "/app/family/access-requests", label: "Access Requests",  icon: <Bell className="w-5 h-5" />      },
     { href: "/app/family/report",          label: "Progress Report",  icon: <FileText className="w-5 h-5" />  },
+    { href: "/app/parent/engagement",      label: "Engagement Score", icon: <Activity className="w-5 h-5" />  },
   ],
   SUPER_ADMIN: [
     { href: "/app/admin",            label: "Overview",            icon: <LayoutDashboard className="w-5 h-5" /> },

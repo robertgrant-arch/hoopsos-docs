@@ -214,6 +214,22 @@ const TeamRoster        = React.lazy(() => import("@/pages/app/AppPages").then(m
 const TeamTeams         = React.lazy(() => import("@/pages/app/AppPages").then(m => ({ default: m.TeamTeams })));
 const TeamSettings      = React.lazy(() => import("@/pages/app/AppPages").then(m => ({ default: m.TeamSettings })));
 
+// KPI / Analytics dashboard pages
+const VDVCommandCenterPage         = React.lazy(() => import("@/pages/app/analytics/VDVCommandCenterPage"));
+const NorthStarDashboardPage       = React.lazy(() => import("@/pages/app/analytics/NorthStarDashboardPage"));
+const ActivationHeatMapPage        = React.lazy(() => import("@/pages/app/analytics/ActivationHeatMapPage"));
+const DataQualityScorecardPage     = React.lazy(() => import("@/pages/app/analytics/DataQualityScorecardPage"));
+const WarningMetricsDashboardPage  = React.lazy(() => import("@/pages/app/analytics/WarningMetricsDashboardPage"));
+const EnterpriseExpansionPage      = React.lazy(() => import("@/pages/app/analytics/EnterpriseExpansionPage"));
+const CoachEffectivenessDashboardPage = React.lazy(() => import("@/pages/app/coach/CoachEffectivenessDashboardPage"));
+const PlayerDevelopmentOutcomesPage   = React.lazy(() => import("@/pages/app/coach/PlayerDevelopmentOutcomesPage"));
+const ProgramRetentionLeadersPage     = React.lazy(() => import("@/pages/app/coach/ProgramRetentionLeadersPage"));
+const ProgramHealthDashboardPage   = React.lazy(() => import("@/pages/app/director/ProgramHealthDashboardPage"));
+const TeamOperationsMetricsPage    = React.lazy(() => import("@/pages/app/admin/TeamOperationsMetricsPage"));
+const ParentEngagementMetricsPage  = React.lazy(() => import("@/pages/app/parent/ParentEngagementMetricsPage"));
+const ClubGrowthMetricsPage        = React.lazy(() => import("@/pages/app/club/ClubGrowthMetricsPage"));
+const PlayerVDVContributionPage    = React.lazy(() => import("@/pages/app/player/PlayerVDVContributionPage"));
+
 // ---------------------------------------------------------------------------
 // Auth guard HOC — works transparently with React.lazy components
 // ---------------------------------------------------------------------------
@@ -445,6 +461,32 @@ function Router() {
         <Route path="/app/team/roster" component={TeamRoster} />
         <Route path="/app/team/teams" component={TeamTeams} />
         <Route path="/app/team/settings" component={TeamSettings} />
+
+        {/* KPI Analytics — platform-level */}
+        <Route path="/app/analytics/vdv"          component={guard(VDVCommandCenterPage)} />
+        <Route path="/app/analytics/north-star"   component={guard(NorthStarDashboardPage)} />
+        <Route path="/app/analytics/activation"   component={guard(ActivationHeatMapPage)} />
+        <Route path="/app/analytics/data-quality" component={guard(DataQualityScorecardPage)} />
+        <Route path="/app/analytics/warnings"     component={guard(WarningMetricsDashboardPage)} />
+        <Route path="/app/analytics/enterprise"   component={guard(EnterpriseExpansionPage)} />
+
+        {/* KPI Analytics — coach */}
+        <Route path="/app/coach/effectiveness"        component={guard(CoachEffectivenessDashboardPage)} />
+        <Route path="/app/coach/development-outcomes" component={guard(PlayerDevelopmentOutcomesPage)} />
+        <Route path="/app/coach/retention-leaders"    component={guard(ProgramRetentionLeadersPage)} />
+
+        {/* KPI Analytics — director / admin */}
+        <Route path="/app/director/program-health"  component={guard(ProgramHealthDashboardPage)} />
+        <Route path="/app/admin/operations-metrics" component={guard(TeamOperationsMetricsPage)} />
+
+        {/* KPI Analytics — club */}
+        <Route path="/app/club/growth" component={guard(ClubGrowthMetricsPage)} />
+
+        {/* KPI Analytics — player */}
+        <Route path="/app/player/vdv" component={PlayerVDVContributionPage} />
+
+        {/* KPI Analytics — parent */}
+        <Route path="/app/parent/engagement" component={ParentEngagementMetricsPage} />
 
         <Route path="/404" component={NotFound} />
         <Route component={NotFound} />
