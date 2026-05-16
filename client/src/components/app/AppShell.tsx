@@ -61,6 +61,8 @@ import {
   Tag,
   ChevronRight,
   Inbox,
+  Megaphone,
+  BarChart2,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { ROLE_META, type Role } from "@/lib/mock/users";
@@ -222,8 +224,9 @@ const COACH_SIDEBAR_SECTIONS: SidebarSection[] = [
   {
     title: "DAILY",
     items: [
-      { href: "/app/coach",       label: "Dashboard", icon: <LayoutDashboard className="w-4 h-4" /> },
-      { href: "/app/coach/inbox", label: "Inbox",     icon: <Inbox className="w-4 h-4" />          },
+      { href: "/app/coach",                label: "Dashboard",     icon: <LayoutDashboard className="w-4 h-4" /> },
+      { href: "/app/coach/inbox",          label: "Inbox",         icon: <Inbox className="w-4 h-4" />          },
+      { href: "/app/coach/announcements",  label: "Announcements", icon: <Megaphone className="w-4 h-4" />      },
     ],
   },
   {
@@ -256,6 +259,7 @@ const COACH_SIDEBAR_SECTIONS: SidebarSection[] = [
     title: "MORE",
     items: [
       { href: "/app/coach/bookings", label: "Bookings",        icon: <Calendar className="w-4 h-4" />     },
+      { href: "/app/club/analytics", label: "Analytics",       icon: <BarChart2 className="w-4 h-4" />    },
       { href: "/app/billing",        label: "Billing",         icon: <CreditCard className="w-4 h-4" />   },
       { href: "/app/learn",          label: "Coach Education", icon: <GraduationCap className="w-4 h-4" />},
     ],
@@ -276,6 +280,7 @@ const NAV: Record<Role, NavItem[]> = {
   ATHLETE: [
     { href: "/app/player",              label: "Home",         icon: <Home className="w-5 h-5" />         },
     { href: "/app/player/workout",      label: "Today's WOD", icon: <Dumbbell className="w-5 h-5" />     },
+    { href: "/app/player/checkin",      label: "Check-In",     icon: <Activity className="w-5 h-5" />     },
     { href: "/app/player/assignments",  label: "Assignments",  icon: <CheckSquare className="w-5 h-5" />  },
     { href: "/app/player/schedule",     label: "Schedule",     icon: <Calendar className="w-5 h-5" />     },
     { href: "/app/player/uploads",      label: "Uploads",      icon: <UploadCloud className="w-5 h-5" />  },
@@ -298,6 +303,7 @@ const NAV: Record<Role, NavItem[]> = {
     { href: "/app/club/registrations", label: "Registrations",   icon: <ClipboardList className="w-5 h-5" />  },
     { href: "/app/club/teams",         label: "Teams",           icon: <Users className="w-5 h-5" />           },
     { href: "/app/club/memberships",   label: "Memberships",     icon: <Tag className="w-5 h-5" />             },
+    { href: "/app/club/analytics",     label: "Analytics",       icon: <BarChart2 className="w-5 h-5" />      },
     { href: "/app/club/billing",       label: "Dues & Billing",  icon: <DollarSign className="w-5 h-5" />     },
     { href: "/app/team/roster",        label: "All Athletes",    icon: <UserIcon className="w-5 h-5" />       },
     { href: "/app/team/invite",        label: "Invite",          icon: <Users className="w-5 h-5" />          },
@@ -320,6 +326,7 @@ const NAV: Record<Role, NavItem[]> = {
     { href: "/app/parent/billing",       label: "Billing",       icon: <CreditCard className="w-5 h-5" />   },
     { href: "/app/parent/forms",         label: "Forms",         icon: <FileText className="w-5 h-5" />     },
     { href: "/app/parent/announcements", label: "Announcements", icon: <Bell className="w-5 h-5" />         },
+    { href: "/app/parent/digest",        label: "Weekly Digest", icon: <FileText className="w-5 h-5" />      },
     { href: "/app/messages",             label: "Messages",      icon: <MessageSquare className="w-5 h-5" />},
   ],
   SUPER_ADMIN: [

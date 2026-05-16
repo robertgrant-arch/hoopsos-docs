@@ -68,6 +68,13 @@ import {
   todaysWod,
 } from "@/lib/mock/data";
 import { demoUsers, ROLE_META } from "@/lib/mock/users";
+import {
+  courses as educationCourses,
+  getCourse,
+  CATEGORY_LABELS,
+  LEVEL_LABELS,
+  type LessonBlock,
+} from "@/lib/mock/education";
 
 /* ==========================================================================
    Shared primitives
@@ -1732,91 +1739,213 @@ export function LiveEventDetail() {
    ========================================================================== */
 
 export function LearnHome() {
-  const { user } = useAuth();
-  const inProgress = courses.filter((c) => c.progress && c.progress > 0 && c.progress < 100);
+  const [activeCategory, setActiveCategory] = useState<string>("all");
+
+  const CATEGORY_COLORS: Record<string, string> = {
+    player_development:  "oklch(0.65 0.18 250)",
+    practice_design:     "oklch(0.72 0.18 290)",
+    film_and_analysis:   "oklch(0.6 0.15 145)",
+    defensive_systems:   "oklch(0.55 0.2 25)",
+    communication:       "oklch(0.78 0.16 75)",
+    program_building:    "oklch(0.6 0.2 330)",
+    offensive_systems:   "oklch(0.72 0.16 200)",
+  };
+
+  const LEVEL_COLORS: Record<string, string> = {
+    foundation:   "oklch(0.65 0.18 250)",
+    intermediate: "oklch(0.78 0.16 75)",
+    advanced:     "oklch(0.68 0.22 25)",
+  };
+
+  const filterCategories = [
+    { key: "all",                label: "All" },
+    { key: "player_development", label: "Player Development" },
+    { key: "practice_design",    label: "Practice Design" },
+    { key: "film_and_analysis",  label: "Film & Analysis" },
+    { key: "defensive_systems",  label: "Defense" },
+    { key: "communication",      label: "Communication" },
+    { key: "program_building",   label: "Program Building" },
+  ];
+
+  const inProgressCourses = educationCourses.filter((c) => c.inProgress);
+
+  const filteredCourses =
+    activeCategory === "all"
+      ? educationCourses
+      : educationCourses.filter((c) => c.category === activeCategory);
+
+  const totalLessons = educationCourses.reduce((acc, c) => acc + c.lessons.length, 0);
+  const totalMin = educationCourses.reduce((acc, c) => acc + c.durationMin, 0);
+
   return (
     <AppShell>
-      <div className="px-6 lg:px-10 py-8 max-w-[1400px] mx-auto">
+      <div className="px-4 sm:px-6 lg:px-10 py-7 max-w-[1200px] mx-auto">
         <PageHeader
-          eyebrow={user?.role === "COACH" ? "Coach Education" : "Learn"}
-          title={user?.role === "COACH" ? "Sharpen the coach." : "Build the blueprint."}
-          subtitle="MasterClass-style cinematic VOD. Included courses are free with membership. Premium bundles sold à la carte."
+          eyebrow="Coach Education"
+          title="Learn & Grow"
+          subtitle="Courses built for basketball coaches who take player development seriously. Every lesson ends with something you can use tomorrow."
         />
 
-        {inProgress.length > 0 && (
-          <Section title="Continue Learning">
-            <div className="grid md:grid-cols-2 gap-3">
-              {inProgress.map((c) => (
-                <Link key={c.id} href={`/app/learn/courses/${c.id}`}>
-                  <a className="flex items-center gap-4 p-4 rounded-lg border border-border bg-card hover:border-primary/40 transition">
-                    <div className="w-28 h-20 rounded-md bg-gradient-to-br from-primary/40 to-[oklch(0.2_0.01_260)] flex items-center justify-center display text-2xl text-white">
-                      {c.instructorInitials}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="text-[11.5px] uppercase tracking-[0.1em] font-mono text-muted-foreground mb-1">
-                        {c.category} · {c.instructor}
-                      </div>
-                      <div className="font-medium text-[14px] mb-1">{c.title}</div>
-                      <div className="h-1 rounded-full bg-[oklch(0.28_0.01_260)] overflow-hidden">
-                        <div className="h-full bg-primary" style={{ width: `${c.progress}%` }} />
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <div className="display text-lg">{c.progress}%</div>
-                    </div>
-                  </a>
-                </Link>
-              ))}
+        {/* Stats strip */}
+        <div className="flex items-center gap-2 mb-8 text-[12px] text-muted-foreground font-mono">
+          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-border bg-card">
+            <BookOpen className="w-3.5 h-3.5" />
+            {educationCourses.length} Courses
+          </span>
+          <span className="text-muted-foreground/40">·</span>
+          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-border bg-card">
+            {totalLessons} Lessons
+          </span>
+          <span className="text-muted-foreground/40">·</span>
+          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-border bg-card">
+            ~{totalMin} min total content
+          </span>
+        </div>
+
+        {/* Continue Learning */}
+        {inProgressCourses.length > 0 && (
+          <div className="mb-10">
+            <div className="text-[11px] uppercase tracking-[0.14em] font-semibold text-muted-foreground/60 mb-3">
+              Continue Learning
             </div>
-          </Section>
+            <div className="flex gap-3 overflow-x-auto pb-2" style={{ scrollbarWidth: "none" }}>
+              {inProgressCourses.map((c) => {
+                const catColor = CATEGORY_COLORS[c.category] ?? "oklch(0.72 0.18 290)";
+                const completed = c.completedLessons ?? 0;
+                const total = c.lessons.length;
+                const pct = total > 0 ? Math.round((completed / total) * 100) : 0;
+                return (
+                  <Link key={c.id} href={`/app/learn/courses/${c.id}`}>
+                    <a className="shrink-0 w-[280px] sm:w-[320px] flex flex-col gap-3 p-4 rounded-xl border border-border bg-card hover:border-[oklch(0.72_0.18_290)/0.5] transition-all duration-150 group">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          <span
+                            className="inline-block text-[10px] font-semibold uppercase tracking-[0.08em] px-2 py-0.5 rounded-full mb-2"
+                            style={{ background: `${catColor.replace(")", " / 0.15)")}`, color: catColor }}
+                          >
+                            {CATEGORY_LABELS[c.category]}
+                          </span>
+                          <div className="font-semibold text-[13px] leading-snug line-clamp-2">{c.title}</div>
+                        </div>
+                        <span className="shrink-0 text-[11px] font-bold tabular-nums" style={{ color: "oklch(0.75 0.12 140)" }}>
+                          {pct}%
+                        </span>
+                      </div>
+                      <div>
+                        <div className="flex justify-between text-[11px] text-muted-foreground mb-1.5">
+                          <span>{completed} of {total} lessons</span>
+                        </div>
+                        <div className="h-1 rounded-full bg-[oklch(0.22_0.005_260)] overflow-hidden">
+                          <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, background: "oklch(0.75 0.12 140)" }} />
+                        </div>
+                      </div>
+                      <div className="flex justify-end">
+                        <span className="text-[11px] font-semibold px-3 py-1 rounded-full transition-colors"
+                          style={{ background: "oklch(0.72 0.18 290 / 0.14)", color: "oklch(0.72 0.18 290)" }}>
+                          Continue →
+                        </span>
+                      </div>
+                    </a>
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
         )}
 
-        <Section title="All Courses">
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {courses.map((c) => (
-              <Link key={c.id} href={`/app/learn/courses/${c.id}`}>
-                <a className="rounded-xl overflow-hidden border border-border bg-card hover:border-primary/40 transition group">
-                  <div
-                    className="aspect-[16/10] relative"
-                    style={{
-                      background:
-                        c.hero === "amber-court"
-                          ? "radial-gradient(ellipse at 40% 40%, oklch(0.55 0.18 55), oklch(0.1 0.01 260))"
-                          : c.hero === "navy-court"
-                            ? "radial-gradient(ellipse at 40% 40%, oklch(0.3 0.15 240), oklch(0.1 0.01 240))"
-                            : c.hero === "white-court"
-                              ? "radial-gradient(ellipse at 40% 40%, oklch(0.45 0.03 80), oklch(0.15 0.01 60))"
-                              : "radial-gradient(ellipse at 40% 40%, oklch(0.35 0.15 300), oklch(0.1 0.01 280))",
-                    }}
-                  >
-                    <div className="absolute inset-0 bg-black/20 group-hover:bg-black/0 transition" />
-                    <div className="absolute bottom-3 right-3 w-12 h-12 rounded-full bg-primary/90 backdrop-blur flex items-center justify-center opacity-0 group-hover:opacity-100 transition">
-                      <Play className="w-5 h-5 text-primary-foreground" fill="currentColor" />
-                    </div>
-                    {c.tier === "PREMIUM" && (
-                      <div className="absolute top-3 left-3 px-2 py-0.5 rounded-sm bg-[oklch(0.72_0.18_290)]/90 text-white text-[10px] font-mono uppercase tracking-wider font-bold">
-                        Premium
+        {/* Filter bar */}
+        <div className="flex gap-2 mb-6 overflow-x-auto pb-1" style={{ scrollbarWidth: "none" }}>
+          {filterCategories.map((cat) => {
+            const active = activeCategory === cat.key;
+            return (
+              <button
+                key={cat.key}
+                onClick={() => setActiveCategory(cat.key)}
+                className="shrink-0 px-3.5 py-1.5 rounded-full text-[12px] font-medium transition-all duration-150 whitespace-nowrap border"
+                style={active ? {
+                  background: "oklch(0.72 0.18 290 / 0.14)",
+                  borderColor: "oklch(0.72 0.18 290 / 0.4)",
+                  color: "oklch(0.72 0.18 290)",
+                  fontWeight: 600,
+                } : {
+                  background: "transparent",
+                  borderColor: "oklch(0.28 0.005 260)",
+                  color: "oklch(0.55 0.02 260)",
+                }}
+              >
+                {cat.label}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Course grid */}
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {filteredCourses.map((c) => {
+            const catColor = CATEGORY_COLORS[c.category] ?? "oklch(0.72 0.18 290)";
+            const lvlColor = LEVEL_COLORS[c.level] ?? "oklch(0.65 0.18 250)";
+            const completed = c.completedLessons ?? 0;
+            const total = c.lessons.length;
+            const pct = total > 0 ? Math.round((completed / total) * 100) : 0;
+            return (
+              <div key={c.id} className="flex flex-col rounded-xl border border-border bg-card hover:border-[oklch(0.72_0.18_290)/0.4] transition-all duration-150 overflow-hidden group">
+                <div className="p-5 flex-1 flex flex-col gap-3">
+                  <div className="flex items-start justify-between gap-2">
+                    <span className="inline-block text-[10px] font-semibold uppercase tracking-[0.08em] px-2 py-0.5 rounded-full"
+                      style={{ background: `${catColor.replace(")", " / 0.15)")}`, color: catColor }}>
+                      {CATEGORY_LABELS[c.category]}
+                    </span>
+                    <span className="inline-block text-[10px] font-semibold uppercase tracking-[0.06em] px-2 py-0.5 rounded-full border"
+                      style={{ borderColor: `${lvlColor.replace(")", " / 0.3)")}`, color: lvlColor, background: `${lvlColor.replace(")", " / 0.08)")}` }}>
+                      {LEVEL_LABELS[c.level]}
+                    </span>
+                  </div>
+                  <div>
+                    <div className="font-bold text-[15px] leading-snug mb-1">{c.title}</div>
+                    <div className="text-[12.5px] text-muted-foreground leading-snug line-clamp-2">{c.subtitle}</div>
+                  </div>
+                  <div className="text-[11.5px] text-muted-foreground font-mono mt-auto">
+                    ~{c.durationMin} min · {total} lessons
+                  </div>
+                </div>
+                <div className="border-t border-border px-5 py-3.5 flex items-center justify-between gap-3">
+                  {c.inProgress && (
+                    <span className="text-[10px] font-semibold uppercase tracking-[0.08em] px-2 py-0.5 rounded-full"
+                      style={{ background: "oklch(0.75 0.12 140 / 0.15)", color: "oklch(0.75 0.12 140)" }}>
+                      In Progress
+                    </span>
+                  )}
+                  {completed > 0 ? (
+                    <div className="flex-1 min-w-0">
+                      <div className="flex justify-between text-[11px] text-muted-foreground mb-1.5">
+                        <span>{completed} of {total} complete</span>
+                        <span>{pct}%</span>
                       </div>
-                    )}
-                  </div>
-                  <div className="p-4">
-                    <div className="text-[11px] uppercase tracking-[0.1em] font-mono text-muted-foreground mb-1">
-                      {c.category} · {c.instructor}
+                      <div className="h-1 rounded-full bg-[oklch(0.22_0.005_260)] overflow-hidden">
+                        <div className="h-full rounded-full" style={{ width: `${pct}%`, background: "oklch(0.75 0.12 140)" }} />
+                      </div>
                     </div>
-                    <div className="display text-lg leading-tight mb-1">{c.title}</div>
-                    <div className="text-[12px] text-muted-foreground line-clamp-2 mb-2">
-                      {c.summary}
-                    </div>
-                    <div className="text-[11.5px] text-muted-foreground font-mono">
-                      {c.lessonCount} lessons · {Math.round(c.totalMinutes / 60)}h
-                      {c.tier === "PREMIUM" && ` · $${c.price}`}
-                    </div>
-                  </div>
-                </a>
-              </Link>
-            ))}
-          </div>
-        </Section>
+                  ) : (
+                    <Link href={`/app/learn/courses/${c.id}`}>
+                      <a className="ml-auto text-[12px] font-semibold px-3.5 py-1.5 rounded-full transition-colors"
+                        style={{ background: "oklch(0.72 0.18 290 / 0.12)", color: "oklch(0.72 0.18 290)" }}>
+                        Start course →
+                      </a>
+                    </Link>
+                  )}
+                  {completed > 0 && (
+                    <Link href={`/app/learn/courses/${c.id}`}>
+                      <a className="shrink-0 text-[11px] font-semibold px-3 py-1.5 rounded-full transition-colors"
+                        style={{ background: "oklch(0.72 0.18 290 / 0.12)", color: "oklch(0.72 0.18 290)" }}>
+                        Continue
+                      </a>
+                    </Link>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
       </div>
     </AppShell>
   );
@@ -1824,107 +1953,268 @@ export function LearnHome() {
 
 export function LearnCourseDetail() {
   const [, params] = useRoute("/app/learn/courses/:id");
-  const course = courses.find((c) => c.id === params?.id) ?? courses[0];
-  const { user } = useAuth();
-  const hasAccess = course.tier === "INCLUDED" || (course.progress ?? 0) > 0;
+  const course = getCourse(params?.id ?? "") ?? educationCourses[0];
+
+  const [activeLessonId, setActiveLessonId] = useState<string>(course.lessons[0]?.id ?? "");
+  const [completedCount, setCompletedCount] = useState<number>(course.completedLessons ?? 0);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  const activeLesson = course.lessons.find((l) => l.id === activeLessonId) ?? course.lessons[0];
+  const activeLessonIdx = course.lessons.findIndex((l) => l.id === activeLessonId);
+  const totalLessons = course.lessons.length;
+  const pct = totalLessons > 0 ? Math.round((completedCount / totalLessons) * 100) : 0;
+  const allDone = completedCount >= totalLessons;
+
+  const CATEGORY_COLORS: Record<string, string> = {
+    player_development:  "oklch(0.65 0.18 250)",
+    practice_design:     "oklch(0.72 0.18 290)",
+    film_and_analysis:   "oklch(0.6 0.15 145)",
+    defensive_systems:   "oklch(0.55 0.2 25)",
+    communication:       "oklch(0.78 0.16 75)",
+    program_building:    "oklch(0.6 0.2 330)",
+    offensive_systems:   "oklch(0.72 0.16 200)",
+  };
+  const LEVEL_COLORS: Record<string, string> = {
+    foundation:   "oklch(0.65 0.18 250)",
+    intermediate: "oklch(0.78 0.16 75)",
+    advanced:     "oklch(0.68 0.22 25)",
+  };
+
+  const catColor = CATEGORY_COLORS[course.category] ?? "oklch(0.72 0.18 290)";
+  const lvlColor = LEVEL_COLORS[course.level] ?? "oklch(0.65 0.18 250)";
+
+  function handleMarkComplete() {
+    if (completedCount < totalLessons) {
+      const newCount = Math.max(completedCount, activeLessonIdx + 1);
+      setCompletedCount(newCount);
+      if (activeLessonIdx < totalLessons - 1) {
+        setActiveLessonId(course.lessons[activeLessonIdx + 1].id);
+      }
+    }
+  }
+
+  function renderBlock(block: LessonBlock, idx: number) {
+    if (block.type === "p") {
+      return <p key={idx} className="text-[14px] leading-relaxed text-foreground/90 mb-4">{block.content}</p>;
+    }
+    if (block.type === "h2") {
+      return <h2 key={idx} className="text-[17px] font-bold mt-6 mb-3">{block.content}</h2>;
+    }
+    if (block.type === "h3") {
+      return <h3 key={idx} className="text-[15px] font-semibold mt-4 mb-2">{block.content}</h3>;
+    }
+    if (block.type === "quote") {
+      return (
+        <blockquote key={idx} className="my-5 pl-4 border-l-[3px] italic" style={{ borderColor: "oklch(0.72 0.18 290)" }}>
+          <p className="text-[14px] leading-relaxed text-foreground/80 mb-1">"{block.content}"</p>
+          {block.attribution && (
+            <footer className="text-[11.5px] text-muted-foreground not-italic font-medium">— {block.attribution}</footer>
+          )}
+        </blockquote>
+      );
+    }
+    if (block.type === "bullets") {
+      return (
+        <ul key={idx} className="mb-4 space-y-2">
+          {block.content.map((item, i) => (
+            <li key={i} className="flex items-start gap-2 text-[14px] leading-relaxed text-foreground/90">
+              <ChevronRight className="w-4 h-4 shrink-0 mt-0.5" style={{ color: "oklch(0.72 0.18 290)" }} />
+              <span>{item}</span>
+            </li>
+          ))}
+        </ul>
+      );
+    }
+    if (block.type === "callout") {
+      const variant = block.variant ?? "info";
+      const variantStyles = {
+        info:    { bg: "oklch(0.65 0.18 250 / 0.10)", border: "oklch(0.65 0.18 250 / 0.35)", color: "oklch(0.65 0.18 250)", icon: "ℹ" },
+        warning: { bg: "oklch(0.78 0.16 75 / 0.10)",  border: "oklch(0.78 0.16 75 / 0.35)",  color: "oklch(0.78 0.16 75)",  icon: "⚠" },
+        tip:     { bg: "oklch(0.75 0.12 140 / 0.10)", border: "oklch(0.75 0.12 140 / 0.35)", color: "oklch(0.75 0.12 140)", icon: "✦" },
+      }[variant];
+      return (
+        <div key={idx} className="my-5 flex items-start gap-3 p-4 rounded-xl border text-[13.5px] leading-relaxed"
+          style={{ background: variantStyles.bg, borderColor: variantStyles.border }}>
+          <span className="shrink-0 font-bold text-[15px]" style={{ color: variantStyles.color }}>{variantStyles.icon}</span>
+          <span className="text-foreground/85">{block.content}</span>
+        </div>
+      );
+    }
+    return null;
+  }
+
+  const LessonList = (
+    <div className="flex flex-col divide-y divide-border">
+      {course.lessons.map((lesson, idx) => {
+        const isActive = lesson.id === activeLessonId;
+        const isDone = idx < completedCount;
+        return (
+          <button key={lesson.id} onClick={() => { setActiveLessonId(lesson.id); setSidebarOpen(false); }}
+            className="flex items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-muted/30 group"
+            style={isActive ? { background: "oklch(0.72 0.18 290 / 0.10)" } : undefined}>
+            <span className="shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold border transition-all"
+              style={isDone
+                ? { background: "oklch(0.75 0.12 140)", borderColor: "oklch(0.75 0.12 140)", color: "#fff" }
+                : isActive
+                ? { background: "oklch(0.72 0.18 290 / 0.20)", borderColor: "oklch(0.72 0.18 290)", color: "oklch(0.72 0.18 290)" }
+                : { background: "transparent", borderColor: "oklch(0.32 0.005 260)", color: "oklch(0.55 0.02 260)" }}>
+              {isDone ? "✓" : idx + 1}
+            </span>
+            <div className="flex-1 min-w-0">
+              <div className="text-[12.5px] font-medium leading-snug line-clamp-2 transition-colors"
+                style={{ color: isActive ? "oklch(0.72 0.18 290)" : undefined }}>
+                {lesson.title}
+              </div>
+              <div className="text-[11px] text-muted-foreground mt-0.5 font-mono">{lesson.durationMin} min</div>
+            </div>
+          </button>
+        );
+      })}
+    </div>
+  );
 
   return (
     <AppShell>
-      <div className="px-6 lg:px-10 py-8 max-w-[1200px] mx-auto">
+      <div className="max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-10 py-7">
         <Link href="/app/learn">
-          <a className="text-[12px] text-muted-foreground hover:text-foreground flex items-center gap-1 mb-4">
-            ← Learn
+          <a className="inline-flex items-center gap-1.5 text-[12px] text-muted-foreground hover:text-foreground mb-6 transition-colors">
+            ← Back to Learn
           </a>
         </Link>
 
-        <div className="grid lg:grid-cols-[1fr_360px] gap-8">
-          <div>
-            <div
-              className="aspect-video rounded-xl mb-6 relative overflow-hidden"
-              style={{
-                background:
-                  "radial-gradient(ellipse at 40% 40%, oklch(0.5 0.18 55), oklch(0.1 0.01 260))",
-              }}
-            >
-              <div className="absolute inset-0 flex items-center justify-center">
-                <button className="w-20 h-20 rounded-full bg-primary/90 flex items-center justify-center hover:scale-105 transition">
-                  <Play className="w-8 h-8 text-primary-foreground" fill="currentColor" />
-                </button>
+        {/* Course header */}
+        <div className="mb-8">
+          <div className="flex flex-wrap items-center gap-2 mb-3">
+            <span className="text-[10px] font-semibold uppercase tracking-[0.08em] px-2.5 py-1 rounded-full"
+              style={{ background: `${catColor.replace(")", " / 0.15)")}`, color: catColor }}>
+              {CATEGORY_LABELS[course.category]}
+            </span>
+            <span className="text-[10px] font-semibold uppercase tracking-[0.06em] px-2.5 py-1 rounded-full border"
+              style={{ borderColor: `${lvlColor.replace(")", " / 0.3)")}`, color: lvlColor, background: `${lvlColor.replace(")", " / 0.08)")}` }}>
+              {LEVEL_LABELS[course.level]}
+            </span>
+          </div>
+          <h1 className="text-2xl sm:text-3xl font-bold leading-tight mb-2">{course.title}</h1>
+          <p className="text-[13.5px] text-muted-foreground leading-relaxed max-w-2xl mb-4">{course.description}</p>
+          <div className="flex flex-wrap items-center gap-x-5 gap-y-1.5 text-[12.5px] text-muted-foreground font-mono mb-5">
+            <span>{totalLessons} lessons</span>
+            <span>·</span>
+            <span>~{course.durationMin} min</span>
+            <span>·</span>
+            <span>{LEVEL_LABELS[course.level]}</span>
+          </div>
+          {completedCount > 0 && (
+            <div className="max-w-lg">
+              <div className="flex justify-between text-[11px] text-muted-foreground mb-1.5">
+                <span>{completedCount} of {totalLessons} lessons complete</span>
+                <span style={{ color: "oklch(0.75 0.12 140)" }}>{pct}%</span>
+              </div>
+              <div className="h-1.5 rounded-full bg-[oklch(0.22_0.005_260)] overflow-hidden">
+                <div className="h-full rounded-full transition-all duration-500" style={{ width: `${pct}%`, background: "oklch(0.75 0.12 140)" }} />
               </div>
             </div>
+          )}
+        </div>
 
-            <div className="text-[11px] uppercase tracking-[0.14em] font-mono text-primary mb-2">
-              {course.category} · With {course.instructor}
+        {/* Mobile: lesson toggle */}
+        <div className="lg:hidden mb-4">
+          <button onClick={() => setSidebarOpen((v) => !v)}
+            className="w-full flex items-center justify-between px-4 py-3 rounded-xl border border-border bg-card text-[13px] font-medium">
+            <span>Lesson {activeLessonIdx + 1}: {activeLesson?.title}</span>
+            <ChevronRight className="w-4 h-4 text-muted-foreground transition-transform"
+              style={{ transform: sidebarOpen ? "rotate(90deg)" : undefined }} />
+          </button>
+          {sidebarOpen && (
+            <div className="mt-2 rounded-xl border border-border bg-card overflow-hidden">{LessonList}</div>
+          )}
+        </div>
+
+        {/* Main layout */}
+        <div className="flex gap-8 items-start">
+          {/* Desktop sidebar */}
+          <aside className="hidden lg:block w-[280px] shrink-0 rounded-xl border border-border bg-card overflow-hidden sticky top-6">
+            <div className="px-4 py-3 border-b border-border">
+              <div className="text-[10.5px] uppercase tracking-[0.12em] font-semibold text-muted-foreground/60">
+                {totalLessons} Lessons
+              </div>
             </div>
-            <h1 className="display text-4xl leading-tight mb-3">{course.title}</h1>
-            <p className="text-[14px] leading-relaxed text-muted-foreground mb-6 max-w-3xl">
-              {course.summary}
-            </p>
+            {LessonList}
+          </aside>
 
-            <div className="flex items-center gap-5 text-[13px] mb-8">
-              <span className="flex items-center gap-1.5">
-                <BookOpen className="w-4 h-4 text-primary" /> {course.lessonCount} lessons
-              </span>
-              <span className="flex items-center gap-1.5 text-muted-foreground">
-                <Clock className="w-4 h-4" /> {Math.round(course.totalMinutes / 60)}h total
-              </span>
-              {course.tier === "PREMIUM" && (
-                <span className="px-2 py-0.5 rounded-sm bg-[oklch(0.72_0.18_290)]/15 text-[oklch(0.82_0.18_290)] text-[10.5px] font-mono uppercase tracking-wider">
-                  Premium · ${course.price}
-                </span>
-              )}
-            </div>
-
-            <h3 className="display text-xl mb-3">Curriculum</h3>
-            <div className="rounded-lg border border-border bg-card divide-y divide-border">
-              {Array.from({ length: Math.min(course.lessonCount, 6) }).map((_, i) => (
-                <div
-                  key={i}
-                  className="flex items-center gap-3 px-4 py-3 text-[13px] hover:bg-muted/30 transition"
-                >
-                  <span className="font-mono text-[11px] text-muted-foreground w-6">
-                    {String(i + 1).padStart(2, "0")}
-                  </span>
-                  <Play className="w-3.5 h-3.5 text-primary shrink-0" fill="currentColor" />
-                  <span className="flex-1">Lesson {i + 1} — preview title</span>
-                  {!hasAccess && i > 0 && <Lock className="w-3.5 h-3.5 text-muted-foreground" />}
-                  <span className="font-mono text-[11px] text-muted-foreground">
-                    {8 + ((i * 3) % 20)} min
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="sticky top-6 h-fit">
-            {hasAccess ? (
-              <div className="rounded-xl border border-border bg-card p-5">
-                <div className="text-[11px] uppercase tracking-[0.12em] font-mono text-[oklch(0.75_0.18_150)] mb-2">
-                  You're enrolled
-                </div>
-                <div className="display text-2xl mb-1">{course.progress ?? 0}% complete</div>
-                <div className="h-1.5 rounded-full bg-[oklch(0.28_0.01_260)] overflow-hidden mb-4">
-                  <div
-                    className="h-full bg-[oklch(0.75_0.18_150)]"
-                    style={{ width: `${course.progress ?? 0}%` }}
-                  />
-                </div>
-                <button className="w-full h-11 rounded-md bg-primary text-primary-foreground font-semibold text-[13px] uppercase tracking-[0.08em]">
-                  Continue Learning
-                </button>
+          {/* Lesson content */}
+          <div className="flex-1 min-w-0">
+            {allDone ? (
+              <div className="rounded-2xl border border-[oklch(0.75_0.12_140)/0.4] bg-[oklch(0.75_0.12_140)/0.07] p-8 text-center">
+                <div className="text-5xl mb-4">🎉</div>
+                <h2 className="text-[22px] font-bold mb-2">Course Complete</h2>
+                <p className="text-[14px] text-muted-foreground leading-relaxed max-w-md mx-auto">
+                  You've completed <strong>{course.title}</strong>. Apply what you've learned in your next session.
+                </p>
+                <Link href="/app/learn">
+                  <a className="inline-block mt-6 px-5 py-2.5 rounded-full text-[13px] font-semibold transition-colors"
+                    style={{ background: "oklch(0.72 0.18 290)", color: "#fff" }}>
+                    Browse More Courses
+                  </a>
+                </Link>
               </div>
             ) : (
-              <div className="rounded-xl border border-border bg-card p-5">
-                <div className="text-[11px] uppercase tracking-[0.12em] font-mono text-muted-foreground mb-2">
-                  Enroll
+              <div className="rounded-xl border border-border bg-card overflow-hidden">
+                <div className="px-6 py-5 border-b border-border flex items-start justify-between gap-4">
+                  <div>
+                    <div className="text-[11px] font-mono text-muted-foreground mb-1 uppercase tracking-[0.1em]">
+                      Lesson {activeLessonIdx + 1} of {totalLessons}
+                    </div>
+                    <h2 className="text-[17px] font-bold leading-snug">{activeLesson?.title}</h2>
+                  </div>
+                  <span className="shrink-0 text-[11px] font-semibold px-2.5 py-1 rounded-full font-mono"
+                    style={{ background: "oklch(0.22 0.005 260)", color: "oklch(0.6 0.02 260)" }}>
+                    {activeLesson?.durationMin} min
+                  </span>
                 </div>
-                <div className="display text-3xl mb-1">${course.price}</div>
-                <div className="text-[12px] text-muted-foreground mb-4">lifetime access</div>
-                <button className="w-full h-11 rounded-md bg-primary text-primary-foreground font-semibold text-[13px] uppercase tracking-[0.08em]">
-                  Buy Course
-                </button>
-                <div className="mt-4 p-3 rounded-md bg-primary/10 text-[11.5px] leading-relaxed text-primary">
-                  <strong>Player Core members</strong> get our full included library free.
+
+                <div className="px-6 py-6">
+                  {activeLesson?.body.map((block, idx) => renderBlock(block, idx))}
+                </div>
+
+                {activeLesson?.actionType !== "none" && activeLesson?.actionHref && (
+                  <div className="mx-6 mb-6 p-5 rounded-xl border"
+                    style={{ background: "oklch(0.72 0.18 290 / 0.07)", borderColor: "oklch(0.72 0.18 290 / 0.3)" }}>
+                    <div className="text-[11px] uppercase tracking-[0.1em] font-semibold mb-1" style={{ color: "oklch(0.72 0.18 290)" }}>
+                      Try it in HoopsOS
+                    </div>
+                    <p className="text-[13px] text-muted-foreground leading-relaxed mb-4">
+                      This lesson ends with an action — apply what you just learned directly in your account.
+                    </p>
+                    <Link href={activeLesson.actionHref}>
+                      <a className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-[13px] font-semibold transition-colors"
+                        style={{ background: "oklch(0.72 0.18 290)", color: "#fff" }}>
+                        {activeLesson.actionLabel ?? "Open in HoopsOS"}
+                        <ArrowRight className="w-3.5 h-3.5" />
+                      </a>
+                    </Link>
+                  </div>
+                )}
+
+                <div className="px-6 pb-6 flex items-center justify-between gap-3 flex-wrap border-t border-border pt-5">
+                  <div className="flex items-center gap-2">
+                    <button disabled={activeLessonIdx === 0}
+                      onClick={() => setActiveLessonId(course.lessons[activeLessonIdx - 1].id)}
+                      className="px-3.5 py-2 rounded-lg text-[12.5px] font-medium border border-border bg-card hover:bg-muted/40 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
+                      ← Previous
+                    </button>
+                    <button disabled={activeLessonIdx === totalLessons - 1}
+                      onClick={() => setActiveLessonId(course.lessons[activeLessonIdx + 1].id)}
+                      className="px-3.5 py-2 rounded-lg text-[12.5px] font-medium border border-border bg-card hover:bg-muted/40 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
+                      Next →
+                    </button>
+                  </div>
+                  <button onClick={handleMarkComplete} disabled={activeLessonIdx < completedCount}
+                    className="px-4 py-2 rounded-lg text-[12.5px] font-semibold transition-colors disabled:opacity-50 disabled:cursor-default"
+                    style={activeLessonIdx < completedCount
+                      ? { background: "oklch(0.75 0.12 140 / 0.15)", color: "oklch(0.75 0.12 140)" }
+                      : { background: "oklch(0.72 0.18 290)", color: "#fff" }}>
+                    {activeLessonIdx < completedCount ? "✓ Complete" : "Mark Complete"}
+                  </button>
                 </div>
               </div>
             )}
