@@ -87,6 +87,24 @@ import FilmPlaylistPage from "@/pages/app/coach/FilmPlaylistPage";
 import TeamSchedulePage from "@/pages/app/team/TeamSchedulePage";
 import { PlayStudyList, PlayStudyPage } from "@/pages/app/player/PlayStudy";
 
+// Team Management Platform (all 5 phases)
+import RosterDetailPage from "@/pages/app/team/RosterDetailPage";
+import StaffDirectoryPage from "@/pages/app/team/StaffDirectoryPage";
+import DocumentLibraryPage from "@/pages/app/team/DocumentLibraryPage";
+import TeamMessagingPage from "@/pages/app/team/TeamMessagingPage";
+import EventDetailPage from "@/pages/app/team/EventDetailPage";
+import TournamentPage from "@/pages/app/team/TournamentPage";
+import TeamCalendarPage from "@/pages/app/team/TeamCalendarPage";
+import AbsenceManagementPage from "@/pages/app/coach/AbsenceManagementPage";
+import FormsManagerPage from "@/pages/app/admin/FormsManagerPage";
+import SeasonSetupPage from "@/pages/app/admin/SeasonSetupPage";
+import OnboardingPage from "@/pages/app/admin/OnboardingPage";
+import ReEnrollmentPage from "@/pages/app/admin/ReEnrollmentPage";
+import PlayerAbsencePage from "@/pages/app/player/PlayerAbsencePage";
+import DirectorOverviewPage from "@/pages/app/club/DirectorOverviewPage";
+import RosterIntelligencePage from "@/pages/app/club/RosterIntelligencePage";
+import PlayerPublicProgramPage from "@/pages/app/PlayerPublicProgramPage";
+
 import PlayQuizRunner from "@/pages/app/player/PlayQuiz";
 import PlayerAssignmentsPage from "@/pages/app/player/PlayerAssignmentsPage";
 import PlayerSchedulePage from "@/pages/app/player/PlayerSchedulePage";
@@ -191,6 +209,7 @@ function Router() {
       <Route path="/app/player/checkin" component={PlayerCheckinPage} />
       <Route path="/app/player/assessments" component={AssessmentHistoryPage} />
       <Route path="/app/player/timeline" component={DevelopmentTimelinePage} />
+      <Route path="/app/player/absence" component={PlayerAbsencePage} />
 
       {/* Coach HQ - auth required */}
       <Route path="/app/coach" component={guard(CoachDashboard)} />
@@ -238,12 +257,20 @@ function Router() {
       <Route path="/app/coach/education/calibration" component={guard(ObservationCalibrationPage)} />
       <Route path="/app/coach/education/practice-review" component={guard(PracticeReviewPage)} />
       <Route path="/app/coach/education/certifications" component={guard(CertificationPage)} />
+      <Route path="/app/coach/absences" component={guard(AbsenceManagementPage)} />
 
       {/* Team */}
       <Route path="/app/team" component={TeamDashboard} />
       <Route path="/app/team/schedule" component={TeamSchedulePage} />
       <Route path="/app/team/invite" component={TeamInvite} />
       <Route path="/app/team/billing" component={TeamBilling} />
+      <Route path="/app/team/calendar" component={guard(TeamCalendarPage)} />
+      <Route path="/app/team/roster-detail" component={guard(RosterDetailPage)} />
+      <Route path="/app/team/staff" component={guard(StaffDirectoryPage)} />
+      <Route path="/app/team/documents" component={guard(DocumentLibraryPage)} />
+      <Route path="/app/team/messaging" component={guard(TeamMessagingPage)} />
+      <Route path="/app/team/events/:id" component={guard(EventDetailPage)} />
+      <Route path="/app/team/tournament/:id" component={guard(TournamentPage)} />
 
       {/* Marketplace */}
       <Route path="/app/marketplace" component={MarketplaceHome} />
@@ -295,6 +322,10 @@ function Router() {
       <Route path="/app/admin/seasons" component={guard(SeasonManagementPage)} />
       <Route path="/app/admin/experts" component={AdminExperts} />
       <Route path="/app/admin/jobs" component={AdminJobs} />
+      <Route path="/app/admin/forms" component={guard(FormsManagerPage)} />
+      <Route path="/app/admin/season-setup" component={guard(SeasonSetupPage)} />
+      <Route path="/app/admin/onboarding" component={guard(OnboardingPage)} />
+      <Route path="/app/admin/re-enrollment" component={guard(ReEnrollmentPage)} />
 
       {/* Parent */}
       <Route path="/app/parent" component={ParentDashboard} />
@@ -306,8 +337,9 @@ function Router() {
       <Route path="/app/parent/register" component={ParentRegistrationPage} />
       <Route path="/app/parent/digest" component={ParentDigestPage} />
 
-      {/* Public player profile — no auth */}
+      {/* Public profiles — no auth */}
       <Route path="/profile/:id" component={PlayerPublicProfilePage} />
+      <Route path="/profile/program/:slug" component={PlayerPublicProgramPage} />
 
       {/* Club operations */}
       <Route path="/app/club" component={guard(ClubDashboard)} />
@@ -317,6 +349,8 @@ function Router() {
       <Route path="/app/club/memberships" component={guard(ClubMembershipsPage)} />
       <Route path="/app/club/analytics" component={guard(ClubAnalyticsPage)} />
       <Route path="/app/club/analytics/v2" component={guard(ProgramAnalyticsV2Page)} />
+      <Route path="/app/club/director" component={guard(DirectorOverviewPage)} />
+      <Route path="/app/club/roster-intel" component={guard(RosterIntelligencePage)} />
 
       {/* Expert */}
       <Route path="/app/expert" component={ExpertDashboard} />
