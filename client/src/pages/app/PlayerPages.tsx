@@ -210,16 +210,19 @@ export function PlayerDashboard() {
                   <div className="text-[11px] uppercase tracking-[0.12em] font-mono text-muted-foreground mb-3">
                     Drills · {todaysWod.drills.length}
                   </div>
-                  <ol className="space-y-2 text-[12.5px]">
+                  <ol className="space-y-2.5 text-[12.5px]">
                     {todaysWod.drills.map((d, i) => (
                       <li key={d.id} className="flex items-start gap-2">
                         <span className="font-mono text-[11px] text-muted-foreground w-4 shrink-0 pt-0.5">
                           {String(i + 1).padStart(2, "0")}
                         </span>
-                        <span className="flex-1">
-                          <span className="font-medium">{d.name}</span>
-                          <span className="block text-muted-foreground text-[11.5px]">
+                        <span className="flex-1 min-w-0">
+                          <span className="font-medium block">{d.name}</span>
+                          <span className="block text-muted-foreground text-[11px]">
                             {d.sets} × {d.reps}
+                            {d.skillFocus && (
+                              <> · <span className="text-primary/70">{d.skillFocus.split(" · ")[0]}</span></>
+                            )}
                           </span>
                         </span>
                       </li>
@@ -387,6 +390,113 @@ function UploadRow({ upload }: { upload: VideoUpload }) {
   );
 }
 
+/* ----------------------------- Workout drill card ----------------------------- */
+
+function WorkoutDrillCard({
+  drill,
+  index,
+  isDone,
+  onToggle,
+}: {
+  drill: import("@/lib/mock/data").Drill;
+  index: number;
+  isDone: boolean;
+  onToggle: () => void;
+}) {
+  const [expanded, setExpanded] = useState(false);
+  const hasCues = drill.cues && drill.cues.length > 0;
+  const hasDesc = !!drill.description;
+  const isExpandable = hasDesc || hasCues;
+
+  return (
+    <div
+      className={`rounded-lg border transition-colors ${
+        isDone
+          ? "border-primary/40 bg-primary/5"
+          : "border-border"
+      }`}
+    >
+      {/* ── Primary row ── */}
+      <div className="flex items-center gap-3 px-4 py-3.5">
+        {/* Sequence number */}
+        <span className="font-mono text-[12px] text-muted-foreground w-5 shrink-0 text-right">
+          {String(index + 1).padStart(2, "0")}
+        </span>
+
+        {/* Check toggle */}
+        <button
+          onClick={onToggle}
+          aria-label={isDone ? "Mark incomplete" : "Mark complete"}
+          className="shrink-0 transition-transform active:scale-90"
+        >
+          {isDone ? (
+            <CheckCircle2 className="w-5 h-5 text-primary" />
+          ) : (
+            <Circle className="w-5 h-5 text-muted-foreground" />
+          )}
+        </button>
+
+        {/* Name + meta */}
+        <div className="flex-1 min-w-0">
+          <div className={`text-[14px] font-semibold leading-tight ${isDone ? "text-muted-foreground line-through" : ""}`}>
+            {drill.name}
+          </div>
+          <div className="flex items-center gap-2 mt-0.5 text-[11.5px] text-muted-foreground">
+            <span>{drill.sets} sets × {drill.reps}</span>
+            <span>·</span>
+            <span>~{drill.duration} min</span>
+            {drill.skillFocus && (
+              <>
+                <span>·</span>
+                <span className="text-primary/70 font-medium truncate">{drill.skillFocus}</span>
+              </>
+            )}
+          </div>
+        </div>
+
+        {/* Expand toggle — only if there's something to show */}
+        {isExpandable && (
+          <button
+            onClick={() => setExpanded((v) => !v)}
+            aria-label={expanded ? "Hide drill details" : "Show drill details"}
+            className="shrink-0 p-1 rounded-md text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <ChevronRight
+              className={`w-4 h-4 transition-transform duration-200 ${expanded ? "rotate-90" : ""}`}
+            />
+          </button>
+        )}
+      </div>
+
+      {/* ── Expanded detail panel ── */}
+      {isExpandable && expanded && (
+        <div className="border-t border-border/60 px-4 pb-4 pt-3 space-y-3">
+          {hasDesc && (
+            <p className="text-[12.5px] text-foreground/80 leading-relaxed">
+              {drill.description}
+            </p>
+          )}
+          {hasCues && (
+            <div>
+              <div className="text-[10px] uppercase tracking-[0.12em] font-semibold text-muted-foreground mb-1.5">
+                Key Cues
+              </div>
+              <ul className="space-y-1">
+                {drill.cues!.map((cue, i) => (
+                  <li key={i} className="flex items-start gap-2 text-[12px] text-muted-foreground">
+                    <ChevronRight className="w-3 h-3 mt-0.5 shrink-0 text-primary/60" />
+                    {cue}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 /* ----------------------------- Workout ----------------------------- */
 
 export function PlayerWorkout() {
@@ -431,46 +541,15 @@ export function PlayerWorkout() {
         </div>
 
         <div className="space-y-2">
-          {todaysWod.drills.map((d, i) => {
-            const isDone = completed.includes(d.id);
-            return (
-              <button
-                key={d.id}
-                onClick={() => toggle(d.id)}
-                className={`w-full flex items-center gap-4 rounded-lg border p-4 text-left transition ${
-                  isDone
-                    ? "border-primary/40 bg-primary/5"
-                    : "border-border hover:border-primary/30"
-                }`}
-              >
-                <span className="font-mono text-[12px] text-muted-foreground w-5 shrink-0">
-                  {String(i + 1).padStart(2, "0")}
-                </span>
-                <span className="shrink-0">
-                  {isDone ? (
-                    <CheckCircle2 className="w-5 h-5 text-primary" />
-                  ) : (
-                    <Circle className="w-5 h-5 text-muted-foreground" />
-                  )}
-                </span>
-                <div className="flex-1 min-w-0">
-                  <div
-                    className={`text-[14px] font-medium ${
-                      isDone ? "text-muted-foreground line-through" : ""
-                    }`}
-                  >
-                    {d.name}
-                  </div>
-                  <div className="text-[12px] text-muted-foreground mt-0.5">
-                    {d.sets} sets × {d.reps} · ~{d.duration} min
-                  </div>
-                </div>
-                <span className="text-[11px] font-mono text-muted-foreground uppercase tracking-wider shrink-0">
-                  {d.category}
-                </span>
-              </button>
-            );
-          })}
+          {todaysWod.drills.map((d, i) => (
+            <WorkoutDrillCard
+              key={d.id}
+              drill={d}
+              index={i}
+              isDone={completed.includes(d.id)}
+              onToggle={() => toggle(d.id)}
+            />
+          ))}
         </div>
 
         {done === total && (

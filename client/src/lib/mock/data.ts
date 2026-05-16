@@ -87,7 +87,21 @@ export const parentContacts: ParentContact[] = [
 ];
 
 // ------------------------------ Workouts ------------------------------
-export type Drill = { id: string; name: string; category: string; sets: number; reps: string; duration: number };
+export type Drill = {
+  id: string;
+  name: string;
+  category: string;
+  sets: number;
+  reps: string;
+  duration: number;
+  /** Plain-English description of what the drill is and how it's executed. */
+  description?: string;
+  /** Short coaching cues — each one should be actionable in a single sentence. */
+  cues?: string[];
+  /** Primary skill this drill develops — shown as a tag on the player card. */
+  skillFocus?: string;
+};
+
 export type Workout = {
   id: string;
   title: string;
@@ -108,11 +122,86 @@ export const todaysWod: Workout = {
   xp: 240,
   description: "Sharpen mid-range pull-ups off ball screens. Focus on balance, base, and one-motion release.",
   drills: [
-    { id: "d_1", name: "Form Shooting", category: "SHOOTING", sets: 3, reps: "10 reps", duration: 4 },
-    { id: "d_2", name: "Elbow Pull-Ups", category: "SHOOTING", sets: 4, reps: "8 reps", duration: 6 },
-    { id: "d_3", name: "Screen Escape Jumpers", category: "SHOOTING", sets: 3, reps: "12 reps", duration: 8 },
-    { id: "d_4", name: "Live Dribble Catch-Shoot", category: "SHOOTING", sets: 4, reps: "10 reps", duration: 6 },
-    { id: "d_5", name: "Finishing Burst", category: "CONDITIONING", sets: 1, reps: "90s", duration: 4 },
+    {
+      id: "d_1",
+      name: "Form Shooting",
+      category: "SHOOTING",
+      sets: 3,
+      reps: "10 reps",
+      duration: 4,
+      skillFocus: "Shooting mechanics",
+      description:
+        "One-handed reps at 3–5 ft from the basket. Lock in your elbow alignment and follow-through before adding range.",
+      cues: [
+        "Elbow under the ball, wrist straight back",
+        "Hold your follow-through until it swishes",
+        "Square hips and shoulders to the basket before releasing",
+      ],
+    },
+    {
+      id: "d_2",
+      name: "Elbow Pull-Ups",
+      category: "SHOOTING",
+      sets: 4,
+      reps: "8 reps",
+      duration: 6,
+      skillFocus: "Mid-range pull-up",
+      description:
+        "Catch a pass at the elbow, one hard dribble right or left, gather, and rise into a pull-up. Land in balance. Alternate sides each set.",
+      cues: [
+        "Attack the gap before pulling up — don't telegraph",
+        "Stay low on the gather, don't rise early",
+        "One-motion: gather → rise → release",
+      ],
+    },
+    {
+      id: "d_3",
+      name: "Screen Escape Jumpers",
+      category: "SHOOTING",
+      sets: 3,
+      reps: "12 reps",
+      duration: 8,
+      skillFocus: "Off-screen shooting",
+      description:
+        "Use a stationary chair as a screen. Curl tight, catch on the move from a feeder, and shoot off one dribble or no dribble. Read the defense angle.",
+      cues: [
+        "Rub your shoulder on the screen — no gap for the defender",
+        "Catch ready: hands up, hips open",
+        "Shoot off the catch if open; one dribble left or right if not",
+      ],
+    },
+    {
+      id: "d_4",
+      name: "Live Dribble Catch-Shoot",
+      category: "SHOOTING",
+      sets: 4,
+      reps: "10 reps",
+      duration: 6,
+      skillFocus: "Rhythm catch-and-shoot",
+      description:
+        "Coach bounce-passes from the paint while you drive past a cone, stop, and catch on the move. Shoot with rhythm — no extra dribbles. Simulate a trail-three or kick-out scenario.",
+      cues: [
+        "See the ball early — hands ready before the pass arrives",
+        "Stop under control; feet landing together on the catch",
+        "Trust your shot — don't second-guess after you catch",
+      ],
+    },
+    {
+      id: "d_5",
+      name: "Finishing Burst",
+      category: "CONDITIONING",
+      sets: 1,
+      reps: "90s",
+      duration: 4,
+      skillFocus: "Conditioning · finishing under fatigue",
+      description:
+        "Continuous layup alternation for 90 seconds. Left, right, reverse. No rest — the goal is finishing when your legs are gone. Start from the block each rep.",
+      cues: [
+        "Jump off one foot — don't two-foot gather when tired",
+        "Keep your eyes up, not down at the ball",
+        "Slow down only if your form breaks — not before",
+      ],
+    },
   ],
 };
 
