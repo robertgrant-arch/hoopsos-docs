@@ -1,4 +1,4 @@
-import React from "react";
+import React, { Suspense } from "react";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/NotFound";
@@ -7,280 +7,307 @@ import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import RequireAuth from "@/components/RequireAuth";
 
+// ---------------------------------------------------------------------------
+// Lazy page loader — one dynamic import per route group creates code-split
+// chunks that Rollup/Vite handles automatically.
+// ---------------------------------------------------------------------------
+
 // Marketing
-import MarketingHome from "@/pages/marketing/Home";
-import {
-  PlayersPage,
-  CoachesPage,
-  TeamsPage,
-  ExpertsPage,
-  PricingPage,
-  LiveLanding,
-} from "@/pages/marketing/audiencePages";
+const MarketingHome   = React.lazy(() => import("@/pages/marketing/Home"));
+const PlayersPage     = React.lazy(() => import("@/pages/marketing/audiencePages").then(m => ({ default: m.PlayersPage })));
+const CoachesPage     = React.lazy(() => import("@/pages/marketing/audiencePages").then(m => ({ default: m.CoachesPage })));
+const TeamsPage       = React.lazy(() => import("@/pages/marketing/audiencePages").then(m => ({ default: m.TeamsPage })));
+const ExpertsPage     = React.lazy(() => import("@/pages/marketing/audiencePages").then(m => ({ default: m.ExpertsPage })));
+const PricingPage     = React.lazy(() => import("@/pages/marketing/audiencePages").then(m => ({ default: m.PricingPage })));
+const LiveLanding     = React.lazy(() => import("@/pages/marketing/audiencePages").then(m => ({ default: m.LiveLanding })));
 
 // Auth
-import SignIn from "@/pages/SignIn";
-import SignUp from "@/pages/SignUp";
+const SignIn = React.lazy(() => import("@/pages/SignIn"));
+const SignUp = React.lazy(() => import("@/pages/SignUp"));
 
 // Docs
-import DocsHome from "@/pages/DocsHome";
-import DocPage from "@/pages/DocPage";
+const DocsHome = React.lazy(() => import("@/pages/DocsHome"));
+const DocPage  = React.lazy(() => import("@/pages/DocPage"));
 
-// Player App
-import {
-  PlayerDashboard,
-  PlayerWorkout,
-  PlayerUploads,
-  PlayerUploadDetail,
-  PlayerSkills,
-  PlayerAchievements,
-} from "@/pages/app/PlayerPages";
+// Player App pages
+const PlayerDashboard    = React.lazy(() => import("@/pages/app/PlayerPages").then(m => ({ default: m.PlayerDashboard })));
+const PlayerWorkout      = React.lazy(() => import("@/pages/app/PlayerPages").then(m => ({ default: m.PlayerWorkout })));
+const PlayerUploads      = React.lazy(() => import("@/pages/app/PlayerPages").then(m => ({ default: m.PlayerUploads })));
+const PlayerUploadDetail = React.lazy(() => import("@/pages/app/PlayerPages").then(m => ({ default: m.PlayerUploadDetail })));
+const PlayerSkills       = React.lazy(() => import("@/pages/app/PlayerPages").then(m => ({ default: m.PlayerSkills })));
+const PlayerAchievements = React.lazy(() => import("@/pages/app/PlayerPages").then(m => ({ default: m.PlayerAchievements })));
 
-// Practice Plan Builder (full v2)
-import CoachPracticePlanBuilder from "@/pages/app/coach/PracticePlanBuilder";
-import DrillLibraryPage from "@/pages/app/coach/DrillLibraryPage";
-import CoachWodPlanner from "@/pages/app/coach/CoachWodPlanner";
-import CoachPlaybookStudio from "@/pages/app/coach/PlaybookStudio";
-import CoachPlaybookStudioV3 from "@/pages/app/coach/PlaybookStudioV3";
-import { FilmRoomPage, FilmUploadPage, FilmSessionPage, PlayerHighlightsPage } from "@/pages/app/coach/FilmAnalysisPages";
-import MessagesPage from "@/pages/app/coach/MessagesPage";
-import CoachInboxPage from "@/pages/app/coach/CoachInboxPage";
-import PlayerProfilePage from "@/pages/app/coach/PlayerProfilePage";
-import CoachIDPPage from "@/pages/app/coach/CoachIDPPage";
-import BenchmarkingPage from "@/pages/app/coach/BenchmarkingPage";
-import IDPGeneratorPage from "@/pages/app/coach/IDPGeneratorPage";
-import PlayerDevelopmentView from "@/pages/app/player/PlayerDevelopmentView";
-import PlayerWearablesPage from "@/pages/app/player/PlayerWearablesPage";
-import FilmSessionDetail from "@/pages/app/coach/FilmSessionDetail";
-import CoachActionsPage from "@/pages/app/coach/CoachActionsPage";
-import TeamReadinessPage from "@/pages/app/coach/TeamReadinessPage";
-import PracticeExecutionPage from "@/pages/app/coach/PracticeExecutionPage";
-import CoachAnnouncementsPage from "@/pages/app/coach/CoachAnnouncementsPage";
-import SkillAssessmentPage from "@/pages/app/coach/SkillAssessmentPage";
-import AssessmentHistoryPage from "@/pages/app/player/AssessmentHistoryPage";
-import DevelopmentTimelinePage from "@/pages/app/player/DevelopmentTimelinePage";
-import SeasonManagementPage from "@/pages/app/admin/SeasonManagementPage";
-import AIFilmAnalysisHub from "@/pages/app/coach/AIFilmAnalysisHub";
-import AtRiskInterventionPage from "@/pages/app/coach/AtRiskInterventionPage";
-import RecruitingHubPage from "@/pages/app/coach/RecruitingHubPage";
+// Practice Plan Builder
+const CoachPracticePlanBuilder = React.lazy(() => import("@/pages/app/coach/PracticePlanBuilder"));
+const DrillLibraryPage         = React.lazy(() => import("@/pages/app/coach/DrillLibraryPage"));
+const CoachWodPlanner          = React.lazy(() => import("@/pages/app/coach/CoachWodPlanner"));
+const CoachPlaybookStudio      = React.lazy(() => import("@/pages/app/coach/PlaybookStudio"));
+const CoachPlaybookStudioV3    = React.lazy(() => import("@/pages/app/coach/PlaybookStudioV3"));
+
+// Film pages
+const FilmRoomPage        = React.lazy(() => import("@/pages/app/coach/FilmAnalysisPages").then(m => ({ default: m.FilmRoomPage })));
+const FilmUploadPage      = React.lazy(() => import("@/pages/app/coach/FilmAnalysisPages").then(m => ({ default: m.FilmUploadPage })));
+const FilmSessionPage     = React.lazy(() => import("@/pages/app/coach/FilmAnalysisPages").then(m => ({ default: m.FilmSessionPage })));
+const PlayerHighlightsPage = React.lazy(() => import("@/pages/app/coach/FilmAnalysisPages").then(m => ({ default: m.PlayerHighlightsPage })));
+
+// Coach pages
+const MessagesPage             = React.lazy(() => import("@/pages/app/coach/MessagesPage"));
+const CoachInboxPage           = React.lazy(() => import("@/pages/app/coach/CoachInboxPage"));
+const PlayerProfilePage        = React.lazy(() => import("@/pages/app/coach/PlayerProfilePage"));
+const CoachIDPPage             = React.lazy(() => import("@/pages/app/coach/CoachIDPPage"));
+const BenchmarkingPage         = React.lazy(() => import("@/pages/app/coach/BenchmarkingPage"));
+const IDPGeneratorPage         = React.lazy(() => import("@/pages/app/coach/IDPGeneratorPage"));
+const FilmSessionDetail        = React.lazy(() => import("@/pages/app/coach/FilmSessionDetail"));
+const CoachActionsPage         = React.lazy(() => import("@/pages/app/coach/CoachActionsPage"));
+const TeamReadinessPage        = React.lazy(() => import("@/pages/app/coach/TeamReadinessPage"));
+const PracticeExecutionPage    = React.lazy(() => import("@/pages/app/coach/PracticeExecutionPage"));
+const CoachAnnouncementsPage   = React.lazy(() => import("@/pages/app/coach/CoachAnnouncementsPage"));
+const SkillAssessmentPage      = React.lazy(() => import("@/pages/app/coach/SkillAssessmentPage"));
+const AIFilmAnalysisHub        = React.lazy(() => import("@/pages/app/coach/AIFilmAnalysisHub"));
+const AtRiskInterventionPage   = React.lazy(() => import("@/pages/app/coach/AtRiskInterventionPage"));
+const RecruitingHubPage        = React.lazy(() => import("@/pages/app/coach/RecruitingHubPage"));
+const ScoutingHubPage          = React.lazy(() => import("@/pages/app/coach/ScoutingHubPage"));
+const OpponentScoutPage        = React.lazy(() => import("@/pages/app/coach/OpponentScoutPage"));
+const FilmPlaylistPage         = React.lazy(() => import("@/pages/app/coach/FilmPlaylistPage"));
+const AbsenceManagementPage    = React.lazy(() => import("@/pages/app/coach/AbsenceManagementPage"));
 
 // Coach Education System
-import CoachEducationHub from "@/pages/app/coach/CoachEducationHub";
-import LearningPathPage from "@/pages/app/coach/LearningPathPage";
-import CoachingDataMirrorPage from "@/pages/app/coach/CoachingDataMirrorPage";
-import CoachingImpactReportPage from "@/pages/app/coach/CoachingImpactReportPage";
-import CueLibraryPage from "@/pages/app/coach/CueLibraryPage";
-import CoachingJournalPage from "@/pages/app/coach/CoachingJournalPage";
-import ProgramTerminologyPage from "@/pages/app/coach/ProgramTerminologyPage";
-import StaffCohortPage from "@/pages/app/coach/StaffCohortPage";
-import ObservationCalibrationPage from "@/pages/app/coach/ObservationCalibrationPage";
-import PracticeReviewPage from "@/pages/app/coach/PracticeReviewPage";
-import CertificationPage from "@/pages/app/coach/CertificationPage";
-import ProgramAnalyticsV2Page from "@/pages/app/club/ProgramAnalyticsV2Page";
-import ClubAnalyticsPage from "@/pages/app/club/ClubAnalyticsPage";
-import PlayerCheckinPage from "@/pages/app/player/PlayerCheckinPage";
-import PlayerPublicProfilePage from "@/pages/app/PlayerPublicProfilePage";
-import ParentDigestPage from "@/pages/app/parent/ParentDigestPage";
-import ScoutingHubPage from "@/pages/app/coach/ScoutingHubPage";
-import OpponentScoutPage from "@/pages/app/coach/OpponentScoutPage";
-import FilmPlaylistPage from "@/pages/app/coach/FilmPlaylistPage";
-import TeamSchedulePage from "@/pages/app/team/TeamSchedulePage";
-import { PlayStudyList, PlayStudyPage } from "@/pages/app/player/PlayStudy";
+const CoachEducationHub          = React.lazy(() => import("@/pages/app/coach/CoachEducationHub"));
+const LearningPathPage           = React.lazy(() => import("@/pages/app/coach/LearningPathPage"));
+const CoachingDataMirrorPage     = React.lazy(() => import("@/pages/app/coach/CoachingDataMirrorPage"));
+const CoachingImpactReportPage   = React.lazy(() => import("@/pages/app/coach/CoachingImpactReportPage"));
+const CueLibraryPage             = React.lazy(() => import("@/pages/app/coach/CueLibraryPage"));
+const CoachingJournalPage        = React.lazy(() => import("@/pages/app/coach/CoachingJournalPage"));
+const ProgramTerminologyPage     = React.lazy(() => import("@/pages/app/coach/ProgramTerminologyPage"));
+const StaffCohortPage            = React.lazy(() => import("@/pages/app/coach/StaffCohortPage"));
+const ObservationCalibrationPage = React.lazy(() => import("@/pages/app/coach/ObservationCalibrationPage"));
+const PracticeReviewPage         = React.lazy(() => import("@/pages/app/coach/PracticeReviewPage"));
+const CertificationPage          = React.lazy(() => import("@/pages/app/coach/CertificationPage"));
+
+// Player pages
+const PlayerDevelopmentView  = React.lazy(() => import("@/pages/app/player/PlayerDevelopmentView"));
+const PlayerWearablesPage    = React.lazy(() => import("@/pages/app/player/PlayerWearablesPage"));
+const AssessmentHistoryPage  = React.lazy(() => import("@/pages/app/player/AssessmentHistoryPage"));
+const DevelopmentTimelinePage = React.lazy(() => import("@/pages/app/player/DevelopmentTimelinePage"));
+const PlayerCheckinPage      = React.lazy(() => import("@/pages/app/player/PlayerCheckinPage"));
+const PlayerAssignmentsPage  = React.lazy(() => import("@/pages/app/player/PlayerAssignmentsPage"));
+const PlayerSchedulePage     = React.lazy(() => import("@/pages/app/player/PlayerSchedulePage"));
+const PlayerAbsencePage      = React.lazy(() => import("@/pages/app/player/PlayerAbsencePage"));
+const PlayStudyList          = React.lazy(() => import("@/pages/app/player/PlayStudy").then(m => ({ default: m.PlayStudyList })));
+const PlayStudyPage          = React.lazy(() => import("@/pages/app/player/PlayStudy").then(m => ({ default: m.PlayStudyPage })));
+const PlayQuizRunner         = React.lazy(() => import("@/pages/app/player/PlayQuiz"));
 
 // Team Management Platform (all 5 phases)
-import RosterDetailPage from "@/pages/app/team/RosterDetailPage";
-import StaffDirectoryPage from "@/pages/app/team/StaffDirectoryPage";
-import DocumentLibraryPage from "@/pages/app/team/DocumentLibraryPage";
-import TeamMessagingPage from "@/pages/app/team/TeamMessagingPage";
-import EventDetailPage from "@/pages/app/team/EventDetailPage";
-import TournamentPage from "@/pages/app/team/TournamentPage";
-import TeamCalendarPage from "@/pages/app/team/TeamCalendarPage";
-import AbsenceManagementPage from "@/pages/app/coach/AbsenceManagementPage";
-import FormsManagerPage from "@/pages/app/admin/FormsManagerPage";
-import SeasonSetupPage from "@/pages/app/admin/SeasonSetupPage";
-import OnboardingPage from "@/pages/app/admin/OnboardingPage";
-import ReEnrollmentPage from "@/pages/app/admin/ReEnrollmentPage";
-import PlayerAbsencePage from "@/pages/app/player/PlayerAbsencePage";
-import DirectorOverviewPage from "@/pages/app/club/DirectorOverviewPage";
-import RosterIntelligencePage from "@/pages/app/club/RosterIntelligencePage";
-import PlayerPublicProgramPage from "@/pages/app/PlayerPublicProgramPage";
+const TeamSchedulePage    = React.lazy(() => import("@/pages/app/team/TeamSchedulePage"));
+const RosterDetailPage    = React.lazy(() => import("@/pages/app/team/RosterDetailPage"));
+const StaffDirectoryPage  = React.lazy(() => import("@/pages/app/team/StaffDirectoryPage"));
+const DocumentLibraryPage = React.lazy(() => import("@/pages/app/team/DocumentLibraryPage"));
+const TeamMessagingPage   = React.lazy(() => import("@/pages/app/team/TeamMessagingPage"));
+const EventDetailPage     = React.lazy(() => import("@/pages/app/team/EventDetailPage"));
+const TournamentPage      = React.lazy(() => import("@/pages/app/team/TournamentPage"));
+const TeamCalendarPage    = React.lazy(() => import("@/pages/app/team/TeamCalendarPage"));
 
-import PlayQuizRunner from "@/pages/app/player/PlayQuiz";
-import PlayerAssignmentsPage from "@/pages/app/player/PlayerAssignmentsPage";
-import PlayerSchedulePage from "@/pages/app/player/PlayerSchedulePage";
+// Admin pages
+const SeasonManagementPage = React.lazy(() => import("@/pages/app/admin/SeasonManagementPage"));
+const FormsManagerPage     = React.lazy(() => import("@/pages/app/admin/FormsManagerPage"));
+const SeasonSetupPage      = React.lazy(() => import("@/pages/app/admin/SeasonSetupPage"));
+const OnboardingPage       = React.lazy(() => import("@/pages/app/admin/OnboardingPage"));
+const ReEnrollmentPage     = React.lazy(() => import("@/pages/app/admin/ReEnrollmentPage"));
+
+// Club pages
+const ProgramAnalyticsV2Page  = React.lazy(() => import("@/pages/app/club/ProgramAnalyticsV2Page"));
+const ClubAnalyticsPage       = React.lazy(() => import("@/pages/app/club/ClubAnalyticsPage"));
+const DirectorOverviewPage    = React.lazy(() => import("@/pages/app/club/DirectorOverviewPage"));
+const RosterIntelligencePage  = React.lazy(() => import("@/pages/app/club/RosterIntelligencePage"));
+
+// Public profiles
+const PlayerPublicProfilePage = React.lazy(() => import("@/pages/app/PlayerPublicProfilePage"));
+const PlayerPublicProgramPage = React.lazy(() => import("@/pages/app/PlayerPublicProgramPage"));
 
 // Parent portal
-import ParentDashboard from "@/pages/app/parent/ParentDashboard";
-import ParentChildPage from "@/pages/app/parent/ParentChildPage";
-import ParentSchedulePage from "@/pages/app/parent/ParentSchedulePage";
-import ParentBillingPage from "@/pages/app/parent/ParentBillingPage";
-import ParentFormsPage from "@/pages/app/parent/ParentFormsPage";
-import ParentAnnouncementsPage from "@/pages/app/parent/ParentAnnouncementsPage";
-import ParentRegistrationPage from "@/pages/app/parent/ParentRegistrationPage";
+const ParentDashboard         = React.lazy(() => import("@/pages/app/parent/ParentDashboard"));
+const ParentChildPage         = React.lazy(() => import("@/pages/app/parent/ParentChildPage"));
+const ParentSchedulePage      = React.lazy(() => import("@/pages/app/parent/ParentSchedulePage"));
+const ParentBillingPage       = React.lazy(() => import("@/pages/app/parent/ParentBillingPage"));
+const ParentFormsPage         = React.lazy(() => import("@/pages/app/parent/ParentFormsPage"));
+const ParentAnnouncementsPage = React.lazy(() => import("@/pages/app/parent/ParentAnnouncementsPage"));
+const ParentRegistrationPage  = React.lazy(() => import("@/pages/app/parent/ParentRegistrationPage"));
+const ParentDigestPage        = React.lazy(() => import("@/pages/app/parent/ParentDigestPage"));
 
 // Club operations (TEAM_ADMIN)
-import ClubDashboard from "@/pages/app/admin/AdminDashboard";
-import ClubRegistrationsPage from "@/pages/app/admin/AdminRegistrationsPage";
-import ClubBillingPage from "@/pages/app/admin/AdminBillingPage";
-import ClubTeamsPage from "@/pages/app/admin/AdminTeamsPage";
-import ClubMembershipsPage from "@/pages/app/admin/AdminMembershipsPage";
+const ClubDashboard         = React.lazy(() => import("@/pages/app/admin/AdminDashboard"));
+const ClubRegistrationsPage = React.lazy(() => import("@/pages/app/admin/AdminRegistrationsPage"));
+const ClubBillingPage       = React.lazy(() => import("@/pages/app/admin/AdminBillingPage"));
+const ClubTeamsPage         = React.lazy(() => import("@/pages/app/admin/AdminTeamsPage"));
+const ClubMembershipsPage   = React.lazy(() => import("@/pages/app/admin/AdminMembershipsPage"));
 
-// Billing (Prompt 16)
-import { AppPricingPage } from "@/pages/app/billing/PricingPage";
-import { BillingPortal } from "@/pages/app/billing/BillingPortal";
-import { SeatManager } from "@/pages/app/billing/SeatManager";
-import { ExpertPayouts } from "@/pages/app/billing/ExpertPayouts";
-import { BillingAdmin } from "@/pages/app/admin/BillingAdmin";
+// Billing
+const AppPricingPage = React.lazy(() => import("@/pages/app/billing/PricingPage").then(m => ({ default: m.AppPricingPage })));
+const BillingPortal  = React.lazy(() => import("@/pages/app/billing/BillingPortal").then(m => ({ default: m.BillingPortal })));
+const SeatManager    = React.lazy(() => import("@/pages/app/billing/SeatManager").then(m => ({ default: m.SeatManager })));
+const ExpertPayouts  = React.lazy(() => import("@/pages/app/billing/ExpertPayouts").then(m => ({ default: m.ExpertPayouts })));
+const BillingAdmin   = React.lazy(() => import("@/pages/app/admin/BillingAdmin").then(m => ({ default: m.BillingAdmin })));
 
-// Everything else
-import {
-  CoachDashboard,
-  CoachRoster,
-  CoachParents,
-  CoachQueue,
-  CoachQueueDetail,
-  CoachAssignments,
-  CoachPracticePlans,
-  CoachBookings,
-  TeamDashboard,
-  TeamInvite,
-  TeamBilling,
-  MarketplaceHome,
-  MarketplaceProfile,
-  FilmRoomHome,
-  FilmClipDetail,
-  FilmInbox,
-  LiveHome,
-  LiveEventDetail,
-  LearnHome,
-  LearnCourseDetail,
-  SettingsBilling,
-  AdminOverview,
-  AdminUsers,
-  AdminModeration,
-  AdminAudit,
-  AdminExperts,
-  AdminJobs,
-  ExpertDashboard,
-  ExpertOffers,
-  ExpertBookings,
-  TeamRoster,
-  TeamTeams,
-  TeamSettings,
-} from "@/pages/app/AppPages";
+// AppPages barrel
+const CoachDashboard    = React.lazy(() => import("@/pages/app/AppPages").then(m => ({ default: m.CoachDashboard })));
+const CoachRoster       = React.lazy(() => import("@/pages/app/AppPages").then(m => ({ default: m.CoachRoster })));
+const CoachParents      = React.lazy(() => import("@/pages/app/AppPages").then(m => ({ default: m.CoachParents })));
+const CoachQueue        = React.lazy(() => import("@/pages/app/AppPages").then(m => ({ default: m.CoachQueue })));
+const CoachQueueDetail  = React.lazy(() => import("@/pages/app/AppPages").then(m => ({ default: m.CoachQueueDetail })));
+const CoachAssignments  = React.lazy(() => import("@/pages/app/AppPages").then(m => ({ default: m.CoachAssignments })));
+const CoachPracticePlans = React.lazy(() => import("@/pages/app/AppPages").then(m => ({ default: m.CoachPracticePlans })));
+const CoachBookings     = React.lazy(() => import("@/pages/app/AppPages").then(m => ({ default: m.CoachBookings })));
+const TeamDashboard     = React.lazy(() => import("@/pages/app/AppPages").then(m => ({ default: m.TeamDashboard })));
+const TeamInvite        = React.lazy(() => import("@/pages/app/AppPages").then(m => ({ default: m.TeamInvite })));
+const TeamBilling       = React.lazy(() => import("@/pages/app/AppPages").then(m => ({ default: m.TeamBilling })));
+const MarketplaceHome   = React.lazy(() => import("@/pages/app/AppPages").then(m => ({ default: m.MarketplaceHome })));
+const MarketplaceProfile = React.lazy(() => import("@/pages/app/AppPages").then(m => ({ default: m.MarketplaceProfile })));
+const FilmRoomHome      = React.lazy(() => import("@/pages/app/AppPages").then(m => ({ default: m.FilmRoomHome })));
+const FilmClipDetail    = React.lazy(() => import("@/pages/app/AppPages").then(m => ({ default: m.FilmClipDetail })));
+const FilmInbox         = React.lazy(() => import("@/pages/app/AppPages").then(m => ({ default: m.FilmInbox })));
+const LiveHome          = React.lazy(() => import("@/pages/app/AppPages").then(m => ({ default: m.LiveHome })));
+const LiveEventDetail   = React.lazy(() => import("@/pages/app/AppPages").then(m => ({ default: m.LiveEventDetail })));
+const LearnHome         = React.lazy(() => import("@/pages/app/AppPages").then(m => ({ default: m.LearnHome })));
+const LearnCourseDetail = React.lazy(() => import("@/pages/app/AppPages").then(m => ({ default: m.LearnCourseDetail })));
+const SettingsBilling   = React.lazy(() => import("@/pages/app/AppPages").then(m => ({ default: m.SettingsBilling })));
+const AdminOverview     = React.lazy(() => import("@/pages/app/AppPages").then(m => ({ default: m.AdminOverview })));
+const AdminUsers        = React.lazy(() => import("@/pages/app/AppPages").then(m => ({ default: m.AdminUsers })));
+const AdminModeration   = React.lazy(() => import("@/pages/app/AppPages").then(m => ({ default: m.AdminModeration })));
+const AdminAudit        = React.lazy(() => import("@/pages/app/AppPages").then(m => ({ default: m.AdminAudit })));
+const AdminExperts      = React.lazy(() => import("@/pages/app/AppPages").then(m => ({ default: m.AdminExperts })));
+const AdminJobs         = React.lazy(() => import("@/pages/app/AppPages").then(m => ({ default: m.AdminJobs })));
+const ExpertDashboard   = React.lazy(() => import("@/pages/app/AppPages").then(m => ({ default: m.ExpertDashboard })));
+const ExpertOffers      = React.lazy(() => import("@/pages/app/AppPages").then(m => ({ default: m.ExpertOffers })));
+const ExpertBookings    = React.lazy(() => import("@/pages/app/AppPages").then(m => ({ default: m.ExpertBookings })));
+const TeamRoster        = React.lazy(() => import("@/pages/app/AppPages").then(m => ({ default: m.TeamRoster })));
+const TeamTeams         = React.lazy(() => import("@/pages/app/AppPages").then(m => ({ default: m.TeamTeams })));
+const TeamSettings      = React.lazy(() => import("@/pages/app/AppPages").then(m => ({ default: m.TeamSettings })));
 
+// ---------------------------------------------------------------------------
+// Auth guard HOC — works transparently with React.lazy components
+// ---------------------------------------------------------------------------
 const guard = (Component: React.ComponentType<any>) => (props: any) => (
   <RequireAuth><Component {...props} /></RequireAuth>
 );
 
+// Minimal spinner shown while a lazy chunk is loading
+function PageFallback() {
+  return (
+    <div className="min-h-screen bg-bg-base flex items-center justify-center">
+      <div className="w-8 h-8 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+    </div>
+  );
+}
+
 function Router() {
   return (
-    <Switch>
-      {/* Marketing */}
-      <Route path="/" component={MarketingHome} />
-      <Route path="/players" component={PlayersPage} />
-      <Route path="/coaches" component={CoachesPage} />
-      <Route path="/teams" component={TeamsPage} />
-      <Route path="/experts" component={ExpertsPage} />
-      <Route path="/pricing" component={PricingPage} />
-      <Route path="/live" component={LiveLanding} />
+    <Suspense fallback={<PageFallback />}>
+      <Switch>
+        {/* Marketing */}
+        <Route path="/" component={MarketingHome} />
+        <Route path="/players" component={PlayersPage} />
+        <Route path="/coaches" component={CoachesPage} />
+        <Route path="/teams" component={TeamsPage} />
+        <Route path="/experts" component={ExpertsPage} />
+        <Route path="/pricing" component={PricingPage} />
+        <Route path="/live" component={LiveLanding} />
 
-      {/* Auth */}
-      <Route path="/sign-in" component={SignIn} />
-      <Route path="/sign-in/:rest*" component={SignIn} />
-      <Route path="/sign-up" component={SignUp} />
-      <Route path="/sign-up/:rest*" component={SignUp} />
+        {/* Auth */}
+        <Route path="/sign-in" component={SignIn} />
+        <Route path="/sign-in/:rest*" component={SignIn} />
+        <Route path="/sign-up" component={SignUp} />
+        <Route path="/sign-up/:rest*" component={SignUp} />
 
-      {/* Docs */}
-      <Route path="/docs" component={DocsHome} />
-      <Route path="/docs/:slug" component={DocPage} />
+        {/* Docs */}
+        <Route path="/docs" component={DocsHome} />
+        <Route path="/docs/:slug" component={DocPage} />
 
-      {/* Player App */}
-      <Route path="/app/player" component={PlayerDashboard} />
-      <Route path="/app/player/workout" component={PlayerWorkout} />
-      <Route path="/app/player/uploads" component={PlayerUploads} />
-      <Route path="/app/player/uploads/:id" component={PlayerUploadDetail} />
-      <Route path="/app/player/skills" component={PlayerSkills} />
-      <Route path="/app/player/achievements" component={PlayerAchievements} />
-      <Route path="/app/player/development" component={PlayerDevelopmentView} />
-      <Route path="/app/player/wearables" component={PlayerWearablesPage} />
-      <Route path="/app/player/assignments" component={PlayerAssignmentsPage} />
-      <Route path="/app/player/schedule" component={PlayerSchedulePage} />
-      <Route path="/app/player/checkin" component={PlayerCheckinPage} />
-      <Route path="/app/player/assessments" component={AssessmentHistoryPage} />
-      <Route path="/app/player/timeline" component={DevelopmentTimelinePage} />
-      <Route path="/app/player/absence" component={PlayerAbsencePage} />
+        {/* Player App */}
+        <Route path="/app/player" component={PlayerDashboard} />
+        <Route path="/app/player/workout" component={PlayerWorkout} />
+        <Route path="/app/player/uploads" component={PlayerUploads} />
+        <Route path="/app/player/uploads/:id" component={PlayerUploadDetail} />
+        <Route path="/app/player/skills" component={PlayerSkills} />
+        <Route path="/app/player/achievements" component={PlayerAchievements} />
+        <Route path="/app/player/development" component={PlayerDevelopmentView} />
+        <Route path="/app/player/wearables" component={PlayerWearablesPage} />
+        <Route path="/app/player/assignments" component={PlayerAssignmentsPage} />
+        <Route path="/app/player/schedule" component={PlayerSchedulePage} />
+        <Route path="/app/player/checkin" component={PlayerCheckinPage} />
+        <Route path="/app/player/assessments" component={AssessmentHistoryPage} />
+        <Route path="/app/player/timeline" component={DevelopmentTimelinePage} />
+        <Route path="/app/player/absence" component={PlayerAbsencePage} />
 
-      {/* Coach HQ - auth required */}
-      <Route path="/app/coach" component={guard(CoachDashboard)} />
-      <Route path="/app/coach/inbox" component={guard(CoachInboxPage)} />
-      <Route path="/app/coach/players/:id/idp" component={guard(CoachIDPPage)} />
-      <Route path="/app/coach/players/:id" component={guard(PlayerProfilePage)} />
-      <Route path="/app/coach/roster" component={guard(CoachRoster)} />
-      <Route path="/app/coach/parents" component={guard(CoachParents)} />
-      <Route path="/app/coach/queue" component={guard(CoachQueue)} />
-      <Route path="/app/coach/queue/:id" component={guard(CoachQueueDetail)} />
-      <Route path="/app/coach/actions" component={guard(CoachActionsPage)} />
-      <Route path="/app/coach/readiness" component={guard(TeamReadinessPage)} />
-      <Route path="/app/coach/scouting" component={guard(ScoutingHubPage)} />
-      <Route path="/app/coach/scouting/:opponentId" component={guard(OpponentScoutPage)} />
-      <Route path="/app/coach/assignments" component={guard(CoachAssignments)} />
-      <Route path="/app/coach/practice-plans" component={guard(CoachPracticePlanBuilder)} />
-      <Route path="/app/coach/practice-plans/:id/execute" component={guard(PracticeExecutionPage)} />
-      <Route path="/app/coach/announcements" component={guard(CoachAnnouncementsPage)} />
-      <Route path="/app/coach/assessments" component={guard(SkillAssessmentPage)} />
-      <Route path="/app/coach/benchmarks" component={guard(BenchmarkingPage)} />
-      <Route path="/app/coach/idp-generator" component={guard(IDPGeneratorPage)} />
-      <Route path="/app/coach/film/analyze" component={guard(AIFilmAnalysisHub)} />
-      <Route path="/app/coach/at-risk" component={guard(AtRiskInterventionPage)} />
-      <Route path="/app/coach/recruiting" component={guard(RecruitingHubPage)} />
-      <Route path="/app/coach/idp/generate" component={guard(IDPGeneratorPage)} />
-      <Route path="/app/coach/drills" component={guard(DrillLibraryPage)} />
-      <Route path="/app/coach/wods" component={guard(CoachWodPlanner)} />
-      <Route path="/app/coach/practice-plans/legacy" component={guard(CoachPracticePlans)} />
-      <Route path="/app/coach/bookings" component={guard(CoachBookings)} />
-      <Route path="/app/coach/messages" component={guard(MessagesPage)} />
-      <Route path="/app/messages" component={guard(MessagesPage)} />
-      <Route path="/app/coach/playbook" component={guard(CoachPlaybookStudioV3)} />
-      <Route path="/app/coach/playbook-v3" component={guard(CoachPlaybookStudioV3)} />
+        {/* Coach HQ - auth required */}
+        <Route path="/app/coach" component={guard(CoachDashboard)} />
+        <Route path="/app/coach/inbox" component={guard(CoachInboxPage)} />
+        <Route path="/app/coach/players/:id/idp" component={guard(CoachIDPPage)} />
+        <Route path="/app/coach/players/:id" component={guard(PlayerProfilePage)} />
+        <Route path="/app/coach/roster" component={guard(CoachRoster)} />
+        <Route path="/app/coach/parents" component={guard(CoachParents)} />
+        <Route path="/app/coach/queue" component={guard(CoachQueue)} />
+        <Route path="/app/coach/queue/:id" component={guard(CoachQueueDetail)} />
+        <Route path="/app/coach/actions" component={guard(CoachActionsPage)} />
+        <Route path="/app/coach/readiness" component={guard(TeamReadinessPage)} />
+        <Route path="/app/coach/scouting" component={guard(ScoutingHubPage)} />
+        <Route path="/app/coach/scouting/:opponentId" component={guard(OpponentScoutPage)} />
+        <Route path="/app/coach/assignments" component={guard(CoachAssignments)} />
+        <Route path="/app/coach/practice-plans" component={guard(CoachPracticePlanBuilder)} />
+        <Route path="/app/coach/practice-plans/:id/execute" component={guard(PracticeExecutionPage)} />
+        <Route path="/app/coach/announcements" component={guard(CoachAnnouncementsPage)} />
+        <Route path="/app/coach/assessments" component={guard(SkillAssessmentPage)} />
+        <Route path="/app/coach/benchmarks" component={guard(BenchmarkingPage)} />
+        <Route path="/app/coach/idp-generator" component={guard(IDPGeneratorPage)} />
+        <Route path="/app/coach/film/analyze" component={guard(AIFilmAnalysisHub)} />
+        <Route path="/app/coach/at-risk" component={guard(AtRiskInterventionPage)} />
+        <Route path="/app/coach/recruiting" component={guard(RecruitingHubPage)} />
+        <Route path="/app/coach/idp/generate" component={guard(IDPGeneratorPage)} />
+        <Route path="/app/coach/drills" component={guard(DrillLibraryPage)} />
+        <Route path="/app/coach/wods" component={guard(CoachWodPlanner)} />
+        <Route path="/app/coach/practice-plans/legacy" component={guard(CoachPracticePlans)} />
+        <Route path="/app/coach/bookings" component={guard(CoachBookings)} />
+        <Route path="/app/coach/messages" component={guard(MessagesPage)} />
+        <Route path="/app/messages" component={guard(MessagesPage)} />
+        <Route path="/app/coach/playbook" component={guard(CoachPlaybookStudioV3)} />
+        <Route path="/app/coach/playbook-v3" component={guard(CoachPlaybookStudioV3)} />
 
-      {/* Coach Education System */}
-      <Route path="/app/coach/education" component={guard(CoachEducationHub)} />
-      <Route path="/app/coach/education/paths" component={guard(LearningPathPage)} />
-      <Route path="/app/coach/education/module/:id" component={guard(LearningPathPage)} />
-      <Route path="/app/coach/education/mirror" component={guard(CoachingDataMirrorPage)} />
-      <Route path="/app/coach/education/impact" component={guard(CoachingImpactReportPage)} />
-      <Route path="/app/coach/cues" component={guard(CueLibraryPage)} />
-      <Route path="/app/coach/education/journal" component={guard(CoachingJournalPage)} />
-      <Route path="/app/coach/education/terminology" component={guard(ProgramTerminologyPage)} />
-      <Route path="/app/coach/education/cohort" component={guard(StaffCohortPage)} />
-      <Route path="/app/coach/education/calibration" component={guard(ObservationCalibrationPage)} />
-      <Route path="/app/coach/education/practice-review" component={guard(PracticeReviewPage)} />
-      <Route path="/app/coach/education/certifications" component={guard(CertificationPage)} />
-      <Route path="/app/coach/absences" component={guard(AbsenceManagementPage)} />
+        {/* Coach Education System */}
+        <Route path="/app/coach/education" component={guard(CoachEducationHub)} />
+        <Route path="/app/coach/education/paths" component={guard(LearningPathPage)} />
+        <Route path="/app/coach/education/module/:id" component={guard(LearningPathPage)} />
+        <Route path="/app/coach/education/mirror" component={guard(CoachingDataMirrorPage)} />
+        <Route path="/app/coach/education/impact" component={guard(CoachingImpactReportPage)} />
+        <Route path="/app/coach/cues" component={guard(CueLibraryPage)} />
+        <Route path="/app/coach/education/journal" component={guard(CoachingJournalPage)} />
+        <Route path="/app/coach/education/terminology" component={guard(ProgramTerminologyPage)} />
+        <Route path="/app/coach/education/cohort" component={guard(StaffCohortPage)} />
+        <Route path="/app/coach/education/calibration" component={guard(ObservationCalibrationPage)} />
+        <Route path="/app/coach/education/practice-review" component={guard(PracticeReviewPage)} />
+        <Route path="/app/coach/education/certifications" component={guard(CertificationPage)} />
+        <Route path="/app/coach/absences" component={guard(AbsenceManagementPage)} />
 
-      {/* Team */}
-      <Route path="/app/team" component={TeamDashboard} />
-      <Route path="/app/team/schedule" component={TeamSchedulePage} />
-      <Route path="/app/team/invite" component={TeamInvite} />
-      <Route path="/app/team/billing" component={TeamBilling} />
-      <Route path="/app/team/calendar" component={guard(TeamCalendarPage)} />
-      <Route path="/app/team/roster-detail" component={guard(RosterDetailPage)} />
-      <Route path="/app/team/staff" component={guard(StaffDirectoryPage)} />
-      <Route path="/app/team/documents" component={guard(DocumentLibraryPage)} />
-      <Route path="/app/team/messaging" component={guard(TeamMessagingPage)} />
-      <Route path="/app/team/events/:id" component={guard(EventDetailPage)} />
-      <Route path="/app/team/tournament/:id" component={guard(TournamentPage)} />
+        {/* Team */}
+        <Route path="/app/team" component={TeamDashboard} />
+        <Route path="/app/team/schedule" component={TeamSchedulePage} />
+        <Route path="/app/team/invite" component={TeamInvite} />
+        <Route path="/app/team/billing" component={TeamBilling} />
+        <Route path="/app/team/calendar" component={guard(TeamCalendarPage)} />
+        <Route path="/app/team/roster-detail" component={guard(RosterDetailPage)} />
+        <Route path="/app/team/staff" component={guard(StaffDirectoryPage)} />
+        <Route path="/app/team/documents" component={guard(DocumentLibraryPage)} />
+        <Route path="/app/team/messaging" component={guard(TeamMessagingPage)} />
+        <Route path="/app/team/events/:id" component={guard(EventDetailPage)} />
+        <Route path="/app/team/tournament/:id" component={guard(TournamentPage)} />
 
-      {/* Marketplace */}
-      <Route path="/app/marketplace" component={MarketplaceHome} />
-      <Route path="/app/marketplace/experts/:slug" component={MarketplaceProfile} />
+        {/* Marketplace */}
+        <Route path="/app/marketplace" component={MarketplaceHome} />
+        <Route path="/app/marketplace/experts/:slug" component={MarketplaceProfile} />
 
-      {/* Film */}
-      <Route path="/app/film" component={FilmRoomHome} />
-      <Route path="/app/film/clips/:id" component={FilmClipDetail} />
-      <Route path="/app/film/inbox" component={FilmInbox} />
-              <Route path="/app/coach/film" component={guard(FilmRoomPage)} />
+        {/* Film */}
+        <Route path="/app/film" component={FilmRoomHome} />
+        <Route path="/app/film/clips/:id" component={FilmClipDetail} />
+        <Route path="/app/film/inbox" component={FilmInbox} />
+        <Route path="/app/coach/film" component={guard(FilmRoomPage)} />
         <Route path="/app/coach/film/upload" component={guard(FilmUploadPage)} />
         <Route path="/app/coach/film/sessions/:id" component={guard(FilmSessionDetail)} />
         <Route path="/app/coach/film/playlists/:id" component={guard(FilmPlaylistPage)} />
@@ -289,82 +316,83 @@ function Router() {
         <Route path="/app/player/plays/:id/study" component={PlayStudyPage} />
         <Route path="/app/player/plays" component={PlayStudyList} />
 
-      {/* Playbook */}
-      <Route path="/app/playbook" component={CoachPlaybookStudioV3} />
-      <Route path="/app/playbook-v3" component={CoachPlaybookStudioV3} />
-      <Route path="/app/playbook/legacy" component={CoachPlaybookStudio} />
-      <Route path="/app/player/quizzes/:id" component={PlayQuizRunner} />
-      <Route path="/app/player/quizzes" component={PlayQuizRunner} />
+        {/* Playbook */}
+        <Route path="/app/playbook" component={CoachPlaybookStudioV3} />
+        <Route path="/app/playbook-v3" component={CoachPlaybookStudioV3} />
+        <Route path="/app/playbook/legacy" component={CoachPlaybookStudio} />
+        <Route path="/app/player/quizzes/:id" component={PlayQuizRunner} />
+        <Route path="/app/player/quizzes" component={PlayQuizRunner} />
 
-      {/* Live */}
-      <Route path="/app/live" component={LiveHome} />
-      <Route path="/app/live/:id" component={LiveEventDetail} />
+        {/* Live */}
+        <Route path="/app/live" component={LiveHome} />
+        <Route path="/app/live/:id" component={LiveEventDetail} />
 
-      {/* Learn */}
-      <Route path="/app/learn" component={LearnHome} />
-      <Route path="/app/learn/courses/:id" component={LearnCourseDetail} />
+        {/* Learn */}
+        <Route path="/app/learn" component={LearnHome} />
+        <Route path="/app/learn/courses/:id" component={LearnCourseDetail} />
 
-      {/* Settings */}
-      <Route path="/app/settings/billing" component={SettingsBilling} />
+        {/* Settings */}
+        <Route path="/app/settings/billing" component={SettingsBilling} />
 
-      {/* Billing (Prompt 16) */}
-      <Route path="/app/billing" component={BillingPortal} />
-      <Route path="/app/billing/pricing" component={AppPricingPage} />
-      <Route path="/app/team/seats" component={SeatManager} />
-      <Route path="/app/expert/payouts" component={ExpertPayouts} />
+        {/* Billing */}
+        <Route path="/app/billing" component={BillingPortal} />
+        <Route path="/app/billing/pricing" component={AppPricingPage} />
+        <Route path="/app/team/seats" component={SeatManager} />
+        <Route path="/app/expert/payouts" component={ExpertPayouts} />
 
-      {/* Admin */}
-      <Route path="/app/admin" component={AdminOverview} />
-      <Route path="/app/admin/billing" component={BillingAdmin} />
-      <Route path="/app/admin/users" component={AdminUsers} />
-      <Route path="/app/admin/moderation" component={AdminModeration} />
-      <Route path="/app/admin/audit" component={AdminAudit} />
-      <Route path="/app/admin/seasons" component={guard(SeasonManagementPage)} />
-      <Route path="/app/admin/experts" component={AdminExperts} />
-      <Route path="/app/admin/jobs" component={AdminJobs} />
-      <Route path="/app/admin/forms" component={guard(FormsManagerPage)} />
-      <Route path="/app/admin/season-setup" component={guard(SeasonSetupPage)} />
-      <Route path="/app/admin/onboarding" component={guard(OnboardingPage)} />
-      <Route path="/app/admin/re-enrollment" component={guard(ReEnrollmentPage)} />
+        {/* Admin */}
+        <Route path="/app/admin" component={AdminOverview} />
+        <Route path="/app/admin/billing" component={BillingAdmin} />
+        <Route path="/app/admin/users" component={AdminUsers} />
+        <Route path="/app/admin/moderation" component={AdminModeration} />
+        <Route path="/app/admin/audit" component={AdminAudit} />
+        <Route path="/app/admin/seasons" component={guard(SeasonManagementPage)} />
+        <Route path="/app/admin/experts" component={AdminExperts} />
+        <Route path="/app/admin/jobs" component={AdminJobs} />
+        <Route path="/app/admin/forms" component={guard(FormsManagerPage)} />
+        <Route path="/app/admin/season-setup" component={guard(SeasonSetupPage)} />
+        <Route path="/app/admin/onboarding" component={guard(OnboardingPage)} />
+        <Route path="/app/admin/re-enrollment" component={guard(ReEnrollmentPage)} />
 
-      {/* Parent */}
-      <Route path="/app/parent" component={ParentDashboard} />
-      <Route path="/app/parent/child" component={ParentChildPage} />
-      <Route path="/app/parent/schedule" component={ParentSchedulePage} />
-      <Route path="/app/parent/billing" component={ParentBillingPage} />
-      <Route path="/app/parent/forms" component={ParentFormsPage} />
-      <Route path="/app/parent/announcements" component={ParentAnnouncementsPage} />
-      <Route path="/app/parent/register" component={ParentRegistrationPage} />
-      <Route path="/app/parent/digest" component={ParentDigestPage} />
+        {/* Parent */}
+        <Route path="/app/parent" component={ParentDashboard} />
+        <Route path="/app/parent/child" component={ParentChildPage} />
+        <Route path="/app/parent/schedule" component={ParentSchedulePage} />
+        <Route path="/app/parent/billing" component={ParentBillingPage} />
+        <Route path="/app/parent/forms" component={ParentFormsPage} />
+        <Route path="/app/parent/announcements" component={ParentAnnouncementsPage} />
+        <Route path="/app/parent/register" component={ParentRegistrationPage} />
+        <Route path="/app/parent/digest" component={ParentDigestPage} />
 
-      {/* Public profiles — no auth */}
-      <Route path="/profile/:id" component={PlayerPublicProfilePage} />
-      <Route path="/profile/program/:slug" component={PlayerPublicProgramPage} />
+        {/* Public profiles — no auth */}
+        <Route path="/profile/:id" component={PlayerPublicProfilePage} />
+        <Route path="/profile/program/:slug" component={PlayerPublicProgramPage} />
 
-      {/* Club operations */}
-      <Route path="/app/club" component={guard(ClubDashboard)} />
-      <Route path="/app/club/registrations" component={guard(ClubRegistrationsPage)} />
-      <Route path="/app/club/billing" component={guard(ClubBillingPage)} />
-      <Route path="/app/club/teams" component={guard(ClubTeamsPage)} />
-      <Route path="/app/club/memberships" component={guard(ClubMembershipsPage)} />
-      <Route path="/app/club/analytics" component={guard(ClubAnalyticsPage)} />
-      <Route path="/app/club/analytics/v2" component={guard(ProgramAnalyticsV2Page)} />
-      <Route path="/app/club/director" component={guard(DirectorOverviewPage)} />
-      <Route path="/app/club/roster-intel" component={guard(RosterIntelligencePage)} />
+        {/* Club operations */}
+        <Route path="/app/club" component={guard(ClubDashboard)} />
+        <Route path="/app/club/registrations" component={guard(ClubRegistrationsPage)} />
+        <Route path="/app/club/billing" component={guard(ClubBillingPage)} />
+        <Route path="/app/club/teams" component={guard(ClubTeamsPage)} />
+        <Route path="/app/club/memberships" component={guard(ClubMembershipsPage)} />
+        <Route path="/app/club/analytics" component={guard(ClubAnalyticsPage)} />
+        <Route path="/app/club/analytics/v2" component={guard(ProgramAnalyticsV2Page)} />
+        <Route path="/app/club/director" component={guard(DirectorOverviewPage)} />
+        <Route path="/app/club/roster-intel" component={guard(RosterIntelligencePage)} />
 
-      {/* Expert */}
-      <Route path="/app/expert" component={ExpertDashboard} />
-      <Route path="/app/expert/offers" component={ExpertOffers} />
-      <Route path="/app/expert/bookings" component={ExpertBookings} />
+        {/* Expert */}
+        <Route path="/app/expert" component={ExpertDashboard} />
+        <Route path="/app/expert/offers" component={ExpertOffers} />
+        <Route path="/app/expert/bookings" component={ExpertBookings} />
 
-      {/* Team extras */}
-      <Route path="/app/team/roster" component={TeamRoster} />
-      <Route path="/app/team/teams" component={TeamTeams} />
-      <Route path="/app/team/settings" component={TeamSettings} />
+        {/* Team extras */}
+        <Route path="/app/team/roster" component={TeamRoster} />
+        <Route path="/app/team/teams" component={TeamTeams} />
+        <Route path="/app/team/settings" component={TeamSettings} />
 
-      <Route path="/404" component={NotFound} />
-      <Route component={NotFound} />
-    </Switch>
+        <Route path="/404" component={NotFound} />
+        <Route component={NotFound} />
+      </Switch>
+    </Suspense>
   );
 }
 

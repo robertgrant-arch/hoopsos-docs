@@ -254,6 +254,32 @@ export default defineConfig({
   build: {
     outDir: path.resolve(import.meta.dirname, "dist/public"),
     emptyOutDir: true,
+    rollupOptions: {
+      output: {
+        // Split vendor node_modules into stable named chunks so the browser
+        // can cache them independently from app code changes.
+        manualChunks(id) {
+          if (!id.includes("node_modules")) return undefined;
+          if (id.includes("/react/") || id.includes("/react-dom/") || id.includes("/scheduler/")) {
+            return "vendor-react";
+          }
+          if (id.includes("/@radix-ui/") || id.includes("/lucide-react/") || id.includes("/cmdk/") || id.includes("/vaul/")) {
+            return "vendor-ui";
+          }
+          if (id.includes("/@tanstack/")) {
+            return "vendor-query";
+          }
+          if (id.includes("/wouter/")) {
+            return "vendor-router";
+          }
+          if (id.includes("/workbox-") || id.includes("/idb/")) {
+            return "vendor-pwa";
+          }
+          // All other node_modules go into a shared vendor chunk
+          return "vendor";
+        },
+      },
+    },
   },
   server: {
     port: 3000,
