@@ -6,7 +6,7 @@
  */
 
 import { useState } from "react";
-import { Link, useRoute, useLocation } from "wouter";
+import { Link, useParams, useLocation } from "wouter";
 import {
   BookOpen,
   Lock,
@@ -57,21 +57,42 @@ const CATEGORY_COLORS: Record<string, string> = {
   leadership: "oklch(0.68 0.22 25)",
 };
 
-function completedCount(path: LearningPath): number {
-  return path.modules.filter((m) => !!m.completedAt).length;
+function pathCompletedCount(path: LearningPath): number {
+  return path.modules.filter((m) => m.status === "complete").length;
+}
+
+function domainToColor(domain: string): string {
+  if (domain.includes("Film")) return "oklch(0.65 0.15 220)";
+  if (domain.includes("Practice") || domain.includes("WOD") || domain.includes("Drill") || domain.includes("Teaching") || domain.includes("Cue")) return "oklch(0.75 0.12 140)";
+  if (domain.includes("Communication") || domain.includes("Parent")) return "oklch(0.70 0.14 170)";
+  if (domain.includes("Program") || domain.includes("Accountability")) return "oklch(0.68 0.22 25)";
+  if (domain.includes("Player") || domain.includes("IDP")) return "oklch(0.72 0.18 290)";
+  // slug fallbacks
+  return CATEGORY_COLORS[domain] ?? "oklch(0.55 0.02 260)";
+}
+
+function domainToLabel(domain: string): string {
+  if (domain.includes("Player") || domain.includes("IDP")) return "Player Dev";
+  if (domain.includes("Practice") || domain.includes("WOD") || domain.includes("Drill")) return "Practice Design";
+  if (domain.includes("Film")) return "Film";
+  if (domain.includes("Communication") || domain.includes("Parent")) return "Communication";
+  if (domain.includes("Program") || domain.includes("Accountability")) return "Leadership";
+  if (domain.includes("Teaching") || domain.includes("Cue")) return "Teaching";
+  return CATEGORY_LABELS[domain] ?? domain;
 }
 
 function CategoryBadge({ category }: { category: string }) {
-  const color = CATEGORY_COLORS[category] ?? "oklch(0.55 0.02 260)";
+  const color = domainToColor(category);
   return (
     <span
       className="inline-block text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded"
       style={{ color, background: `color-mix(in oklch, ${color} 12%, transparent)` }}
     >
-      {CATEGORY_LABELS[category] ?? category}
+      {domainToLabel(category)}
     </span>
   );
 }
+
 
 // ─── Path Overview ────────────────────────────────────────────────────────────
 
@@ -85,22 +106,21 @@ function PathCard({
   defaultOpen?: boolean;
 }) {
   const [open, setOpen] = useState(!!defaultOpen);
-  const done = completedCount(path);
+  const done = pathCompletedCount(path);
   const total = path.modules.length;
   const pct = total > 0 ? Math.round((done / total) * 100) : 0;
 
-  const levelColors = [
-    "oklch(0.65 0.15 220)",
-    "oklch(0.72 0.18 290)",
-    "oklch(0.78 0.16 75)",
-  ];
-  const color = levelColors[(path.level - 1) % 3];
+  const levelColors: Record<number, string> = {
+    1: "oklch(0.65 0.15 220)",
+    2: "oklch(0.72 0.18 290)",
+    3: "oklch(0.78 0.16 75)",
+  };
+  const color = levelColors[path.level] ?? "oklch(0.55 0.02 260)";
 
   return (
     <div
       className={`rounded-xl border border-border bg-card transition-opacity ${locked ? "opacity-60" : ""}`}
     >
-      {/* Header */}
       <button
         onClick={() => !locked && setOpen((o) => !o)}
         className="w-full flex items-start gap-4 p-5 text-left"
@@ -154,7 +174,6 @@ function PathCard({
         </div>
       </button>
 
-      {/* Module list */}
       {open && !locked && (
         <div className="border-t border-border divide-y divide-border">
           {path.modules.map((mod, idx) => (
@@ -163,7 +182,7 @@ function PathCard({
                 <span className="text-[11px] text-muted-foreground font-mono w-6 shrink-0">
                   {String(idx + 1).padStart(2, "0")}
                 </span>
-                {mod.completedAt ? (
+                {mod.status === "complete" ? (
                   <CheckCircle2 className="size-4 text-[oklch(0.75_0.12_140)] shrink-0" />
                 ) : (
                   <Circle className="size-4 text-muted-foreground shrink-0 opacity-40" />
@@ -171,12 +190,12 @@ function PathCard({
                 <div className="flex-1 min-w-0">
                   <p
                     className={`text-[13px] font-medium truncate ${
-                      mod.completedAt ? "text-muted-foreground" : "text-foreground"
+                      mod.status === "complete" ? "text-muted-foreground" : "text-foreground"
                     }`}
                   >
                     {mod.title}
                   </p>
-                  <CategoryBadge category={mod.category} />
+                  <CategoryBadge category={mod.domain} />
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
                   <span className="text-[11px] text-muted-foreground flex items-center gap-1">
@@ -192,7 +211,8 @@ function PathCard({
             <div className="flex items-center gap-2">
               <Award className="size-4 text-[oklch(0.78_0.16_75)]" />
               <p className="text-[12px] text-muted-foreground">
-                Credential: <span className="font-medium text-foreground">{path.credentialTitle}</span>
+                Credential:{" "}
+                <span className="font-medium text-foreground">{path.credentialTitle}</span>
               </p>
             </div>
           </div>
@@ -218,14 +238,14 @@ function PathsOverview() {
         <PageHeader
           eyebrow="COACHING EDUCATION"
           title="Learning Paths"
-          subtitle="Three levels. One system. Build your practice from Foundation to Elite."
+          subtitle="Three levels. One system. Build your coaching practice from Foundation to Elite."
         />
         <div className="space-y-4">
           {learningPaths.map((path, i) => (
             <PathCard
               key={path.id}
               path={path}
-              locked={i > 0} // Development and Elite locked until Foundation complete
+              locked={i > 0}
               defaultOpen={i === 0}
             />
           ))}
@@ -253,13 +273,7 @@ const SECTION_COLORS: Record<ModuleSection["type"], string> = {
   reflect: "oklch(0.78 0.16 75)",
 };
 
-function SectionBlock({
-  section,
-  active,
-}: {
-  section: ModuleSection;
-  active: boolean;
-}) {
+function SectionBlock({ section, active }: { section: ModuleSection; active: boolean }) {
   const color = SECTION_COLORS[section.type];
   const [reflectText, setReflectText] = useState("");
   const [reflectSaved, setReflectSaved] = useState(false);
@@ -268,29 +282,35 @@ function SectionBlock({
 
   return (
     <div className="space-y-4">
-      {/* Section header */}
       <div
         className="flex items-center gap-3 px-4 py-3 rounded-lg"
         style={{ background: `color-mix(in oklch, ${color} 10%, transparent)` }}
       >
         <span style={{ color }}>{SECTION_ICONS[section.type]}</span>
         <div>
-          <p
-            className="text-[10px] font-semibold uppercase tracking-wider"
-            style={{ color }}
-          >
+          <p className="text-[10px] font-semibold uppercase tracking-wider" style={{ color }}>
             {section.type.charAt(0).toUpperCase() + section.type.slice(1)}
           </p>
           <h3 className="text-[15px] font-semibold leading-snug">{section.title}</h3>
         </div>
       </div>
 
-      {/* Body */}
       <div className="rounded-xl border border-border bg-card p-5">
-        <p className="text-[14px] leading-relaxed text-foreground">{section.body}</p>
+        <div className="space-y-3">
+          {(section.content ?? "").split("\n\n").filter(Boolean).map((para, i) => (
+            <p key={i} className="text-[14px] leading-relaxed text-foreground">
+              {para.split(/(\*\*[^*]+\*\*)/).map((chunk, j) =>
+                chunk.startsWith("**") && chunk.endsWith("**") ? (
+                  <strong key={j}>{chunk.slice(2, -2)}</strong>
+                ) : (
+                  chunk
+                )
+              )}
+            </p>
+          ))}
+        </div>
 
-        {/* Platform action (apply section) */}
-        {section.type === "apply" && section.platformAction && (
+        {section.type === "apply" && section.actionPrompt && (
           <div
             className="mt-4 flex items-start gap-3 p-4 rounded-lg border"
             style={{
@@ -300,18 +320,14 @@ function SectionBlock({
           >
             <Target className="size-4 mt-0.5 shrink-0" style={{ color }} />
             <div>
-              <p
-                className="text-[11px] font-semibold uppercase tracking-wider mb-1"
-                style={{ color }}
-              >
-                Platform Deliverable
+              <p className="text-[11px] font-semibold uppercase tracking-wider mb-1" style={{ color }}>
+                Platform Action
               </p>
-              <p className="text-[13px] font-medium">{section.platformAction}</p>
+              <p className="text-[13px] font-medium">{section.actionPrompt}</p>
             </div>
           </div>
         )}
 
-        {/* Reflect section input */}
         {section.type === "reflect" && (
           <div className="mt-4 space-y-3">
             {reflectSaved ? (
@@ -355,27 +371,27 @@ function ModuleReader({ module }: { module: EducationModule }) {
 
   const sections = module.sections;
   const isLast = activeIdx === sections.length - 1;
+  const path = learningPaths.find((p) => p.id === module.pathId || p.coachLevel === module.path);
+  const moduleIdx = path ? path.modules.findIndex((m) => m.id === module.id) : -1;
+  const moduleNum = moduleIdx >= 0 ? moduleIdx + 1 : module.order ?? "—";
 
   function handleComplete() {
     setCompleted(true);
-    toast.success(`Module complete! Platform deliverable: ${module.platformDeliverable}`);
+    const deliverable = module.platformDeliverable ?? module.deliverablePrompt;
+    toast.success(`Module complete! Deliverable: ${deliverable}`);
     setTimeout(() => navigate("/app/coach/education/paths"), 2000);
   }
-
-  const path = learningPaths.find((p) => p.id === module.pathId);
-  const pathTitle = path?.title ?? "Foundation";
 
   return (
     <AppShell>
       <div className="max-w-4xl mx-auto px-4 py-6 sm:px-6">
         <PageHeader
-          eyebrow={`${pathTitle.toUpperCase()} · MODULE ${module.order}`}
+          eyebrow={`${(path?.title ?? "Foundation Path").toUpperCase()} · MODULE ${moduleNum}`}
           title={module.title}
           subtitle={module.subtitle}
         />
 
         <div className="grid grid-cols-1 lg:grid-cols-[220px_1fr] gap-6">
-          {/* Sidebar nav */}
           <aside className="hidden lg:block">
             <div className="rounded-xl border border-border bg-card p-4 sticky top-4">
               <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-3">
@@ -403,7 +419,7 @@ function ModuleReader({ module }: { module: EducationModule }) {
                         {SECTION_ICONS[sec.type]}
                       </span>
                       <span
-                        className="text-[12px] font-medium leading-snug"
+                        className="text-[12px] font-medium"
                         style={{ color: isActive ? color : undefined }}
                       >
                         {sec.type.charAt(0).toUpperCase() + sec.type.slice(1)}
@@ -412,7 +428,6 @@ function ModuleReader({ module }: { module: EducationModule }) {
                   );
                 })}
               </div>
-
               <div className="mt-4 pt-4 border-t border-border">
                 <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
                   <Clock className="size-3.5" />
@@ -422,13 +437,11 @@ function ModuleReader({ module }: { module: EducationModule }) {
             </div>
           </aside>
 
-          {/* Content */}
           <div className="space-y-6 min-w-0">
             {sections.map((sec, i) => (
               <SectionBlock key={sec.id} section={sec} active={i === activeIdx} />
             ))}
 
-            {/* Nav buttons */}
             <div className="flex items-center justify-between pt-2 border-t border-border">
               <Button
                 variant="outline"
@@ -462,12 +475,11 @@ function ModuleReader({ module }: { module: EducationModule }) {
               )}
             </div>
 
-            {/* Platform deliverable reminder */}
             <div className="rounded-lg border border-border bg-muted/30 p-4">
               <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-1">
                 Platform Deliverable
               </p>
-              <p className="text-[13px] text-foreground">{module.platformDeliverable}</p>
+              <p className="text-[13px] text-foreground">{module.platformDeliverable ?? module.deliverablePrompt}</p>
               <Link href="/app/coach">
                 <button className="mt-2 text-[12px] text-primary hover:underline flex items-center gap-1">
                   Go to platform <PlayCircle className="size-3.5" />

@@ -45,7 +45,7 @@ import { coachEffectivenessBreakdown } from "@/lib/mock/coach-metrics";
 // Derived data helpers
 // ─────────────────────────────────────────────────────────────────────────────
 
-const foundationPath = learningPaths.find((p) => p.id === "foundation")!;
+const foundationPath = learningPaths.find((p) => p.level === 1)!;
 const foundationModuleList = foundationPath.modules;
 const completedCount = foundationModuleList.filter((m) => !!m.completedAt).length;
 
@@ -196,19 +196,24 @@ function EffectivenessRing({ score }: { score: number }) {
   );
 }
 
-/** Module status indicator — derived from completedAt and path lock state */
+/** Module status indicator — derived from status field */
 function StatusDot({ module, locked }: { module: EducationModule; locked?: boolean }) {
-  if (module.completedAt) {
+  if (module.status === "complete") {
     return <CheckCircle2 className="size-4 text-[oklch(0.75_0.12_140)] shrink-0" />;
   }
-  if (locked) {
+  if (locked || module.status === "locked") {
     return <Lock className="size-4 text-muted-foreground shrink-0 opacity-50" />;
   }
-  // "next up" module — first incomplete in its path
-  const firstIncomplete = allModules.find(
-    (m) => m.pathId === module.pathId && !m.completedAt
+  if (module.status === "in_progress") {
+    return (
+      <div className="size-4 rounded-full border-2 border-primary bg-primary/20 shrink-0" />
+    );
+  }
+  // "next up" — first not_started module in path
+  const firstNotStarted = allModules.find(
+    (m) => m.path === module.path && m.status === "not_started"
   );
-  if (firstIncomplete?.id === module.id) {
+  if (firstNotStarted?.id === module.id) {
     return (
       <div className="size-4 rounded-full border-2 border-primary bg-primary/20 shrink-0" />
     );
@@ -216,27 +221,31 @@ function StatusDot({ module, locked }: { module: EducationModule; locked?: boole
   return <Circle className="size-4 text-muted-foreground shrink-0 opacity-40" />;
 }
 
-/** Category color tag */
-const CATEGORY_COLORS: Record<string, string> = {
-  "player-dev": "oklch(0.72 0.18 290)",
-  "practice-design": "oklch(0.75 0.12 140)",
-  film: "oklch(0.65 0.15 220)",
-  communication: "oklch(0.70 0.14 170)",
-  data: "oklch(0.78 0.16 75)",
-  leadership: "oklch(0.68 0.22 25)",
-};
+/** Domain/category tag — works with both slug categories and domain strings */
+function domainToColor(domain: string): string {
+  if (domain.includes("Film")) return "oklch(0.65 0.15 220)";
+  if (domain.includes("Practice") || domain.includes("WOD") || domain.includes("Drill") || domain.includes("Teaching") || domain.includes("Cue")) return "oklch(0.75 0.12 140)";
+  if (domain.includes("Communication") || domain.includes("Parent")) return "oklch(0.70 0.14 170)";
+  if (domain.includes("Program") || domain.includes("Accountability")) return "oklch(0.68 0.22 25)";
+  if (domain === "data") return "oklch(0.78 0.16 75)";
+  if (domain === "leadership") return "oklch(0.68 0.22 25)";
+  if (domain === "film") return "oklch(0.65 0.15 220)";
+  if (domain === "communication") return "oklch(0.70 0.14 170)";
+  if (domain === "practice-design") return "oklch(0.75 0.12 140)";
+  return "oklch(0.72 0.18 290)";
+}
 
-const CATEGORY_LABELS: Record<string, string> = {
-  "player-dev": "Player Dev",
-  "practice-design": "Practice Design",
-  film: "Film",
-  communication: "Communication",
-  data: "Data",
-  leadership: "Leadership",
-};
+function domainToLabel(domain: string): string {
+  if (domain.includes("Film")) return "Film";
+  if (domain.includes("Practice") || domain.includes("WOD") || domain.includes("Drill") || domain.includes("Teaching") || domain.includes("Cue")) return "Practice";
+  if (domain.includes("Communication") || domain.includes("Parent")) return "Communication";
+  if (domain.includes("Program") || domain.includes("Accountability")) return "Leadership";
+  const slugMap: Record<string, string> = { "player-dev": "Player Dev", "practice-design": "Practice", film: "Film", communication: "Communication", data: "Data", leadership: "Leadership" };
+  return slugMap[domain] ?? domain;
+}
 
 function CategoryTag({ category }: { category: string }) {
-  const color = CATEGORY_COLORS[category] ?? "oklch(0.55 0.02 260)";
+  const color = domainToColor(category);
   return (
     <span
       className="inline-block text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded"
@@ -245,7 +254,7 @@ function CategoryTag({ category }: { category: string }) {
         background: `color-mix(in oklch, ${color} 12%, transparent)`,
       }}
     >
-      {CATEGORY_LABELS[category] ?? category}
+      {domainToLabel(category)}
     </span>
   );
 }
@@ -361,7 +370,7 @@ function WhatToDoNext() {
   const topUnmetReq = CREDENTIAL_REQUIREMENTS.find((r) => !r.met);
 
   const recommended = foundationModuleList.find(
-    (m) => !m.completedAt && m.id !== activeModule?.id
+    (m) => m.status !== "complete" && m.status !== "locked" && m.id !== activeModule?.id
   );
 
   type AccentKey = "primary" | "warning" | "success";
@@ -387,7 +396,7 @@ function WhatToDoNext() {
       icon: <PlayCircle className="size-5 text-primary" />,
       title: activeModule.title,
       description: `Next up · ${activeModule.estimatedMinutes} min`,
-      category: activeModule.category,
+      category: activeModule.domain,
       href: `/app/coach/education/module/${activeModule.id}`,
       actionLabel: "Start",
       accent: "primary",
@@ -411,7 +420,7 @@ function WhatToDoNext() {
       icon: <Zap className="size-5 text-[oklch(0.75_0.12_140)]" />,
       title: recommended.title,
       description: `Recommended · ${recommended.estimatedMinutes} min`,
-      category: recommended.category,
+      category: recommended.domain,
       href: `/app/coach/education/module/${recommended.id}`,
       actionLabel: "Preview",
       accent: "success",
@@ -509,14 +518,14 @@ function FoundationPathProgress() {
               <div className="flex-1 min-w-0">
                 <p
                   className={`text-[13px] font-medium truncate ${
-                    module.completedAt
+                    module.status === "complete"
                       ? "text-muted-foreground"
                       : "text-foreground"
                   }`}
                 >
                   {module.title}
                 </p>
-                <CategoryTag category={module.category} />
+                <CategoryTag category={module.domain} />
               </div>
               <span className="text-[11px] text-muted-foreground shrink-0 flex items-center gap-1">
                 <Clock className="size-3" />
@@ -648,7 +657,7 @@ function CertificateSidebar() {
       <div className="flex items-center gap-2 mb-2">
         <Award className="size-4 text-[oklch(0.78_0.16_75)]" />
         <h3 className="text-[14px] font-semibold leading-tight">
-          {foundationPath.credentialTitle}
+          HoopsOS Foundation Certificate
         </h3>
       </div>
 
