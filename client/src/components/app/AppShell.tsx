@@ -63,6 +63,9 @@ import {
   Inbox,
   Megaphone,
   BarChart2,
+  AlertTriangle,
+  Star,
+  Sparkles,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { ROLE_META, type Role } from "@/lib/mock/users";
@@ -232,17 +235,28 @@ const COACH_SIDEBAR_SECTIONS: SidebarSection[] = [
   {
     title: "TEAM",
     items: [
-      { href: "/app/coach/roster",    label: "Roster",    icon: <Users className="w-4 h-4" />    },
-      { href: "/app/coach/parents",   label: "Parents",   icon: <Heart className="w-4 h-4" />    },
-      { href: "/app/coach/readiness", label: "Readiness", icon: <Activity className="w-4 h-4" /> },
+      { href: "/app/coach/roster",     label: "Roster",      icon: <Users className="w-4 h-4" />       },
+      { href: "/app/coach/parents",    label: "Parents",     icon: <Heart className="w-4 h-4" />       },
+      { href: "/app/coach/readiness",  label: "Readiness",   icon: <Activity className="w-4 h-4" />    },
+      { href: "/app/coach/at-risk",    label: "At-Risk",     icon: <AlertTriangle className="w-4 h-4" /> },
+      { href: "/app/coach/recruiting", label: "Recruiting",  icon: <Star className="w-4 h-4" />        },
+    ],
+  },
+  {
+    title: "DEVELOP",
+    items: [
+      { href: "/app/coach/assessments",  label: "Assessments",  icon: <ClipboardCheck className="w-4 h-4" /> },
+      { href: "/app/coach/benchmarks",   label: "Benchmarking", icon: <TrendingUp className="w-4 h-4" />     },
+      { href: "/app/coach/idp/generate", label: "IDP Builder",  icon: <Target className="w-4 h-4" />         },
     ],
   },
   {
     title: "FILM",
     items: [
-      { href: "/app/coach/film",     label: "Film Room",    icon: <Film className="w-4 h-4" />       },
-      { href: "/app/coach/queue",    label: "Review Queue", icon: <ListChecks className="w-4 h-4" /> },
-      { href: "/app/coach/scouting", label: "Scouting",     icon: <Crosshair className="w-4 h-4" /> },
+      { href: "/app/coach/film",         label: "Film Room",    icon: <Film className="w-4 h-4" />       },
+      { href: "/app/coach/film/analyze", label: "AI Analysis",  icon: <Sparkles className="w-4 h-4" />   },
+      { href: "/app/coach/queue",        label: "Review Queue", icon: <ListChecks className="w-4 h-4" /> },
+      { href: "/app/coach/scouting",     label: "Scouting",     icon: <Crosshair className="w-4 h-4" /> },
     ],
   },
   {
@@ -258,10 +272,11 @@ const COACH_SIDEBAR_SECTIONS: SidebarSection[] = [
   {
     title: "MORE",
     items: [
-      { href: "/app/coach/bookings", label: "Bookings",        icon: <Calendar className="w-4 h-4" />     },
-      { href: "/app/club/analytics", label: "Analytics",       icon: <BarChart2 className="w-4 h-4" />    },
-      { href: "/app/billing",        label: "Billing",         icon: <CreditCard className="w-4 h-4" />   },
-      { href: "/app/learn",          label: "Coach Education", icon: <GraduationCap className="w-4 h-4" />},
+      { href: "/app/coach/bookings",    label: "Bookings",        icon: <Calendar className="w-4 h-4" />     },
+      { href: "/app/club/analytics",    label: "Analytics",       icon: <BarChart2 className="w-4 h-4" />    },
+      { href: "/app/club/analytics/v2", label: "Deep Analytics",  icon: <BarChart2 className="w-4 h-4" />    },
+      { href: "/app/billing",           label: "Billing",         icon: <CreditCard className="w-4 h-4" />   },
+      { href: "/app/learn",             label: "Coach Education", icon: <GraduationCap className="w-4 h-4" />},
     ],
   },
 ];
@@ -286,6 +301,8 @@ const NAV: Record<Role, NavItem[]> = {
     { href: "/app/player/uploads",      label: "Uploads",      icon: <UploadCloud className="w-5 h-5" />  },
     { href: "/app/player/skills",       label: "Skill Tracks", icon: <TrendingUp className="w-5 h-5" />   },
     { href: "/app/player/development",  label: "Development",  icon: <Target className="w-5 h-5" />       },
+    { href: "/app/player/timeline",     label: "My Timeline",  icon: <TrendingUp className="w-5 h-5" />   },
+    { href: "/app/player/assessments",  label: "Assessments",  icon: <ClipboardCheck className="w-5 h-5" /> },
     { href: "/app/player/achievements", label: "Achievements", icon: <Trophy className="w-5 h-5" />       },
     { href: "/app/player/plays",        label: "Study Plays",  icon: <BookOpen className="w-5 h-5" />     },
     { href: "/app/billing",             label: "Billing",      icon: <CreditCard className="w-5 h-5" />   },
@@ -304,6 +321,8 @@ const NAV: Record<Role, NavItem[]> = {
     { href: "/app/club/teams",         label: "Teams",           icon: <Users className="w-5 h-5" />           },
     { href: "/app/club/memberships",   label: "Memberships",     icon: <Tag className="w-5 h-5" />             },
     { href: "/app/club/analytics",     label: "Analytics",       icon: <BarChart2 className="w-5 h-5" />      },
+    { href: "/app/club/analytics/v2",  label: "Deep Analytics",  icon: <BarChart2 className="w-5 h-5" />      },
+    { href: "/app/admin/seasons",      label: "Seasons",         icon: <Calendar className="w-5 h-5" />       },
     { href: "/app/club/billing",       label: "Dues & Billing",  icon: <DollarSign className="w-5 h-5" />     },
     { href: "/app/team/roster",        label: "All Athletes",    icon: <UserIcon className="w-5 h-5" />       },
     { href: "/app/team/invite",        label: "Invite",          icon: <Users className="w-5 h-5" />          },

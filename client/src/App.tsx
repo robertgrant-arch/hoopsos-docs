@@ -47,6 +47,8 @@ import MessagesPage from "@/pages/app/coach/MessagesPage";
 import CoachInboxPage from "@/pages/app/coach/CoachInboxPage";
 import PlayerProfilePage from "@/pages/app/coach/PlayerProfilePage";
 import CoachIDPPage from "@/pages/app/coach/CoachIDPPage";
+import BenchmarkingPage from "@/pages/app/coach/BenchmarkingPage";
+import IDPGeneratorPage from "@/pages/app/coach/IDPGeneratorPage";
 import PlayerDevelopmentView from "@/pages/app/player/PlayerDevelopmentView";
 import PlayerWearablesPage from "@/pages/app/player/PlayerWearablesPage";
 import FilmSessionDetail from "@/pages/app/coach/FilmSessionDetail";
@@ -54,6 +56,14 @@ import CoachActionsPage from "@/pages/app/coach/CoachActionsPage";
 import TeamReadinessPage from "@/pages/app/coach/TeamReadinessPage";
 import PracticeExecutionPage from "@/pages/app/coach/PracticeExecutionPage";
 import CoachAnnouncementsPage from "@/pages/app/coach/CoachAnnouncementsPage";
+import SkillAssessmentPage from "@/pages/app/coach/SkillAssessmentPage";
+import AssessmentHistoryPage from "@/pages/app/player/AssessmentHistoryPage";
+import DevelopmentTimelinePage from "@/pages/app/player/DevelopmentTimelinePage";
+import SeasonManagementPage from "@/pages/app/admin/SeasonManagementPage";
+import AIFilmAnalysisHub from "@/pages/app/coach/AIFilmAnalysisHub";
+import AtRiskInterventionPage from "@/pages/app/coach/AtRiskInterventionPage";
+import RecruitingHubPage from "@/pages/app/coach/RecruitingHubPage";
+import ProgramAnalyticsV2Page from "@/pages/app/club/ProgramAnalyticsV2Page";
 import ClubAnalyticsPage from "@/pages/app/club/ClubAnalyticsPage";
 import PlayerCheckinPage from "@/pages/app/player/PlayerCheckinPage";
 import PlayerPublicProfilePage from "@/pages/app/PlayerPublicProfilePage";
@@ -166,6 +176,8 @@ function Router() {
       <Route path="/app/player/assignments" component={PlayerAssignmentsPage} />
       <Route path="/app/player/schedule" component={PlayerSchedulePage} />
       <Route path="/app/player/checkin" component={PlayerCheckinPage} />
+      <Route path="/app/player/assessments" component={AssessmentHistoryPage} />
+      <Route path="/app/player/timeline" component={DevelopmentTimelinePage} />
 
       {/* Coach HQ - auth required */}
       <Route path="/app/coach" component={guard(CoachDashboard)} />
@@ -184,6 +196,13 @@ function Router() {
       <Route path="/app/coach/practice-plans" component={guard(CoachPracticePlanBuilder)} />
       <Route path="/app/coach/practice-plans/:id/execute" component={guard(PracticeExecutionPage)} />
       <Route path="/app/coach/announcements" component={guard(CoachAnnouncementsPage)} />
+      <Route path="/app/coach/assessments" component={guard(SkillAssessmentPage)} />
+      <Route path="/app/coach/benchmarks" component={guard(BenchmarkingPage)} />
+      <Route path="/app/coach/idp-generator" component={guard(IDPGeneratorPage)} />
+      <Route path="/app/coach/film/analyze" component={guard(AIFilmAnalysisHub)} />
+      <Route path="/app/coach/at-risk" component={guard(AtRiskInterventionPage)} />
+      <Route path="/app/coach/recruiting" component={guard(RecruitingHubPage)} />
+      <Route path="/app/coach/idp/generate" component={guard(IDPGeneratorPage)} />
       <Route path="/app/coach/drills" component={guard(DrillLibraryPage)} />
       <Route path="/app/coach/wods" component={guard(CoachWodPlanner)} />
       <Route path="/app/coach/practice-plans/legacy" component={guard(CoachPracticePlans)} />
@@ -246,6 +265,7 @@ function Router() {
       <Route path="/app/admin/users" component={AdminUsers} />
       <Route path="/app/admin/moderation" component={AdminModeration} />
       <Route path="/app/admin/audit" component={AdminAudit} />
+      <Route path="/app/admin/seasons" component={guard(SeasonManagementPage)} />
       <Route path="/app/admin/experts" component={AdminExperts} />
       <Route path="/app/admin/jobs" component={AdminJobs} />
 
@@ -269,6 +289,7 @@ function Router() {
       <Route path="/app/club/teams" component={guard(ClubTeamsPage)} />
       <Route path="/app/club/memberships" component={guard(ClubMembershipsPage)} />
       <Route path="/app/club/analytics" component={guard(ClubAnalyticsPage)} />
+      <Route path="/app/club/analytics/v2" component={guard(ProgramAnalyticsV2Page)} />
 
       {/* Expert */}
       <Route path="/app/expert" component={ExpertDashboard} />
