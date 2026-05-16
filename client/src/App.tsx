@@ -97,6 +97,37 @@ const PlayStudyList          = React.lazy(() => import("@/pages/app/player/PlayS
 const PlayStudyPage          = React.lazy(() => import("@/pages/app/player/PlayStudy").then(m => ({ default: m.PlayStudyPage })));
 const PlayQuizRunner         = React.lazy(() => import("@/pages/app/player/PlayQuiz"));
 
+// Recruiting platform — player-facing
+const PlayerRecruitingDashboard = React.lazy(() => import("@/pages/app/player/PlayerRecruitingDashboard"));
+const DevelopmentResumePage     = React.lazy(() => import("@/pages/app/player/DevelopmentResumePage"));
+const ProfileVisibilityPage     = React.lazy(() => import("@/pages/app/player/ProfileVisibilityPage"));
+
+// Recruiting platform — coach-facing
+const RecruitingExportPage    = React.lazy(() => import("@/pages/app/coach/RecruitingExportPage"));
+const BadgeAwardsPage         = React.lazy(() => import("@/pages/app/coach/BadgeAwardsPage"));
+const PlayerNarrativePage     = React.lazy(() => import("@/pages/app/coach/PlayerNarrativePage"));
+const DevelopmentSynthesisPage = React.lazy(() => import("@/pages/app/coach/DevelopmentSynthesisPage"));
+
+// Recruiting platform — director-facing
+const ProspectPoolPage          = React.lazy(() => import("@/pages/app/director/ProspectPoolPage"));
+const ProgramReputationPage     = React.lazy(() => import("@/pages/app/director/ProgramReputationPage"));
+const RecruiterAccessLogPage    = React.lazy(() => import("@/pages/app/director/RecruiterAccessLogPage"));
+const DirectorRecruitingCRMPage = React.lazy(() => import("@/pages/app/director/DirectorRecruitingCRMPage"));
+
+// Recruiting platform — college coach (recruiter) portal
+const RecruiterDashboardPage  = React.lazy(() => import("@/pages/app/recruiting/RecruiterDashboardPage"));
+const PlayerSearchPage        = React.lazy(() => import("@/pages/app/recruiting/PlayerSearchPage"));
+const RecruiterPlayerViewPage = React.lazy(() => import("@/pages/app/recruiting/RecruiterPlayerViewPage"));
+const AccessRequestPage       = React.lazy(() => import("@/pages/app/recruiting/AccessRequestPage"));
+
+// Recruiting platform — family portal
+const FamilyPrivacyPage           = React.lazy(() => import("@/pages/app/family/FamilyPrivacyPage"));
+const AccessRequestsManagerPage   = React.lazy(() => import("@/pages/app/family/AccessRequestsManagerPage"));
+const FamilyGrowthReportPage      = React.lazy(() => import("@/pages/app/family/FamilyGrowthReportPage"));
+
+// Public recruiting profile (no auth)
+const PublicRecruitingProfilePage = React.lazy(() => import("@/pages/recruiting/PublicRecruitingProfilePage"));
+
 // Team Management Platform (all 5 phases)
 const TeamSchedulePage    = React.lazy(() => import("@/pages/app/team/TeamSchedulePage"));
 const RosterDetailPage    = React.lazy(() => import("@/pages/app/team/RosterDetailPage"));
@@ -237,6 +268,9 @@ function Router() {
         <Route path="/app/player/assessments" component={AssessmentHistoryPage} />
         <Route path="/app/player/timeline" component={DevelopmentTimelinePage} />
         <Route path="/app/player/absence" component={PlayerAbsencePage} />
+        <Route path="/app/player/recruiting" component={PlayerRecruitingDashboard} />
+        <Route path="/app/player/resume" component={DevelopmentResumePage} />
+        <Route path="/app/player/recruiting/visibility" component={ProfileVisibilityPage} />
 
         {/* Coach HQ - auth required */}
         <Route path="/app/coach" component={guard(CoachDashboard)} />
@@ -285,6 +319,11 @@ function Router() {
         <Route path="/app/coach/education/practice-review" component={guard(PracticeReviewPage)} />
         <Route path="/app/coach/education/certifications" component={guard(CertificationPage)} />
         <Route path="/app/coach/absences" component={guard(AbsenceManagementPage)} />
+        <Route path="/app/coach/recruiting/export" component={guard(RecruitingExportPage)} />
+        <Route path="/app/coach/recruiting/badges" component={guard(BadgeAwardsPage)} />
+        <Route path="/app/coach/recruiting/narratives" component={guard(PlayerNarrativePage)} />
+        <Route path="/app/coach/recruiting/synthesis/:playerId" component={guard(DevelopmentSynthesisPage)} />
+        <Route path="/app/coach/recruiting/synthesis" component={guard(DevelopmentSynthesisPage)} />
 
         {/* Team */}
         <Route path="/app/team" component={TeamDashboard} />
@@ -364,9 +403,15 @@ function Router() {
         <Route path="/app/parent/register" component={ParentRegistrationPage} />
         <Route path="/app/parent/digest" component={ParentDigestPage} />
 
+        {/* Family recruiting / privacy portal */}
+        <Route path="/app/family/privacy" component={FamilyPrivacyPage} />
+        <Route path="/app/family/access-requests" component={AccessRequestsManagerPage} />
+        <Route path="/app/family/report" component={FamilyGrowthReportPage} />
+
         {/* Public profiles — no auth */}
         <Route path="/profile/:id" component={PlayerPublicProfilePage} />
         <Route path="/profile/program/:slug" component={PlayerPublicProgramPage} />
+        <Route path="/recruiting/:slug" component={PublicRecruitingProfilePage} />
 
         {/* Club operations */}
         <Route path="/app/club" component={guard(ClubDashboard)} />
@@ -378,6 +423,18 @@ function Router() {
         <Route path="/app/club/analytics/v2" component={guard(ProgramAnalyticsV2Page)} />
         <Route path="/app/club/director" component={guard(DirectorOverviewPage)} />
         <Route path="/app/club/roster-intel" component={guard(RosterIntelligencePage)} />
+
+        {/* Director recruiting */}
+        <Route path="/app/director/prospects" component={guard(ProspectPoolPage)} />
+        <Route path="/app/director/program-reputation" component={guard(ProgramReputationPage)} />
+        <Route path="/app/director/recruiter-access" component={guard(RecruiterAccessLogPage)} />
+        <Route path="/app/director/recruiting-crm" component={guard(DirectorRecruitingCRMPage)} />
+
+        {/* College coach (recruiter) portal */}
+        <Route path="/app/recruiter" component={guard(RecruiterDashboardPage)} />
+        <Route path="/app/recruiter/search" component={guard(PlayerSearchPage)} />
+        <Route path="/app/recruiter/players/:id" component={guard(RecruiterPlayerViewPage)} />
+        <Route path="/app/recruiter/access-requests" component={guard(AccessRequestPage)} />
 
         {/* Expert */}
         <Route path="/app/expert" component={ExpertDashboard} />
