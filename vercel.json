@@ -1,9 +1,12 @@
 {
+  "buildCommand": "npx vite build",
+  "outputDirectory": "dist/public",
+  "installCommand": "pnpm install --frozen-lockfile",
   "rewrites": [
-    { "source": "/api/plans", "destination": "/api/plan-sync" },
-    { "source": "/api/wods/:path*", "destination": "/api/wods/generate" },
-    { "source": "/api/:path*", "destination": "/api/index" },
-    { "source": "/webhooks/:path*", "destination": "/api/index" },
-    { "source": "/(.*)", "destination": "/index.html" }
+    { "source": "/api/plans",        "destination": "/api/plan-sync" },
+    { "source": "/api/wods/:path*",  "destination": "/api/wods/generate" },
+    { "source": "/api/:path*",       "destination": "/api/index" },
+    { "source": "/webhooks/:path*",  "destination": "/api/index" },
+    { "source": "/(.*)",             "destination": "/index.html" }
   ]
 }
