@@ -63,6 +63,19 @@ import SeasonManagementPage from "@/pages/app/admin/SeasonManagementPage";
 import AIFilmAnalysisHub from "@/pages/app/coach/AIFilmAnalysisHub";
 import AtRiskInterventionPage from "@/pages/app/coach/AtRiskInterventionPage";
 import RecruitingHubPage from "@/pages/app/coach/RecruitingHubPage";
+
+// Coach Education System
+import CoachEducationHub from "@/pages/app/coach/CoachEducationHub";
+import LearningPathPage from "@/pages/app/coach/LearningPathPage";
+import CoachingDataMirrorPage from "@/pages/app/coach/CoachingDataMirrorPage";
+import CoachingImpactReportPage from "@/pages/app/coach/CoachingImpactReportPage";
+import CueLibraryPage from "@/pages/app/coach/CueLibraryPage";
+import CoachingJournalPage from "@/pages/app/coach/CoachingJournalPage";
+import ProgramTerminologyPage from "@/pages/app/coach/ProgramTerminologyPage";
+import StaffCohortPage from "@/pages/app/coach/StaffCohortPage";
+import ObservationCalibrationPage from "@/pages/app/coach/ObservationCalibrationPage";
+import PracticeReviewPage from "@/pages/app/coach/PracticeReviewPage";
+import CertificationPage from "@/pages/app/coach/CertificationPage";
 import ProgramAnalyticsV2Page from "@/pages/app/club/ProgramAnalyticsV2Page";
 import ClubAnalyticsPage from "@/pages/app/club/ClubAnalyticsPage";
 import PlayerCheckinPage from "@/pages/app/player/PlayerCheckinPage";
@@ -211,6 +224,20 @@ function Router() {
       <Route path="/app/messages" component={guard(MessagesPage)} />
       <Route path="/app/coach/playbook" component={guard(CoachPlaybookStudioV3)} />
       <Route path="/app/coach/playbook-v3" component={guard(CoachPlaybookStudioV3)} />
+
+      {/* Coach Education System */}
+      <Route path="/app/coach/education" component={guard(CoachEducationHub)} />
+      <Route path="/app/coach/education/paths" component={guard(LearningPathPage)} />
+      <Route path="/app/coach/education/module/:id" component={guard(LearningPathPage)} />
+      <Route path="/app/coach/education/mirror" component={guard(CoachingDataMirrorPage)} />
+      <Route path="/app/coach/education/impact" component={guard(CoachingImpactReportPage)} />
+      <Route path="/app/coach/cues" component={guard(CueLibraryPage)} />
+      <Route path="/app/coach/education/journal" component={guard(CoachingJournalPage)} />
+      <Route path="/app/coach/education/terminology" component={guard(ProgramTerminologyPage)} />
+      <Route path="/app/coach/education/cohort" component={guard(StaffCohortPage)} />
+      <Route path="/app/coach/education/calibration" component={guard(ObservationCalibrationPage)} />
+      <Route path="/app/coach/education/practice-review" component={guard(PracticeReviewPage)} />
+      <Route path="/app/coach/education/certifications" component={guard(CertificationPage)} />
 
       {/* Team */}
       <Route path="/app/team" component={TeamDashboard} />

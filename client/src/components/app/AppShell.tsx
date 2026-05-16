@@ -66,6 +66,7 @@ import {
   AlertTriangle,
   Star,
   Sparkles,
+  Award,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { ROLE_META, type Role } from "@/lib/mock/users";
@@ -277,6 +278,18 @@ const COACH_SIDEBAR_SECTIONS: SidebarSection[] = [
       { href: "/app/club/analytics/v2", label: "Deep Analytics",  icon: <BarChart2 className="w-4 h-4" />    },
       { href: "/app/billing",           label: "Billing",         icon: <CreditCard className="w-4 h-4" />   },
       { href: "/app/learn",             label: "Coach Education", icon: <GraduationCap className="w-4 h-4" />},
+    ],
+  },
+  {
+    title: "EDUCATION",
+    items: [
+      { href: "/app/coach/education",                label: "Education Hub",   icon: <GraduationCap className="w-4 h-4" /> },
+      { href: "/app/coach/education/paths",          label: "Learning Paths",  icon: <BookOpen className="w-4 h-4" />      },
+      { href: "/app/coach/education/mirror",         label: "My Data",         icon: <Activity className="w-4 h-4" />      },
+      { href: "/app/coach/cues",                     label: "Cue Library",     icon: <MessageSquare className="w-4 h-4" /> },
+      { href: "/app/coach/education/journal",        label: "Coaching Journal", icon: <FileText className="w-4 h-4" />     },
+      { href: "/app/coach/education/cohort",         label: "Staff Cohort",    icon: <Users className="w-4 h-4" />         },
+      { href: "/app/coach/education/certifications", label: "Certifications",  icon: <Award className="w-4 h-4" />         },
     ],
   },
 ];
