@@ -1,5 +1,5 @@
 import { Link, useRoute } from "wouter";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Play,
   Upload,
@@ -17,7 +17,10 @@ import {
   ChevronRight,
   Bell,
   Star,
+  RotateCcw,
+  AlertCircle,
 } from "lucide-react";
+import { apiGet } from "@/lib/api/client";
 import { AppShell, PageHeader } from "@/components/app/AppShell";
 import { useAuth } from "@/lib/auth";
 import {
@@ -488,9 +491,67 @@ export function PlayerWorkout() {
   );
 }
 
+/* ----------------------------- Pending re-upload requests ----------------------------- */
+
+interface ReuploadRequest {
+  id: string;
+  issueCategory?: string;
+  coachNote?: string;
+  sessionId?: string;
+  createdAt: string;
+}
+
+function PendingReuploadBanner({ requests }: { requests: ReuploadRequest[] }) {
+  if (requests.length === 0) return null;
+  return (
+    <div className="mb-6 rounded-xl border border-violet-500/30 bg-violet-500/8 p-4 flex flex-col gap-3">
+      <div className="flex items-center gap-2">
+        <AlertCircle className="w-4 h-4 text-violet-500 shrink-0" />
+        <span className="text-[13px] font-semibold text-violet-500">
+          {requests.length} pending re-upload request{requests.length > 1 ? "s" : ""} from your coach
+        </span>
+      </div>
+      <div className="flex flex-col gap-2">
+        {requests.map((r) => (
+          <div
+            key={r.id}
+            className="flex items-start justify-between gap-4 rounded-lg border border-violet-500/20 bg-card p-3"
+          >
+            <div className="flex flex-col gap-1 min-w-0">
+              {r.issueCategory && (
+                <span className="text-[10.5px] font-mono uppercase tracking-[0.1em] text-violet-500">
+                  {r.issueCategory}
+                </span>
+              )}
+              {r.coachNote && (
+                <p className="text-[12.5px] text-muted-foreground leading-snug">
+                  {r.coachNote}
+                </p>
+              )}
+            </div>
+            <Link href={`/app/player/uploads?resolves=${r.id}`}>
+              <a className="shrink-0 inline-flex items-center gap-1.5 h-8 px-3 rounded-md bg-violet-500 text-white text-[11.5px] font-semibold hover:bg-violet-600 transition">
+                <RotateCcw className="w-3 h-3" /> Record & Upload
+              </a>
+            </Link>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 /* ----------------------------- Uploads list ----------------------------- */
 
 export function PlayerUploads() {
+  const [pendingReuploads, setPendingReuploads] = useState<ReuploadRequest[]>([]);
+
+  useEffect(() => {
+    apiGet<ReuploadRequest[]>("/coaching-actions/player/me?actionType=request_reupload&status=open")
+      .then((rows) => { if (Array.isArray(rows)) setPendingReuploads(rows); })
+      .catch(() => {});
+  }, []);
+
   return (
     <AppShell>
       <div className="px-6 lg:px-10 py-8 max-w-[1100px] mx-auto">
@@ -504,6 +565,7 @@ export function PlayerUploads() {
             </button>
           }
         />
+        <PendingReuploadBanner requests={pendingReuploads} />
         <div className="space-y-2">
           {athleteUploads.map((v) => (
             <UploadRow key={v.id} upload={v} />

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useRoute } from "wouter";
 import { MuxVideoPlayer } from "@/components/film/MuxVideoPlayer";
 import {
@@ -24,12 +24,16 @@ import {
   Lightbulb,
   X,
   Clock,
+  Pencil,
 } from "lucide-react";
 import { AppShell, PageHeader } from "@/components/app/AppShell";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
+import { ClipActionBar } from "@/components/film/ClipActionBar";
+import { TelestrationCanvas, type SavedTelestration } from "@/components/film/TelestrationCanvas";
+import { apiGet } from "@/lib/api/client";
 
 // ── Mock data ──────────────────────────────────────────────────────────────────
 
@@ -207,6 +211,28 @@ export function FilmSessionDetail() {
   // Dismissed AI suggestions
   const [dismissedSuggestions, setDismissedSuggestions] = useState<Set<string>>(new Set());
 
+  // Telestration mode — when true, the canvas overlay is active
+  const [drawMode, setDrawMode] = useState(false);
+
+  // Saved telestration annotations for playback
+  const [savedTelestrations, setSavedTelestrations] = useState<SavedTelestration[]>([]);
+
+  useEffect(() => {
+    apiGet<any[]>(`/film-analysis/sessions/${SESSION.id}/annotations?kind=telestration`)
+      .then((rows) => {
+        if (!Array.isArray(rows)) return;
+        setSavedTelestrations(
+          rows.map((r) => ({
+            id:      r.id,
+            startMs: r.startMs ?? 0,
+            strokes: r.data?.strokes ?? [],
+            label:   r.label ?? undefined,
+          })),
+        );
+      })
+      .catch(() => {});
+  }, []);
+
   const selectedClip = selectedClipId ? CLIPS.find((c) => c.id === selectedClipId) ?? null : null;
 
   const filteredClips = clipFilter === "all"
@@ -287,6 +313,26 @@ export function FilmSessionDetail() {
 
               {/* Video area */}
               <div className="relative w-full" style={{ aspectRatio: "16/9" }}>
+                {drawMode && (
+                  <TelestrationCanvas
+                    sessionId={SESSION.id}
+                    currentTimeSec={currentTimeSec}
+                    savedStrokes={savedTelestrations}
+                    onSave={() => {
+                      setDrawMode(false);
+                      // Re-fetch annotations so newly saved stroke appears on next open
+                      apiGet<any[]>(`/film-analysis/sessions/${SESSION.id}/annotations?kind=telestration`)
+                        .then((rows) => {
+                          if (!Array.isArray(rows)) return;
+                          setSavedTelestrations(rows.map((r) => ({
+                            id: r.id, startMs: r.startMs ?? 0,
+                            strokes: r.data?.strokes ?? [], label: r.label ?? undefined,
+                          })));
+                        })
+                        .catch(() => {});
+                    }}
+                  />
+                )}
                 {SESSION.muxPlaybackId ? (
                   /* Real Mux player — shown when a playback ID is available */
                   <MuxVideoPlayer
@@ -349,7 +395,19 @@ export function FilmSessionDetail() {
                   <span className="text-xs text-white/40 ml-1 font-mono">
                     0:47 / {SESSION.duration}
                   </span>
-                  <div className="ml-auto flex items-center gap-1.5">
+                  <div className="ml-auto flex items-center gap-2">
+                    <button
+                      onClick={() => setDrawMode((d) => !d)}
+                      title={drawMode ? "Exit draw mode" : "Draw on frame"}
+                      className={`flex items-center gap-1.5 h-7 px-2.5 rounded-md text-[11px] font-medium border transition-all ${
+                        drawMode
+                          ? "bg-primary/20 border-primary/60 text-primary"
+                          : "border-white/20 text-white/50 hover:text-white/80 hover:border-white/40"
+                      }`}
+                    >
+                      <Pencil className="w-3 h-3" />
+                      {drawMode ? "Drawing" : "Draw"}
+                    </button>
                     <Clock className="w-3.5 h-3.5 text-white/30" />
                     <span className="text-xs text-white/30">{SESSION.duration}</span>
                   </div>
@@ -639,37 +697,20 @@ export function FilmSessionDetail() {
                         </Link>
                       )}
 
-                      {/* Action buttons */}
-                      <div className="flex flex-wrap gap-2">
-                        <Button
-                          size="sm"
-                          className="h-7 text-[11px]"
-                          onClick={() => toast("Assignment created from clip")}
-                        >
-                          <ClipboardList className="w-3 h-3 mr-1" />
-                          Assign to Player
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="h-7 text-[11px]"
-                          onClick={() => toast("Added to next practice plan")}
-                        >
-                          <Calendar className="w-3 h-3 mr-1" />
-                          Add to Practice Plan
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="h-7 text-[11px]"
-                          onClick={() => toast("Linked to development plan")}
-                        >
-                          <Target className="w-3 h-3 mr-1" />
-                          Add to Player IDP
-                        </Button>
-                      </div>
+                      {/* Film-to-Action bar */}
+                      <ClipActionBar
+                        clipId={selectedClip.id}
+                        sessionId={SESSION.id}
+                        playerId={selectedClip.playerId}
+                        playerName={selectedClip.player}
+                        timestamp={selectedClip.label}
+                        issueCategory={selectedClip.category}
+                        onActionCreated={() => {
+                          setReviewedClips((prev) => new Set(Array.from(prev).concat(selectedClip.id)));
+                        }}
+                      />
 
-                      <div className="flex items-center justify-between">
+                      <div className="flex items-center justify-between pt-1 border-t border-border/50">
                         <Button
                           size="sm"
                           variant="secondary"
@@ -686,11 +727,8 @@ export function FilmSessionDetail() {
                             onChange={() => {
                               setReviewedClips((prev) => {
                                 const next = new Set(prev);
-                                if (next.has(selectedClip.id)) {
-                                  next.delete(selectedClip.id);
-                                } else {
-                                  next.add(selectedClip.id);
-                                }
+                                if (next.has(selectedClip.id)) next.delete(selectedClip.id);
+                                else next.add(selectedClip.id);
                                 return next;
                               });
                             }}
@@ -867,29 +905,28 @@ export function FilmSessionDetail() {
                                   Clip at {linkedClip.label}
                                 </button>
                               )}
-                              <div className="flex items-center gap-2 mt-0.5">
-                                <Button
-                                  size="sm"
-                                  className="h-7 text-[11px] flex-1"
-                                  onClick={() =>
-                                    toast(`Assignment created for ${suggestion.player}`)
-                                  }
-                                >
-                                  <CheckCircle2 className="w-3 h-3 mr-1" />
-                                  Accept &amp; Assign
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  className="h-7 text-[11px] text-muted-foreground"
-                                  onClick={() => {
-                                    setDismissedSuggestions((prev) => new Set(Array.from(prev).concat(suggestion.id)));
-                                    toast("Suggestion dismissed");
-                                  }}
-                                >
-                                  Override
-                                </Button>
-                              </div>
+                              <ClipActionBar
+                                clipId={suggestion.clipId}
+                                sessionId={SESSION.id}
+                                playerId={suggestion.playerId}
+                                playerName={suggestion.player}
+                                issueCategory="Finishing"
+                                compact={false}
+                                onActionCreated={() => {
+                                  setDismissedSuggestions((prev) => new Set(Array.from(prev).concat(suggestion.id)));
+                                }}
+                              />
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-6 text-[11px] text-muted-foreground w-full"
+                                onClick={() => {
+                                  setDismissedSuggestions((prev) => new Set(Array.from(prev).concat(suggestion.id)));
+                                  toast("Suggestion dismissed");
+                                }}
+                              >
+                                Dismiss suggestion
+                              </Button>
                             </div>
                           );
                         })}

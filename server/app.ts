@@ -12,12 +12,27 @@ import { registerReadinessRoutes } from "./modules/readiness/routes";
 import { registerMessagingRoutes } from "./modules/messaging/routes";
 import { registerWearableRoutes } from "./modules/wearables/routes";
 import { registerWodRoutes } from "./modules/wods/routes";
+import { registerCoachingActionRoutes } from "./modules/coaching-actions/routes";
+import { registerParentRoutes } from "./modules/parent/routes";
+import { registerAnnouncementRoutes } from "./modules/announcements/routes";
+import { registerWaiverRoutes } from "./modules/waivers/routes";
+import { registerSeasonRoutes } from "./modules/seasons/routes";
+import { registerTeamRoutes } from "./modules/teams/routes";
+import { registerRegistrationRoutes } from "./modules/registrations/routes";
+import { registerInvoiceRoutes } from "./modules/invoices/routes";
+import { registerAdminRoutes } from "./modules/admin/routes";
 import { registerWebhookRoutes } from "./routes/webhooks";
 import { inngest } from "./inngest/client";
-import { analyzeFilmFn, readinessAlertFn, attendanceNotifyFn } from "./inngest";
+import { analyzeFilmFn, readinessAlertFn, attendanceNotifyFn, notifyCoachingActionFn } from "./inngest";
 
 export function createApp() {
   const app = express();
+
+  // Trust the first proxy for accurate req.ip in waiver signatures.
+  // Required for X-Forwarded-For to be read correctly behind load balancers
+  // (Render, Railway, Heroku, etc.).  Set to the number of trusted proxies
+  // in front of the app in production.
+  app.set("trust proxy", 1);
 
   // Webhooks MUST be registered before express.json() so express.raw()
   // inside registerWebhookRoutes can capture the raw body for Mux HMAC verification.
@@ -68,11 +83,54 @@ export function createApp() {
   registerWodRoutes(wodsRouter);
   app.use("/api/wods", wodsRouter);
 
+  const coachingActionsRouter = express.Router();
+  registerCoachingActionRoutes(coachingActionsRouter);
+  app.use("/api/coaching-actions", coachingActionsRouter);
+
+  // ── New portal-layer routes ────────────────────────────────────────────────
+
+  // Parent portal: all routes gated to role=guardian + parent-child validation
+  const parentRouter = express.Router();
+  registerParentRoutes(parentRouter);
+  app.use("/api/parent", parentRouter);
+
+  // Announcements: role-filtered server-side before response
+  const announcementsRouter = express.Router();
+  registerAnnouncementRoutes(announcementsRouter);
+  app.use("/api/announcements", announcementsRouter);
+
+  // Waivers: IP + UA captured on sign; consent acknowledgement enforced
+  const waiversRouter = express.Router();
+  registerWaiverRoutes(waiversRouter);
+  app.use("/api/waivers", waiversRouter);
+
+  // ── Club Operations Layer ─────────────────────────────────────────────────
+
+  const seasonsRouter = express.Router();
+  registerSeasonRoutes(seasonsRouter);
+  app.use("/api/seasons", seasonsRouter);
+
+  const teamsRouter = express.Router();
+  registerTeamRoutes(teamsRouter);
+  app.use("/api/teams", teamsRouter);
+
+  const registrationsRouter = express.Router();
+  registerRegistrationRoutes(registrationsRouter);
+  app.use("/api/registrations", registrationsRouter);
+
+  const invoicesRouter = express.Router();
+  registerInvoiceRoutes(invoicesRouter);
+  app.use("/api/invoices", invoicesRouter);
+
+  const adminRouter = express.Router();
+  registerAdminRoutes(adminRouter);
+  app.use("/api/admin", adminRouter);
+
   app.use(
     "/api/inngest",
     serve({
       client: inngest,
-      functions: [analyzeFilmFn, readinessAlertFn, attendanceNotifyFn],
+      functions: [analyzeFilmFn, readinessAlertFn, attendanceNotifyFn, notifyCoachingActionFn],
     }),
   );
 

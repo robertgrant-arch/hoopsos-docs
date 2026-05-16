@@ -39,6 +39,14 @@ import {
   Menu,
   X,
   MoreHorizontal,
+  Crosshair,
+  Bell,
+  FileText,
+  CheckSquare,
+  ClipboardCheck,
+  DollarSign,
+  PlusCircle,
+  Tag,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { ROLE_META, type Role } from "@/lib/mock/users";
@@ -58,20 +66,22 @@ type NavItem = { href: string; label: string; icon: React.ReactNode };
 
 const NAV: Record<Role, NavItem[]> = {
   ATHLETE: [
-    { href: "/app/player",              label: "Dashboard",      icon: <Home className="w-5 h-5" /> },
-    { href: "/app/player/workout",      label: "Today's WOD",   icon: <Dumbbell className="w-5 h-5" /> },
-    { href: "/app/player/uploads",      label: "Uploads",        icon: <UploadCloud className="w-5 h-5" /> },
-    { href: "/app/player/skills",       label: "Skill Tracks",   icon: <TrendingUp className="w-5 h-5" /> },
-    { href: "/app/player/development",  label: "My Development", icon: <Target className="w-5 h-5" /> },
-    { href: "/app/player/wearables",    label: "Wearables",      icon: <Activity className="w-5 h-5" /> },
-    { href: "/app/player/achievements", label: "Achievements",   icon: <Trophy className="w-5 h-5" /> },
-    { href: "/app/player/plays",        label: "Study Plays",    icon: <BookOpen className="w-5 h-5" /> },
-    { href: "/app/billing",             label: "Billing",        icon: <CreditCard className="w-5 h-5" /> },
-    { href: "/app/film/inbox",          label: "Film Inbox",     icon: <Film className="w-5 h-5" /> },
-    { href: "/app/learn",               label: "Learn",          icon: <BookOpen className="w-5 h-5" /> },
-    { href: "/app/live",                label: "Live",           icon: <Radio className="w-5 h-5" /> },
-    { href: "/app/marketplace",         label: "Marketplace",    icon: <Package className="w-5 h-5" /> },
-    { href: "/app/messages",            label: "Messages",       icon: <MessageSquare className="w-5 h-5" /> },
+    { href: "/app/player",                label: "Dashboard",      icon: <Home className="w-5 h-5" /> },
+    { href: "/app/player/workout",        label: "Today's WOD",    icon: <Dumbbell className="w-5 h-5" /> },
+    { href: "/app/player/assignments",    label: "Assignments",    icon: <CheckSquare className="w-5 h-5" /> },
+    { href: "/app/player/schedule",       label: "Schedule",       icon: <Calendar className="w-5 h-5" /> },
+    { href: "/app/player/uploads",        label: "Uploads",        icon: <UploadCloud className="w-5 h-5" /> },
+    { href: "/app/player/skills",         label: "Skill Tracks",   icon: <TrendingUp className="w-5 h-5" /> },
+    { href: "/app/player/development",    label: "My Development", icon: <Target className="w-5 h-5" /> },
+    { href: "/app/player/wearables",      label: "Wearables",      icon: <Activity className="w-5 h-5" /> },
+    { href: "/app/player/achievements",   label: "Achievements",   icon: <Trophy className="w-5 h-5" /> },
+    { href: "/app/player/plays",          label: "Study Plays",    icon: <BookOpen className="w-5 h-5" /> },
+    { href: "/app/billing",               label: "Billing",        icon: <CreditCard className="w-5 h-5" /> },
+    { href: "/app/film/inbox",            label: "Film Inbox",     icon: <Film className="w-5 h-5" /> },
+    { href: "/app/learn",                 label: "Learn",          icon: <BookOpen className="w-5 h-5" /> },
+    { href: "/app/live",                  label: "Live",           icon: <Radio className="w-5 h-5" /> },
+    { href: "/app/marketplace",           label: "Marketplace",    icon: <Package className="w-5 h-5" /> },
+    { href: "/app/messages",              label: "Messages",       icon: <MessageSquare className="w-5 h-5" /> },
   ],
   COACH: [
     { href: "/app/coach",               label: "Dashboard",      icon: <LayoutDashboard className="w-5 h-5" /> },
@@ -84,6 +94,7 @@ const NAV: Record<Role, NavItem[]> = {
     { href: "/app/coach/practice-plans",label: "Practice Plans", icon: <Calendar className="w-5 h-5" /> },
     { href: "/app/coach/drills",        label: "Drill Library",  icon: <BookOpen className="w-5 h-5" /> },
     { href: "/app/coach/film",          label: "Film Room",      icon: <Film className="w-5 h-5" /> },
+    { href: "/app/coach/scouting",      label: "Scouting",       icon: <Crosshair className="w-5 h-5" /> },
     { href: "/app/playbook",            label: "Playbook Studio",icon: <LayoutDashboard className="w-5 h-5" /> },
     { href: "/app/coach/bookings",      label: "Bookings",       icon: <Calendar className="w-5 h-5" /> },
     { href: "/app/billing",             label: "Billing",        icon: <CreditCard className="w-5 h-5" /> },
@@ -91,14 +102,20 @@ const NAV: Record<Role, NavItem[]> = {
     { href: "/app/learn",               label: "Coach Education",icon: <BookOpen className="w-5 h-5" /> },
   ],
   TEAM_ADMIN: [
-    { href: "/app/team",           label: "Org Dashboard", icon: <LayoutDashboard className="w-5 h-5" /> },
-    { href: "/app/team/schedule",  label: "Schedule",      icon: <Calendar className="w-5 h-5" /> },
-    { href: "/app/team/teams",     label: "Teams",         icon: <Users className="w-5 h-5" /> },
-    { href: "/app/team/roster",    label: "All Athletes",  icon: <UserIcon className="w-5 h-5" /> },
-    { href: "/app/team/invite",    label: "Invite",        icon: <Users className="w-5 h-5" /> },
-    { href: "/app/billing",        label: "Billing",       icon: <CreditCard className="w-5 h-5" /> },
-    { href: "/app/team/seats",     label: "Seat Manager",  icon: <Users className="w-5 h-5" /> },
-    { href: "/app/team/settings",  label: "Settings",      icon: <Shield className="w-5 h-5" /> },
+    { href: "/app/team",              label: "Org Dashboard",  icon: <LayoutDashboard className="w-5 h-5" /> },
+    { href: "/app/team/schedule",     label: "Schedule",       icon: <Calendar className="w-5 h-5" /> },
+    // Club operations
+    { href: "/app/club",              label: "Club Dashboard", icon: <ClipboardCheck className="w-5 h-5" /> },
+    { href: "/app/club/registrations",label: "Registrations",  icon: <ClipboardList className="w-5 h-5" /> },
+    { href: "/app/club/teams",        label: "Teams",          icon: <Users className="w-5 h-5" /> },
+    { href: "/app/club/memberships",  label: "Memberships",    icon: <Tag className="w-5 h-5" /> },
+    { href: "/app/club/billing",      label: "Dues & Billing", icon: <DollarSign className="w-5 h-5" /> },
+    // Org tools
+    { href: "/app/team/roster",       label: "All Athletes",   icon: <UserIcon className="w-5 h-5" /> },
+    { href: "/app/team/invite",       label: "Invite",         icon: <Users className="w-5 h-5" /> },
+    { href: "/app/billing",           label: "Platform Billing",icon: <CreditCard className="w-5 h-5" /> },
+    { href: "/app/team/seats",        label: "Seat Manager",   icon: <Users className="w-5 h-5" /> },
+    { href: "/app/team/settings",     label: "Settings",       icon: <Shield className="w-5 h-5" /> },
   ],
   EXPERT: [
     { href: "/app/expert",          label: "Dashboard", icon: <LayoutDashboard className="w-5 h-5" /> },
@@ -108,10 +125,14 @@ const NAV: Record<Role, NavItem[]> = {
     { href: "/app/messages",        label: "Messages",  icon: <MessageSquare className="w-5 h-5" /> },
   ],
   PARENT: [
-    { href: "/app/parent",          label: "Dashboard", icon: <Home className="w-5 h-5" /> },
-    { href: "/app/parent/child",    label: "My Child",  icon: <Heart className="w-5 h-5" /> },
-    { href: "/app/parent/billing",  label: "Billing",   icon: <CreditCard className="w-5 h-5" /> },
-    { href: "/app/messages",        label: "Messages",  icon: <MessageSquare className="w-5 h-5" /> },
+    { href: "/app/parent",               label: "Dashboard",     icon: <Home className="w-5 h-5" /> },
+    { href: "/app/parent/child",         label: "My Child",      icon: <Heart className="w-5 h-5" /> },
+    { href: "/app/parent/schedule",      label: "Schedule",      icon: <Calendar className="w-5 h-5" /> },
+    { href: "/app/parent/register",      label: "Register",      icon: <PlusCircle className="w-5 h-5" /> },
+    { href: "/app/parent/billing",       label: "Billing",       icon: <CreditCard className="w-5 h-5" /> },
+    { href: "/app/parent/forms",         label: "Forms",         icon: <FileText className="w-5 h-5" /> },
+    { href: "/app/parent/announcements", label: "Announcements", icon: <Bell className="w-5 h-5" /> },
+    { href: "/app/messages",             label: "Messages",      icon: <MessageSquare className="w-5 h-5" /> },
   ],
   SUPER_ADMIN: [
     { href: "/app/admin",          label: "Overview",            icon: <LayoutDashboard className="w-5 h-5" /> },
@@ -128,9 +149,9 @@ const NAV: Record<Role, NavItem[]> = {
 const BOTTOM_NAV_COUNT: Partial<Record<Role, number>> = {
   ATHLETE:    4,
   COACH:      4,
-  TEAM_ADMIN: 3,
+  TEAM_ADMIN: 4,  // Org Dashboard, Schedule, Club Dashboard, Registrations → rest in More
   EXPERT:     4,
-  PARENT:     4,
+  PARENT:     4,  // Dashboard, My Child, Schedule, Register → More has Billing, Forms, Announcements, Messages
   SUPER_ADMIN: 3,
 };
 

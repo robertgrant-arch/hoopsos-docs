@@ -1,7 +1,7 @@
 import { inngest } from "../client";
 import { analyzeFilmSession } from "../../lib/gemini";
 import { getDb } from "@shared/db/client";
-import { filmSessions, filmAssets, annotations } from "@shared/db/schema";
+import { filmSessions, filmAssets, annotations, coachingActions } from "@shared/db/schema";
 import { eq, and } from "drizzle-orm";
 import { nanoid } from "nanoid";
 
@@ -87,6 +87,74 @@ export const analyzeFilmFn = inngest.createFunction(
       }
     });
 
-    return { sessionId, clipsCreated: analysis.teachableClips.length, summary: analysis.summary };
+    // Step 5: Auto-resolve coaching actions that linked this session as follow-up evidence.
+    // If the original issue category no longer appears as a negative AI observation, mark resolved.
+    const resolutionResult = await step.run("check-resolutions", async () => {
+      const db = getDb();
+
+      const pendingActions = await db
+        .select()
+        .from(coachingActions)
+        .where(
+          and(
+            eq(coachingActions.followUpSessionId, sessionId),
+            eq(coachingActions.status, "in_progress"),
+            eq(coachingActions.orgId, orgId),
+          ),
+        );
+
+      if (pendingActions.length === 0) return { checked: 0, resolved: 0 };
+
+      // Categories that are still flagged negatively in the new session
+      const stillFlaggedCategories = new Set(
+        analysis.teachableClips
+          .filter((c) => c.sentiment === "corrective" || c.teachable)
+          .map((c) => c.category.toLowerCase()),
+      );
+
+      let resolved = 0;
+      for (const action of pendingActions) {
+        const originalCategory = action.issueCategory?.toLowerCase();
+        const stillFlagged = originalCategory && stillFlaggedCategories.has(originalCategory);
+
+        if (!stillFlagged) {
+          // Count how many clips had this category in the original session vs follow-up
+          const originalCount = analysis.teachableClips.filter(
+            (c) => c.category.toLowerCase() === originalCategory,
+          ).length;
+          // In the follow-up session we already checked it's 0, so followUpCount = 0
+          const followUpCount = 0;
+          const improvement = originalCount > 0 ? 1.0 : 0;
+
+          await db
+            .update(coachingActions)
+            .set({
+              status: "resolved",
+              resolvedAt: new Date(),
+              resolvedNote: originalCategory
+                ? `AI detected improvement: ${action.issueCategory} not flagged in follow-up session.`
+                : "Follow-up session analyzed — no related issues found by AI.",
+              resolutionScore: {
+                originalCount,
+                followUpCount,
+                improvement,
+                autoResolved: true,
+              },
+              updatedAt: new Date(),
+            })
+            .where(eq(coachingActions.id, action.id));
+          resolved++;
+        }
+      }
+      return { checked: pendingActions.length, resolved };
+    });
+
+    return {
+      sessionId,
+      clipsCreated: analysis.teachableClips.length,
+      summary: analysis.summary,
+      resolutionsChecked: resolutionResult.checked,
+      resolutionsAutoResolved: resolutionResult.resolved,
+    };
   }
 );

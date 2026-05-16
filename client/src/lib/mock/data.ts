@@ -144,6 +144,8 @@ export type VideoUpload = {
   aiConfidence: number;
   issues: { timestamp: string; category: string; severity: "minor" | "major"; message: string; suggestedDrillIds: string[] }[];
   coachReview?: { coachName: string; verdict: string; comments: { t: string; text: string }[] };
+  /** Number of open coaching actions spawned from this upload */
+  openActionCount?: number;
 };
 
 export const athleteUploads: VideoUpload[] = [
@@ -155,6 +157,7 @@ export const athleteUploads: VideoUpload[] = [
     uploadedAt: "2 hours ago",
     status: "COACH_REVIEWED",
     aiConfidence: 0.89,
+    openActionCount: 2,
     issues: [
       { timestamp: "0:14", category: "Balance", severity: "minor", message: "Slight forward lean at release. Keep chest stacked over base.", suggestedDrillIds: ["d_balance_1"] },
       { timestamp: "0:37", category: "Release", severity: "major", message: "Thumb flick visible — rotation is forced. Index finger should be last off the ball.", suggestedDrillIds: ["d_form_2", "d_hand_3"] },
@@ -177,6 +180,7 @@ export const athleteUploads: VideoUpload[] = [
     uploadedAt: "Yesterday",
     status: "READY",
     aiConfidence: 0.92,
+    openActionCount: 1,
     issues: [
       { timestamp: "0:08", category: "Posture", severity: "minor", message: "Stand up a touch too tall on crossover. Stay low and wide.", suggestedDrillIds: ["d_handles_1"] },
       { timestamp: "0:45", category: "Change of Pace", severity: "major", message: "Speed is constant — defender can predict. Decelerate before bursting.", suggestedDrillIds: ["d_handles_2"] },

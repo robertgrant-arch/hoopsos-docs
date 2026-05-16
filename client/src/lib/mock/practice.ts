@@ -634,6 +634,41 @@ export type PracticePlanBlock = {
   athleteCount?: number;
 };
 
+// ── Outcome-driven metadata types ────────────────────────────────────────────
+
+export type PracticeObjectiveCategory = "skill" | "tactic" | "mindset" | "conditioning" | "opponent_prep";
+
+export type PracticeObjective = {
+  id: string;
+  label: string;
+  category: PracticeObjectiveCategory;
+};
+
+export type PracticeTargetGroupType = "full_team" | "guards" | "bigs" | "wings" | "starters" | "bench";
+
+export type PracticeTargetGroup = {
+  type: PracticeTargetGroupType;
+  label: string;
+};
+
+export type PracticeIntensity = "RECOVERY" | "MODERATE" | "HIGH" | "MAX";
+
+export type DrillFeedback = {
+  drillId: string;
+  rating: 1 | 2 | 3 | 4 | 5;
+  note: string;
+  teachAgain: boolean;
+};
+
+export type PracticeReflection = {
+  whatWorked: string;
+  whatDidnt: string;
+  generalNote: string;
+  actualDurationMin: number;
+  drillFeedback: DrillFeedback[];
+  completedAt: string; // ISO
+};
+
 export type PracticePlan = {
   id: string;
   title: string;
@@ -644,10 +679,19 @@ export type PracticePlan = {
   focus: string;
   authorId: string;
   authorName: string;
-  status: "DRAFT" | "PUBLISHED" | "ARCHIVED";
+  status: "DRAFT" | "PUBLISHED" | "ARCHIVED" | "COMPLETED";
   blocks: PracticePlanBlock[];
   createdAt: string; // ISO
   updatedAt: string; // ISO
+
+  // Phase-2: outcome-driven fields
+  objectives?: PracticeObjective[];
+  targetGroup?: PracticeTargetGroup;
+  skillEmphasis?: Record<string, number>; // categoryId → 0-100 weight
+  plannedIntensity?: PracticeIntensity;
+  linkedEventId?: string;
+  reflection?: PracticeReflection;
+  followUpActionIds?: string[];
 };
 
 export const practicePlans: PracticePlan[] = [
@@ -662,6 +706,15 @@ export const practicePlans: PracticePlan[] = [
     authorId: "user_coach_1",
     authorName: "Coach Daniels",
     status: "PUBLISHED",
+    objectives: [
+      { id: "obj_pnr_coverage", label: "PnR Coverage", category: "tactic" },
+      { id: "obj_zone_offense",  label: "Zone Offense",  category: "tactic" },
+      { id: "obj_late_clock",    label: "Late Clock",    category: "tactic" },
+      { id: "obj_opponent_prep", label: "Opponent Prep", category: "opponent_prep" },
+      { id: "obj_compete",       label: "Compete Level", category: "mindset" },
+    ],
+    targetGroup: { type: "full_team", label: "Full Team" },
+    plannedIntensity: "HIGH",
     createdAt: "2026-04-29T22:00:00Z",
     updatedAt: "2026-04-30T11:30:00Z",
     blocks: [
@@ -686,6 +739,13 @@ export const practicePlans: PracticePlan[] = [
     authorId: "user_coach_1",
     authorName: "Coach Daniels",
     status: "DRAFT",
+    objectives: [
+      { id: "obj_shooting",     label: "Shooting",     category: "skill" },
+      { id: "obj_ball_handling",label: "Ball Handling", category: "skill" },
+      { id: "obj_finishing",    label: "Finishing",    category: "skill" },
+    ],
+    targetGroup: { type: "guards", label: "Guards" },
+    plannedIntensity: "MODERATE",
     createdAt: "2026-04-30T08:00:00Z",
     updatedAt: "2026-04-30T08:00:00Z",
     blocks: [

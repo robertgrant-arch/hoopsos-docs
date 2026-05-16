@@ -18,6 +18,7 @@ import type {
 
 import { HttpError, requireOrg } from "../../auth/tenant";
 import type { FilmAnalysisService } from "./service";
+import { createRepository } from "@shared/db";
 
 function handleError(
   err: unknown,
@@ -48,6 +49,15 @@ export function registerFilmAnalysisRoutes(
           teamId,
           createdBy: userId,
         });
+
+        // If this upload is a re-upload resolving an open coaching action,
+        // move that action to in_progress and link the new session as evidence.
+        if (body.resolvesActionId) {
+          const repo = createRepository({ orgId, userId });
+          await repo.coachingActions.updateStatus(body.resolvesActionId, "in_progress", {
+            followUpSessionId: result.assetId,
+          });
+        }
 
         res.status(201).json(result);
       } catch (e) {
@@ -281,6 +291,63 @@ export function registerFilmAnalysisRoutes(
           body,
         );
         res.status(201).json(decision);
+      } catch (e) {
+        handleError(e, res, next);
+      }
+    },
+  );
+
+  // List all annotations for a session — used for telestration playback and clip overlays
+  router.get(
+    "/sessions/:id/annotations",
+    async (req: Request, res: Response, next: NextFunction) => {
+      try {
+        const { orgId, userId } = await requireOrg(req);
+        const repo = createRepository({ orgId, userId });
+        const kind = req.query.kind as string | undefined;
+        const all = await repo.annotations.listForSession(req.params.id);
+        const filtered = kind ? all.filter((a: any) => a.kind === kind) : all;
+        res.json(filtered);
+      } catch (e) {
+        handleError(e, res, next);
+      }
+    },
+  );
+
+  // Create a coach annotation on a session (including telestration strokes)
+  router.post(
+    "/sessions/:id/annotations",
+    async (req: Request, res: Response, next: NextFunction) => {
+      try {
+        const { orgId, userId } = await requireOrg(req);
+        const repo = createRepository({ orgId, userId });
+        const { kind, startMs, endMs, label, body, data, payload } = req.body as {
+          kind: string;
+          startMs: number;
+          endMs?: number;
+          label?: string;
+          body?: string;
+          data?: Record<string, unknown>;
+          payload?: Record<string, unknown>;
+        };
+        if (!kind || startMs == null) {
+          return res.status(400).json({ error: "kind and startMs are required" });
+        }
+        const annotation = await repo.annotations.create({
+          sessionId: req.params.id,
+          kind: kind as any,
+          source: "coach",
+          authorUserId: userId,
+          startMs,
+          endMs: endMs ?? null,
+          label: label ?? null,
+          body: body ?? null,
+          data: data ?? {},
+          payload: payload ?? {},
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        });
+        res.status(201).json(annotation);
       } catch (e) {
         handleError(e, res, next);
       }

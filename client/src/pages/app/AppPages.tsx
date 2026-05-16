@@ -43,9 +43,11 @@ import {
 import { useRef } from "react";
 import { Stage, Layer, Circle, Line, Text as KonvaText, Rect } from "react-konva";
 import { AppShell, PageHeader } from "@/components/app/AppShell";
+import { ClipActionBar } from "@/components/film/ClipActionBar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/lib/auth";
+import { apiGet } from "@/lib/api/client";
 import {
   org,
   roster,
@@ -195,19 +197,21 @@ export function CoachRoster() {
                   className="border-b border-border last:border-0 hover:bg-muted/40 transition"
                 >
                   <Td>
-                    <div className="flex items-center gap-2.5">
-                      <div className="w-7 h-7 rounded-md bg-primary/15 text-primary font-semibold text-[11px] flex items-center justify-center shrink-0">
-                        {a.initials}
-                      </div>
-                      <div>
-                        <div className="font-medium whitespace-nowrap">{a.name}</div>
-                        {a.isMinor ? (
-                          <div className="text-[10.5px] text-muted-foreground">Minor · parent linked</div>
-                        ) : a.email ? (
-                          <div className="text-[10.5px] text-muted-foreground truncate max-w-[140px]">{a.email}</div>
-                        ) : null}
-                      </div>
-                    </div>
+                    <Link href={`/app/coach/players/${a.id}`}>
+                      <a className="flex items-center gap-2.5 hover:opacity-80 transition">
+                        <div className="w-7 h-7 rounded-md bg-primary/15 text-primary font-semibold text-[11px] flex items-center justify-center shrink-0">
+                          {a.initials}
+                        </div>
+                        <div>
+                          <div className="font-medium whitespace-nowrap hover:underline underline-offset-2">{a.name}</div>
+                          {a.isMinor ? (
+                            <div className="text-[10.5px] text-muted-foreground">Minor · parent linked</div>
+                          ) : a.email ? (
+                            <div className="text-[10.5px] text-muted-foreground truncate max-w-[140px]">{a.email}</div>
+                          ) : null}
+                        </div>
+                      </a>
+                    </Link>
                   </Td>
                   <Td>
                     {a.phone ? (
@@ -472,13 +476,25 @@ function ComplianceChip({ value }: { value: number }) {
 }
 
 export function CoachQueue() {
+  const [totalOpen, setTotalOpen] = useState(0);
+
+  useEffect(() => {
+    apiGet<{ id: string }[]>("/coaching-actions/open")
+      .then((actions) => { if (Array.isArray(actions)) setTotalOpen(actions.length); })
+      .catch(() => { /* demo mode — no badge */ });
+  }, []);
+
   return (
     <AppShell>
       <div className="px-6 lg:px-10 py-8 max-w-[1400px] mx-auto">
         <PageHeader
           eyebrow="Coach HQ · Review Queue"
           title="Video Review Queue"
-          subtitle="Sorted by AI priority — flagged clips at top. Telestrate, comment, mark reviewed."
+          subtitle={
+            totalOpen > 0
+              ? `Sorted by AI priority — flagged clips at top. ${totalOpen} open coaching action${totalOpen === 1 ? "" : "s"} pending.`
+              : "Sorted by AI priority — flagged clips at top. Telestrate, comment, mark reviewed."
+          }
         />
         <div className="rounded-xl border border-border bg-card divide-y divide-border">
           {athleteUploads.map((u) => (
@@ -514,6 +530,14 @@ export function CoachQueue() {
                     <span className="font-mono">AI conf {(u.aiConfidence * 100).toFixed(0)}%</span>
                     <span>·</span>
                     <span>{u.issues.length} observations</span>
+                    {u.openActionCount != null && u.openActionCount > 0 && (
+                      <>
+                        <span>·</span>
+                        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-sm bg-[oklch(0.68_0.22_25)]/15 text-[oklch(0.75_0.22_25)] text-[10px] font-mono">
+                          {u.openActionCount} open {u.openActionCount === 1 ? "action" : "actions"}
+                        </span>
+                      </>
+                    )}
                   </div>
                 </div>
                 <ChevronRight className="w-4 h-4 text-muted-foreground" />
@@ -530,6 +554,14 @@ export function CoachQueueDetail() {
   const [, params] = useRoute("/app/coach/queue/:id");
   const upload = athleteUploads.find((u) => u.id === params?.id) ?? athleteUploads[0];
   const [activeT, setActiveT] = useState<string | null>(upload.issues[0]?.timestamp ?? null);
+  // Track which issues have been expanded to show their action bar
+  const [expandedIssue, setExpandedIssue] = useState<number | null>(null);
+  // Track fully reviewed state
+  const [isReviewed, setIsReviewed] = useState(upload.status === "COACH_REVIEWED");
+  const [addressedIssues, setAddressedIssues] = useState<Set<number>>(new Set());
+  const [commentText, setCommentText] = useState("");
+
+  const allAddressed = upload.issues.length > 0 && addressedIssues.size === upload.issues.length;
 
   return (
     <AppShell>
@@ -542,16 +574,48 @@ export function CoachQueueDetail() {
         <PageHeader
           eyebrow={`Clip · ${upload.status.replace("_", " ")}`}
           title={upload.title}
-          subtitle={`${upload.uploadedAt} · ${upload.duration} · AI confidence ${(upload.aiConfidence * 100).toFixed(0)}%`}
+          subtitle={`${upload.uploadedAt} · ${upload.duration} · AI confidence ${(upload.aiConfidence * 100).toFixed(0)}% · ${upload.issues.length} observations`}
           actions={
-            <button className="inline-flex items-center gap-2 h-9 px-4 rounded-md bg-primary text-primary-foreground font-semibold text-[12.5px] uppercase tracking-[0.08em] hover:brightness-110 transition">
-              <CheckCheck className="w-4 h-4" /> Mark Reviewed
+            <button
+              onClick={() => { setIsReviewed(true); }}
+              className={`inline-flex items-center gap-2 h-9 px-4 rounded-md font-semibold text-[12.5px] uppercase tracking-[0.08em] transition ${
+                isReviewed
+                  ? "bg-emerald-500/15 text-emerald-600 border border-emerald-500/30 cursor-default"
+                  : "bg-primary text-primary-foreground hover:brightness-110"
+              }`}
+            >
+              <CheckCheck className="w-4 h-4" />
+              {isReviewed ? "Reviewed" : "Mark Reviewed"}
             </button>
           }
         />
 
-        <div className="grid lg:grid-cols-[1fr_380px] gap-6">
-          {/* Video + telestration canvas */}
+        {/* Progress strip — shows how many issues have actions */}
+        {upload.issues.length > 0 && (
+          <div className="mb-6 rounded-lg border border-border bg-card px-4 py-3 flex items-center gap-4">
+            <div className="flex items-center gap-2 text-[12px] text-muted-foreground">
+              <Sparkles className="w-3.5 h-3.5 text-primary" />
+              <span>
+                <span className="font-semibold text-foreground">{addressedIssues.size}</span>
+                /{upload.issues.length} observations actioned
+              </span>
+            </div>
+            <div className="flex-1 h-1.5 rounded-full bg-muted overflow-hidden">
+              <div
+                className="h-full rounded-full bg-primary transition-all"
+                style={{ width: `${upload.issues.length > 0 ? (addressedIssues.size / upload.issues.length) * 100 : 0}%` }}
+              />
+            </div>
+            {allAddressed && (
+              <span className="text-[11px] text-emerald-600 font-medium flex items-center gap-1">
+                <CheckCircle2 className="w-3.5 h-3.5" /> All actioned
+              </span>
+            )}
+          </div>
+        )}
+
+        <div className="grid lg:grid-cols-[1fr_420px] gap-6">
+          {/* Left: Video + telestration + coach comment */}
           <div>
             <TelestrationCanvas activeTimestamp={activeT} />
 
@@ -560,6 +624,8 @@ export function CoachQueueDetail() {
                 Coach Comment · Timestamped
               </div>
               <textarea
+                value={commentText}
+                onChange={(e) => setCommentText(e.target.value)}
                 className="w-full bg-transparent border border-border rounded-md p-3 text-[13px] resize-none focus:outline-none focus:border-primary"
                 rows={3}
                 placeholder={`[${activeT ?? "0:00"}] Type your feedback here. Auto-prepends timestamp.`}
@@ -568,16 +634,19 @@ export function CoachQueueDetail() {
                 <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
                   <Heart className="w-3 h-3" /> Auto-cc parent on minor athletes
                 </div>
-                <button className="inline-flex items-center gap-1.5 h-8 px-3 rounded-md bg-primary text-primary-foreground text-[12px] font-semibold">
+                <button
+                  onClick={() => { setCommentText(""); }}
+                  className="inline-flex items-center gap-1.5 h-8 px-3 rounded-md bg-primary text-primary-foreground text-[12px] font-semibold"
+                >
                   <Send className="w-3 h-3" /> Send
                 </button>
               </div>
             </div>
           </div>
 
-          {/* AI observations + existing comments */}
+          {/* Right: AI observations with action bars + coach review */}
           <div className="space-y-4">
-            <div className="rounded-xl border border-border bg-card">
+            <div className="rounded-xl border border-border bg-card overflow-hidden">
               <div className="px-5 py-4 border-b border-border flex items-center gap-2">
                 <Sparkles className="w-4 h-4 text-primary" />
                 <span className="text-[13px] font-semibold">AI Observations</span>
@@ -585,38 +654,71 @@ export function CoachQueueDetail() {
                   Model v2.1
                 </span>
               </div>
+
               <div className="divide-y divide-border">
-                {upload.issues.map((issue, i) => (
-                  <button
-                    key={i}
-                    onClick={() => setActiveT(issue.timestamp)}
-                    className={`w-full text-left p-4 hover:bg-muted/40 transition ${
-                      activeT === issue.timestamp ? "bg-primary/5" : ""
-                    }`}
-                  >
-                    <div className="flex items-start gap-2.5">
-                      <span className="font-mono text-[11px] text-primary shrink-0 mt-0.5">
-                        {issue.timestamp}
-                      </span>
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-1.5 mb-1">
-                          <span className="text-[11.5px] font-semibold uppercase tracking-wider">
-                            {issue.category}
+                {upload.issues.map((issue, i) => {
+                  const isActive    = activeT === issue.timestamp;
+                  const isExpanded  = expandedIssue === i;
+                  const isActioned  = addressedIssues.has(i);
+
+                  return (
+                    <div
+                      key={i}
+                      className={`transition-colors ${isActive ? "bg-primary/5" : ""} ${isActioned ? "opacity-60" : ""}`}
+                    >
+                      {/* Observation header — click to seek */}
+                      <button
+                        onClick={() => {
+                          setActiveT(issue.timestamp);
+                          setExpandedIssue(isExpanded ? null : i);
+                        }}
+                        className="w-full text-left px-4 py-3 hover:bg-muted/40 transition"
+                      >
+                        <div className="flex items-start gap-2.5">
+                          <span className="font-mono text-[11px] text-primary shrink-0 mt-0.5">
+                            {issue.timestamp}
                           </span>
-                          {issue.severity === "major" ? (
-                            <AlertOctagon className="w-3 h-3 text-[oklch(0.7_0.2_30)]" />
-                          ) : (
-                            <AlertTriangle className="w-3 h-3 text-muted-foreground" />
-                          )}
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-1.5 mb-1 flex-wrap">
+                              <span className="text-[11.5px] font-semibold uppercase tracking-wider">
+                                {issue.category}
+                              </span>
+                              {issue.severity === "major" ? (
+                                <AlertOctagon className="w-3 h-3 text-[oklch(0.7_0.2_30)]" />
+                              ) : (
+                                <AlertTriangle className="w-3 h-3 text-muted-foreground" />
+                              )}
+                              {isActioned && (
+                                <CheckCircle2 className="w-3 h-3 text-emerald-500 ml-auto" />
+                              )}
+                            </div>
+                            <div className="text-[12.5px] leading-relaxed text-muted-foreground">
+                              {issue.message}
+                            </div>
+                          </div>
                         </div>
-                        <div className="text-[12.5px] leading-relaxed">
-                          {issue.message}
+                      </button>
+
+                      {/* Inline action bar — expands without a modal */}
+                      {isExpanded && !isActioned && (
+                        <div className="px-4 pb-4 pt-1 bg-muted/20 border-t border-border/50">
+                          <ClipActionBar
+                            sessionId={upload.id}
+                            timestamp={issue.timestamp}
+                            issueCategory={issue.category}
+                            issueSeverity={issue.severity}
+                            onActionCreated={() => {
+                              setAddressedIssues((prev) => new Set(Array.from(prev).concat(i)));
+                              setExpandedIssue(null);
+                            }}
+                          />
                         </div>
-                      </div>
+                      )}
                     </div>
-                  </button>
-                ))}
+                  );
+                })}
               </div>
+
               <div className="px-4 py-3 border-t border-border text-[11px] text-muted-foreground">
                 <em>AI feedback is preliminary. Coach review is canonical.</em>
               </div>

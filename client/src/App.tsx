@@ -46,14 +46,37 @@ import { FilmRoomPage, FilmUploadPage, FilmSessionPage, PlayerHighlightsPage } f
 import MessagesPage from "@/pages/app/coach/MessagesPage";
 import CoachInboxPage from "@/pages/app/coach/CoachInboxPage";
 import PlayerProfilePage from "@/pages/app/coach/PlayerProfilePage";
+import CoachIDPPage from "@/pages/app/coach/CoachIDPPage";
 import PlayerDevelopmentView from "@/pages/app/player/PlayerDevelopmentView";
 import PlayerWearablesPage from "@/pages/app/player/PlayerWearablesPage";
 import FilmSessionDetail from "@/pages/app/coach/FilmSessionDetail";
+import CoachActionsPage from "@/pages/app/coach/CoachActionsPage";
+import TeamReadinessPage from "@/pages/app/coach/TeamReadinessPage";
+import ScoutingHubPage from "@/pages/app/coach/ScoutingHubPage";
+import OpponentScoutPage from "@/pages/app/coach/OpponentScoutPage";
 import FilmPlaylistPage from "@/pages/app/coach/FilmPlaylistPage";
 import TeamSchedulePage from "@/pages/app/team/TeamSchedulePage";
 import { PlayStudyList, PlayStudyPage } from "@/pages/app/player/PlayStudy";
 
 import PlayQuizRunner from "@/pages/app/player/PlayQuiz";
+import PlayerAssignmentsPage from "@/pages/app/player/PlayerAssignmentsPage";
+import PlayerSchedulePage from "@/pages/app/player/PlayerSchedulePage";
+
+// Parent portal
+import ParentDashboard from "@/pages/app/parent/ParentDashboard";
+import ParentChildPage from "@/pages/app/parent/ParentChildPage";
+import ParentSchedulePage from "@/pages/app/parent/ParentSchedulePage";
+import ParentBillingPage from "@/pages/app/parent/ParentBillingPage";
+import ParentFormsPage from "@/pages/app/parent/ParentFormsPage";
+import ParentAnnouncementsPage from "@/pages/app/parent/ParentAnnouncementsPage";
+import ParentRegistrationPage from "@/pages/app/parent/ParentRegistrationPage";
+
+// Club operations (TEAM_ADMIN)
+import ClubDashboard from "@/pages/app/admin/AdminDashboard";
+import ClubRegistrationsPage from "@/pages/app/admin/AdminRegistrationsPage";
+import ClubBillingPage from "@/pages/app/admin/AdminBillingPage";
+import ClubTeamsPage from "@/pages/app/admin/AdminTeamsPage";
+import ClubMembershipsPage from "@/pages/app/admin/AdminMembershipsPage";
 
 // Billing (Prompt 16)
 import { AppPricingPage } from "@/pages/app/billing/PricingPage";
@@ -91,9 +114,6 @@ import {
   AdminAudit,
   AdminExperts,
   AdminJobs,
-  ParentDashboard,
-  ParentChild,
-  ParentBilling,
   ExpertDashboard,
   ExpertOffers,
   ExpertBookings,
@@ -137,15 +157,22 @@ function Router() {
       <Route path="/app/player/achievements" component={PlayerAchievements} />
       <Route path="/app/player/development" component={PlayerDevelopmentView} />
       <Route path="/app/player/wearables" component={PlayerWearablesPage} />
+      <Route path="/app/player/assignments" component={PlayerAssignmentsPage} />
+      <Route path="/app/player/schedule" component={PlayerSchedulePage} />
 
       {/* Coach HQ - auth required */}
       <Route path="/app/coach" component={guard(CoachDashboard)} />
       <Route path="/app/coach/inbox" component={guard(CoachInboxPage)} />
+      <Route path="/app/coach/players/:id/idp" component={guard(CoachIDPPage)} />
       <Route path="/app/coach/players/:id" component={guard(PlayerProfilePage)} />
       <Route path="/app/coach/roster" component={guard(CoachRoster)} />
       <Route path="/app/coach/parents" component={guard(CoachParents)} />
       <Route path="/app/coach/queue" component={guard(CoachQueue)} />
       <Route path="/app/coach/queue/:id" component={guard(CoachQueueDetail)} />
+      <Route path="/app/coach/actions" component={guard(CoachActionsPage)} />
+      <Route path="/app/coach/readiness" component={guard(TeamReadinessPage)} />
+      <Route path="/app/coach/scouting" component={guard(ScoutingHubPage)} />
+      <Route path="/app/coach/scouting/:opponentId" component={guard(OpponentScoutPage)} />
       <Route path="/app/coach/assignments" component={guard(CoachAssignments)} />
       <Route path="/app/coach/practice-plans" component={guard(CoachPracticePlanBuilder)} />
       <Route path="/app/coach/drills" component={guard(DrillLibraryPage)} />
@@ -215,8 +242,19 @@ function Router() {
 
       {/* Parent */}
       <Route path="/app/parent" component={ParentDashboard} />
-      <Route path="/app/parent/child" component={ParentChild} />
-      <Route path="/app/parent/billing" component={ParentBilling} />
+      <Route path="/app/parent/child" component={ParentChildPage} />
+      <Route path="/app/parent/schedule" component={ParentSchedulePage} />
+      <Route path="/app/parent/billing" component={ParentBillingPage} />
+      <Route path="/app/parent/forms" component={ParentFormsPage} />
+      <Route path="/app/parent/announcements" component={ParentAnnouncementsPage} />
+      <Route path="/app/parent/register" component={ParentRegistrationPage} />
+
+      {/* Club operations */}
+      <Route path="/app/club" component={guard(ClubDashboard)} />
+      <Route path="/app/club/registrations" component={guard(ClubRegistrationsPage)} />
+      <Route path="/app/club/billing" component={guard(ClubBillingPage)} />
+      <Route path="/app/club/teams" component={guard(ClubTeamsPage)} />
+      <Route path="/app/club/memberships" component={guard(ClubMembershipsPage)} />
 
       {/* Expert */}
       <Route path="/app/expert" component={ExpertDashboard} />

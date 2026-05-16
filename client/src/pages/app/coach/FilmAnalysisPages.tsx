@@ -130,6 +130,14 @@ type UploadPhase = "idle" | "uploading" | "processing" | "done";
 export function FilmUploadPage() {
   const [, setLocation] = useLocation();
 
+  // If coach navigated here from a "Request Re-upload" action, the actionId is
+  // in the query string (?resolves=ca_xxx). We pass it to the initiate endpoint
+  // so the server can link the new session as follow-up evidence.
+  const resolvesActionId = React.useMemo(
+    () => new URLSearchParams(window.location.search).get("resolves") ?? undefined,
+    [],
+  );
+
   const [title, setTitle] = React.useState("");
   const [opponent, setOpponent] = React.useState("");
   const [file, setFile] = React.useState<File | null>(null);
@@ -196,6 +204,7 @@ export function FilmUploadPage() {
           sizeBytes: file.size,
           title,
           opponent,
+          ...(resolvesActionId ? { resolvesActionId } : {}),
         }),
       });
 

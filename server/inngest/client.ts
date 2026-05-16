@@ -50,4 +50,16 @@ export type HoopsOSEvents = {
       parentPhone?: string;
     };
   };
+  "coaching-action/created": {
+    data: {
+      actionId: string;
+      orgId: string;
+      actionType: string;
+      playerId: string | null;
+      sessionId: string;
+      coachNote?: string;
+      issueCategory?: string;
+      authorUserId: string;
+    };
+  };
 };

@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Link } from "wouter";
+import { useState, useEffect } from "react";
+import { Link, useLocation } from "wouter";
 import {
   Target,
   Flame,
@@ -12,11 +12,16 @@ import {
   TrendingUp,
   ChevronRight,
   Star,
+  ClipboardList,
+  Dumbbell,
+  RotateCcw,
+  Upload,
 } from "lucide-react";
 import { toast } from "sonner";
 import { AppShell, PageHeader } from "@/components/app/AppShell";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { apiGet } from "@/lib/api/client";
 
 /* -------------------------------------------------------------------------- */
 /* Mock data                                                                   */
@@ -134,6 +139,61 @@ const UPCOMING = [
   { date: "Jun 5", label: "Monthly 1-on-1 Review", type: "review" },
   { date: "Jun 15", label: "Focus Area #1 Deadline", type: "deadline" },
 ];
+
+type CoachingActionType = "assign_clip" | "recommend_drill" | "add_to_idp" | "add_to_wod" | "request_reupload";
+type CoachingActionStatus = "open" | "in_progress" | "resolved";
+
+interface CoachingActionItem {
+  id: string;
+  actionType: CoachingActionType;
+  status: CoachingActionStatus;
+  issueCategory?: string;
+  coachNote?: string;
+  sessionTitle?: string;
+  timestamp?: string;
+  createdAt: string;
+}
+
+const MOCK_COACHING_ACTIONS: CoachingActionItem[] = [
+  {
+    id: "ca1",
+    actionType: "request_reupload",
+    status: "open",
+    issueCategory: "Finishing",
+    coachNote: "Record this contact layup again — drive through the contact instead of fading. Submit within 48h.",
+    sessionTitle: "Barnegat vs. Toms River",
+    timestamp: "1:23",
+    createdAt: "2026-05-12",
+  },
+  {
+    id: "ca2",
+    actionType: "assign_clip",
+    status: "open",
+    issueCategory: "Release",
+    coachNote: "Watch your thumb flick in this clip. This is the habit we need to break — index finger last off the ball.",
+    sessionTitle: "Pull-Up Jumper Review",
+    timestamp: "0:37",
+    createdAt: "2026-05-10",
+  },
+  {
+    id: "ca3",
+    actionType: "recommend_drill",
+    status: "in_progress",
+    issueCategory: "Balance",
+    coachNote: "Balance Board Jumpers — 3 sets of 8, focus on chest staying stacked over your base. Daily.",
+    sessionTitle: "Pull-Up Jumper Review",
+    timestamp: "0:14",
+    createdAt: "2026-05-08",
+  },
+];
+
+const ACTION_TYPE_META: Record<CoachingActionType, { label: string; icon: React.ReactNode; color: string }> = {
+  assign_clip:      { label: "Film Clip",     icon: <Film className="w-3 h-3" />,         color: "bg-primary/15 text-primary border-primary/30" },
+  recommend_drill:  { label: "Drill",         icon: <Dumbbell className="w-3 h-3" />,      color: "bg-amber-500/15 text-amber-600 border-amber-500/30" },
+  add_to_idp:       { label: "IDP",           icon: <Target className="w-3 h-3" />,        color: "bg-emerald-500/15 text-emerald-600 border-emerald-500/30" },
+  add_to_wod:       { label: "WOD",           icon: <Flame className="w-3 h-3" />,         color: "bg-orange-500/15 text-orange-600 border-orange-500/30" },
+  request_reupload: { label: "Re-upload Ask", icon: <RotateCcw className="w-3 h-3" />,    color: "bg-violet-500/15 text-violet-600 border-violet-500/30" },
+};
 
 const SKILL_OVERVIEW = [
   { category: "Shooting", score: 7.2, max: 10 },
@@ -362,8 +422,18 @@ const TERM_ORDER = ["4-week", "Season", "Long-term"] as const;
 /* -------------------------------------------------------------------------- */
 
 export function PlayerDevelopmentView() {
+  const [, setLocation] = useLocation();
   const todayDrillIds = FOCUS_AREAS.filter((a) => a.dueToday).map((a) => a.id);
   const [doneDrills, setDoneDrills] = useState<Set<string>>(new Set());
+
+  // Coaching actions assigned to this player — try real API, fall back to mock
+  const [coachingActions, setCoachingActions] = useState<CoachingActionItem[]>(MOCK_COACHING_ACTIONS);
+  useEffect(() => {
+    // In a real session, PLAYER.id would come from the auth context
+    apiGet<CoachingActionItem[]>("/coaching-actions/player/me")
+      .then((items) => { if (Array.isArray(items) && items.length) setCoachingActions(items); })
+      .catch(() => { /* keep mock */ });
+  }, []);
 
   const allDone = todayDrillIds.every((id) => doneDrills.has(id));
 
@@ -468,6 +538,88 @@ export function PlayerDevelopmentView() {
                 />
               ))}
             </div>
+
+            {/* Coaching Actions — open items from your coach */}
+            {coachingActions.filter((a) => a.status !== "resolved").length > 0 && (
+              <div className="rounded-xl border border-border bg-card p-5">
+                <div className="flex items-center gap-2 mb-4">
+                  <ClipboardList className="w-4 h-4 text-primary" />
+                  <h2 className="font-semibold text-[15px]">Coach Actions</h2>
+                  <Badge variant="outline" className="text-[10px] font-mono ml-auto">
+                    {coachingActions.filter((a) => a.status === "open").length} open
+                  </Badge>
+                </div>
+                <div className="flex flex-col gap-3">
+                  {coachingActions
+                    .filter((a) => a.status !== "resolved")
+                    .map((action) => {
+                      const meta = ACTION_TYPE_META[action.actionType];
+                      return (
+                        <div
+                          key={action.id}
+                          className="flex flex-col gap-2 p-3 rounded-lg border border-border bg-background"
+                        >
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10.5px] font-medium border ${meta.color}`}>
+                              {meta.icon}
+                              {meta.label}
+                            </span>
+                            {action.issueCategory && (
+                              <span className="text-[11px] font-medium text-foreground">
+                                {action.issueCategory}
+                              </span>
+                            )}
+                            {action.status === "in_progress" && (
+                              <span className="ml-auto text-[10px] font-mono text-amber-600 bg-amber-500/10 px-1.5 py-0.5 rounded">
+                                In progress
+                              </span>
+                            )}
+                          </div>
+
+                          {action.coachNote && (
+                            <p className="text-[12.5px] text-muted-foreground leading-relaxed italic">
+                              "{action.coachNote}"
+                            </p>
+                          )}
+
+                          <div className="flex items-center gap-3 flex-wrap">
+                            {action.sessionTitle && (
+                              <span className="inline-flex items-center gap-1 text-[11px] text-muted-foreground">
+                                <Film className="w-3 h-3" />
+                                {action.sessionTitle}
+                                {action.timestamp && ` @ ${action.timestamp}`}
+                              </span>
+                            )}
+                            <span className="text-[10.5px] text-muted-foreground font-mono ml-auto">
+                              {action.createdAt}
+                            </span>
+                          </div>
+
+                          {action.actionType === "request_reupload" && action.status === "open" && (
+                            <button
+                              onClick={() => setLocation(`/app/player/uploads?resolves=${action.id}`)}
+                              className="inline-flex items-center gap-1.5 self-start h-7 px-3 rounded-md bg-violet-600 hover:bg-violet-700 text-white text-[11.5px] font-medium transition"
+                            >
+                              <Upload className="w-3 h-3" />
+                              Upload Response
+                            </button>
+                          )}
+
+                          {action.actionType === "assign_clip" && action.status === "open" && (
+                            <Link href="/app/player/uploads">
+                              <a className="inline-flex items-center gap-1.5 self-start h-7 px-3 rounded-md border border-border hover:bg-muted text-[11.5px] font-medium transition">
+                                <Film className="w-3 h-3" />
+                                Review Clip
+                                <ChevronRight className="w-3 h-3" />
+                              </a>
+                            </Link>
+                          )}
+                        </div>
+                      );
+                    })}
+                </div>
+              </div>
+            )}
 
             {/* Skill overview */}
             <div className="rounded-xl border border-border bg-card p-5">

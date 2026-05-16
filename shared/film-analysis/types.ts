@@ -450,6 +450,8 @@ export interface InitiateUploadRequest {
   filename: string;
   mimeType: string;
   sizeBytes: number;
+  /** coaching_actions.id — when set, the new session is auto-linked as follow-up evidence */
+  resolvesActionId?: string;
 }
 
 export interface InitiateUploadResponse {

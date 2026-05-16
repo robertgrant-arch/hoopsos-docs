@@ -9,6 +9,7 @@ import {
   practicePlans as seedPlans,
   type PracticePlan,
   type PracticePlanBlock,
+  type PracticeReflection,
   drillLibrary,
 } from "@/lib/mock/practice";
 import { useCustomDrillsStore } from "@/lib/customDrillsStore";
@@ -22,6 +23,9 @@ type State = {
   updatePlan: (id: string, patch: Partial<PracticePlan>) => void;
   deletePlan: (id: string) => void;
   duplicatePlan: (id: string) => string;
+
+  /** Mark a practice as completed, persisting structured coach reflection. */
+  completePlan: (id: string, reflection: PracticeReflection) => void;
 
   addBlock: (planId: string, drillId: string, atIndex?: number) => void;
   updateBlock: (planId: string, blockId: string, patch: Partial<PracticePlanBlock>) => void;
@@ -96,6 +100,16 @@ export const usePracticePlans = create<State>()(
         };
         set({ plans: [copy, ...get().plans], activePlanId: newId });
         return newId;
+      },
+
+      completePlan: (id, reflection) => {
+        set({
+          plans: get().plans.map((p) =>
+            p.id === id
+              ? { ...p, status: "COMPLETED" as const, reflection, updatedAt: new Date().toISOString() }
+              : p
+          ),
+        });
       },
 
       addBlock: (planId, drillId, atIndex) => {

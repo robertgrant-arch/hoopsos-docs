@@ -21,6 +21,13 @@ export const players = pgTable("players", {
   parentGuardianEmail: text("parent_guardian_email"),
   parentGuardianPhone: text("parent_guardian_phone"),
   medicalNotes: text("medical_notes"),
+  // Extended profile fields
+  phone:            text("phone"),
+  email:            text("email"),
+  bio:              text("bio"),
+  recruitingStatus: text("recruiting_status"),   // "D1 Interest" | "D2 Target" | etc.
+  academicNotes:    text("academic_notes"),
+  yearsPlaying:     integer("years_playing"),
   createdByUserId: text("created_by_user_id"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),

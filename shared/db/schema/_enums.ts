@@ -97,6 +97,7 @@ export const annotationKindEnum = pgEnum("annotation_kind", [
   "shot",
   "foul",
   "highlight",
+  "telestration",
 ]);
 
 // --- Billing (Stripe-backed, PR 6) ------------------------------------------
