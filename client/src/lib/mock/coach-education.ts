@@ -14,1004 +14,821 @@
 // Types
 // ─────────────────────────────────────────────────────────────────────────────
 
+export type CoachLevel = "foundation" | "development" | "elite";
+
+export type ModuleStatus = "locked" | "not_started" | "in_progress" | "complete";
+
+export type DeliverableType =
+  | "cue_save"
+  | "idp_update"
+  | "film_annotation"
+  | "practice_plan_save"
+  | "peer_review"
+  | "reflection"
+  | "observation_log";
+
 export type ModuleSection = {
-  id: string;
+  /** Optional id — used by older page files */
+  id?: string;
   type: "frame" | "concept" | "examine" | "apply" | "reflect";
   title: string;
-  body: string;
+  content: string;
+  /** Legacy alias for content — used by older page files */
+  body?: string;
+  estimatedMinutes: number;
+  actionPrompt?: string;
+  /** Legacy alias for actionPrompt — used by older page files */
   platformAction?: string;
+  actionHref?: string;
 };
 
-export type EducationModule = {
+export type Module = {
   id: string;
+  path: CoachLevel;
+  /** Alias for path — used by legacy page files */
+  pathId?: CoachLevel;
+  domain: string;
+  /** Alias for domain — used by legacy page files. Always equals domain. */
+  category: string;
   title: string;
   subtitle: string;
-  pathId: "foundation" | "development" | "elite";
-  order: number;
+  description: string;
+  /** Sort order within path — used by legacy page files */
+  order?: number;
   estimatedMinutes: number;
-  category:
-    | "player-dev"
-    | "communication"
-    | "practice-design"
-    | "film"
-    | "data"
-    | "leadership";
   sections: ModuleSection[];
-  platformDeliverable: string;
+  deliverableType: DeliverableType;
+  deliverablePrompt: string;
+  /** Legacy alias for deliverablePrompt — used by older page files */
+  platformDeliverable?: string;
+  deliverableHref: string;
+  status: ModuleStatus;
   completedAt?: string;
+  deliverableCompleted: boolean;
+  prerequisiteIds: string[];
 };
 
+export type PathData = {
+  level: CoachLevel;
+  title: string;
+  subtitle: string;
+  description: string;
+  totalModules: number;
+  completedModules: number;
+  estimatedHours: number;
+  completionGate: string[];
+  modules: Module[];
+};
+
+/**
+ * LearningPath — unified type compatible with both the spec types and
+ * the legacy page files (id: string, level: 1|2|3, credentialTitle).
+ */
 export type LearningPath = {
   id: string;
-  title: string;
   level: 1 | 2 | 3;
+  coachLevel: CoachLevel;
+  title: string;
+  subtitle: string;
   description: string;
-  modules: EducationModule[];
+  totalModules: number;
+  completedModules: number;
+  estimatedHours: number;
+  completionGate: string[];
   credentialTitle: string;
+  modules: Module[];
 };
 
 export type ContextualTrigger = {
   id: string;
-  triggerRoute: string;
+  condition: string;
   moduleId: string;
   headline: string;
-  body: string;
   ctaLabel: string;
+  ctaHref: string;
+  dismissible: boolean;
 };
 
-export type JournalPrompt = {
+export type CoachingJournalEntry = {
   id: string;
   moduleId: string;
+  moduleName: string;
   prompt: string;
-  category: string;
+  response: string;
+  createdAt: string;
+};
+
+export type CredentialRequirement = {
+  id: string;
+  label: string;
+  description: string;
+  type: "behavior" | "module" | "peer_review" | "deliverable";
+  target: string;
+  currentValue?: string;
+  met: boolean;
+};
+
+export type Credential = {
+  level: CoachLevel;
+  title: string;
+  description: string;
+  requirements: CredentialRequirement[];
+  earned: boolean;
+  earnedAt?: string;
+  progress: number;
+  unlocksNextPath: boolean;
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Foundation Path — 9 Modules
+// Foundation Path — 9 Modules (full content)
 // ─────────────────────────────────────────────────────────────────────────────
 
-const foundationModules: EducationModule[] = [
-  // ── Module 1: IDP Fundamentals ─────────────────────────────────────────────
-  {
-    id: "fm_01_idp",
-    title: "IDP Fundamentals",
-    subtitle: "Why most goals fail — and the 3-part formula that doesn't",
-    pathId: "foundation",
-    order: 1,
-    estimatedMinutes: 22,
-    category: "player-dev",
-    completedAt: "2026-04-10",
-    platformDeliverable:
-      "Update one player's IDP with a goal written using the behavior + condition + standard formula. Add at least two milestones with target dates.",
-    sections: [
-      {
-        id: "fm_01_idp_s1",
-        type: "frame",
-        title: "The IDP That Collects Dust",
-        body: "Picture your roster right now. How many players have an IDP? How many of those IDPs have been opened in the last two weeks — by the player, not just you? Most coaches have experienced the same quiet frustration: they spend an hour building a thoughtful development plan in pre-season, and by week four, nobody's looking at it. IDPs fail for three predictable reasons: the goals are too vague to evaluate, there's no milestone structure to course-correct early, and the goal lives in a form rather than a conversation the player has internalized.",
-      },
-      {
-        id: "fm_01_idp_s2",
-        type: "concept",
-        title: "The 3-Part Goal Formula",
-        body: "The most effective athletic development goals share a common structure: they name a specific behavior, describe the condition under which it should happen, and define the standard that proves success. Behavior is an observable action ('attack the closeout with a speed dribble when the defender's feet are set'), not a trait ('be more aggressive'). Condition anchors the goal to a specific situation that actually occurs in your system. Standard tells both of you whether it's working — a frequency, a coach observation, or a milestone event — making the goal self-evaluable for the player. Compare 'get better at finishing' with 'finish through contact with either hand on a wing drive when a help defender is present at a rate of 4 of 6 attempts in the Thursday contact drill by January 20': the second version doesn't just evaluate better — it coaches better.",
-      },
-      {
-        id: "fm_01_idp_s3",
-        type: "examine",
-        title: "What Your IDP Data Shows",
-        body: "Coaches who adopt the 3-part formula see measurable differences in player outcomes within one season. In HoopsOS usage data, IDPs with milestone dates are completed or meaningfully progressed 68% more often than open-ended goals. The most common failure point isn't the goal itself — it's the absence of a first milestone within the first 21 days. Look at your current roster: how many active IDP goals have a milestone marked in the next 30 days? That number tells you more about IDP health than completion percentages.",
-      },
-      {
-        id: "fm_01_idp_s4",
-        type: "apply",
-        title: "Update One Player's IDP Now",
-        body: "Open your IDP dashboard and choose one player you've observed closely in the last two weeks. Find a goal that reads as vague and rewrite it using the 3-part formula. Write the behavior specifically enough that a substitute coach would know exactly what to watch for; define the condition so it maps to situations in your system; set a standard the player could evaluate themselves. Then add two milestones: one due within 21 days (the early indicator), one at the six-week mark.",
-        platformAction:
-          "Open your IDP Builder, rewrite one goal using behavior + condition + standard, and add two milestones with target dates.",
-      },
-      {
-        id: "fm_01_idp_s5",
-        type: "reflect",
-        title: "Your Development Philosophy",
-        body: "Think about a player you've coached who made a meaningful developmental leap. What made the difference — was it the right goal, the right moment, the right level of specificity? What does this module change about how you'll write goals going forward? Which player on your current roster needs this kind of goal-clarity most urgently?",
-      },
-    ],
-  },
+export const foundationPath: LearningPath = {
+  id: "foundation",
+  level: 1,
+  coachLevel: "foundation",
+  title: "Foundation Path",
+  subtitle: "Build the core systems every effective basketball coach needs.",
+  description:
+    "Nine focused modules covering the essential disciplines of player development — from writing goals that actually change behavior to communicating with parents under pressure. Each module connects directly to your work inside HoopsOS.",
+  credentialTitle: "HoopsOS Foundation Certificate",
+  totalModules: 9,
+  completedModules: 2,
+  estimatedHours: 4.5,
+  completionGate: [
+    "All 9 modules marked complete",
+    "At least 6 deliverables submitted",
+    "Coaching journal has at least 5 entries",
+    "All active players have IDPs with milestones",
+    "At least 3 film review sessions with timestamp annotations",
+  ],
+  modules: [
+    // ── Module 1 ────────────────────────────────────────────────────────────
+    {
+      id: "fm_01_idp",
+      path: "foundation",
+      pathId: "foundation",
+      category: "Player Development Planning",
+      domain: "Player Development Planning",
+      title: "Writing IDPs That Actually Change Player Behavior",
+      subtitle: "Why most goals fail — and the 3-part formula that doesn't",
+      description:
+        "Most coaches write IDP goals that sound good but drive no real change. This module shows you why vague goals stall players and teaches the behavior + condition + standard formula that creates measurable development.",
+      estimatedMinutes: 22,
+      status: "complete",
+      completedAt: "2025-05-10T09:14:00Z",
+      deliverableCompleted: true,
+      prerequisiteIds: [],
+      deliverableType: "idp_update",
+      deliverablePrompt:
+        "Update one player's IDP with a goal written using the behavior + condition + standard formula. Add at least two milestones with target dates.",
+      deliverableHref: "/app/coach/idp",
+      sections: [
+        {
+          type: "frame",
+          title: "The IDP That Collects Dust",
+          estimatedMinutes: 3,
+          content:
+            "Picture your roster right now. How many players have an IDP? How many of those IDPs have been opened in the last two weeks — by the player, not just you?\n\nMost coaches have experienced the same quiet frustration: they spend an hour building a thoughtful development plan in pre-season, and by week four, nobody's looking at it. Not the player. Not the parents. Sometimes not even the coach.\n\nThis isn't a motivation problem. It's a goal design problem.\n\nIDPs fail for one of three reasons. First, the goals are too vague to evaluate — 'improve your handle' means different things to everyone in the gym. Second, there's no milestone structure, so the first checkpoint is 'did it work?' at season's end, which is too late to course-correct. Third, the goal lives in a form, not in a conversation — the player never internalized it as their own.\n\nThis module gives you the framework to fix all three.",
+        },
+        {
+          type: "concept",
+          title: "The 3-Part Goal Formula",
+          estimatedMinutes: 6,
+          content:
+            "The most effective athletic development goals share a common structure: they name a specific behavior, describe the condition under which it should happen, and define the standard that proves success.\n\n**Behavior** — What exactly will the player do differently? Not a trait ('be more aggressive') but an observable action ('attack the closeout with a speed dribble when the defender's feet are set').\n\n**Condition** — In what context does this need to happen? In practice? In games? Under pressure? Against zone? This specificity transforms a general goal into one the player can mentally rehearse.\n\n**Standard** — How will both of you know it's working? This doesn't have to be a stat. It can be a frequency ('3 of 5 reps in the live drill'), a coach observation ('no full-stop pivots in the post-up game'), or a milestone event.\n\nHere's the difference in practice:\n\n> Weak: 'Get better at finishing.'\n> Strong: 'Finish through contact with either hand (behavior) on a drive from the wing when a help defender is present (condition) at a rate of 4 of 6 attempts in the Thursday contact drill by January 20 (standard).'\n\nThe strong version doesn't just evaluate better — it coaches better. The player knows what to work on in the driveway. You know what to design into your drills.\n\nMilestone sequencing matters too. Break every IDP goal into three checkpoints: an early indicator (2–3 weeks), a midpoint check (6–8 weeks), and a completion marker. Early indicators are your early warning system. If a player isn't hitting week-three markers, you have time to adjust — not at season's end.",
+        },
+        {
+          type: "examine",
+          title: "What Your IDP Data Shows",
+          estimatedMinutes: 4,
+          content:
+            "Coaches who adopt the 3-part formula see measurable differences in player outcomes within one season. In HoopsOS usage data, IDPs with milestone dates are completed or meaningfully progressed 68% more often than open-ended goals. Players with two or more milestones per goal engage with their IDPs 3× more frequently.\n\nThe most common failure point isn't the goal itself — it's the absence of a first milestone within the first 21 days. When there's no early check-in point, both coach and player mentally defer the plan until 'later,' which often means never.\n\nLook at your current roster: how many active IDP goals have a milestone marked in the next 30 days? That number tells you more about IDP health than completion percentages.",
+        },
+        {
+          type: "apply",
+          title: "Update One Player's IDP Now",
+          estimatedMinutes: 7,
+          content:
+            "Open your IDP dashboard and choose one player — ideally someone you've observed closely in the last two weeks. Find a goal that currently reads as vague and rewrite it using the 3-part formula.\n\nWrite the behavior specifically enough that a substitute coach would know exactly what to watch for. Define the condition so it maps to situations that actually occur in your system. Set a standard the player themselves could evaluate.\n\nThen add two milestones: one due within 21 days (the early indicator), one at the six-week mark. Attach a target date to each.",
+          actionPrompt:
+            "Open the IDP tool, rewrite one goal using behavior + condition + standard, and add two milestones with target dates.",
+          actionHref: "/app/coach/idp",
+        },
+        {
+          type: "reflect",
+          title: "Your Development Philosophy",
+          estimatedMinutes: 2,
+          content:
+            "Think about the player you just updated — or a player you've coached who made a meaningful developmental leap. What made the difference? Was it the right goal, the right moment, the right level of specificity?\n\nWhat does this module change about how you'll write goals going forward? And which player on your current roster needs this kind of goal-clarity most urgently?",
+        },
+      ],
+    },
 
-  // ── Module 2: Skill Assessment Mastery ────────────────────────────────────
-  {
-    id: "fm_02_assessment",
-    title: "Skill Assessment Mastery",
-    subtitle: "Building evaluations players trust and coaches can actually use",
-    pathId: "foundation",
-    order: 2,
-    estimatedMinutes: 24,
-    category: "player-dev",
-    completedAt: "2026-04-22",
-    platformDeliverable:
-      "Complete skill assessments for at least 3 players using the HoopsOS assessment rubric and record notes on each player's top growth priority.",
-    sections: [
-      {
-        id: "fm_02_assessment_s1",
-        type: "frame",
-        title: "The Rating That Means Nothing",
-        body: "A '7 out of 10 in ball-handling' is the kind of assessment that feels useful until you try to act on it. Does 7 mean the player can handle in traffic? Under pressure? Against zone pressure? Without a number anchored to an observable, replicable condition, your assessment is really just a feeling with a digit attached. Assessments that players trust and coaches can actually use must be built on observable behaviors in defined contexts — not impressions averaged over time.",
-      },
-      {
-        id: "fm_02_assessment_s2",
-        type: "concept",
-        title: "The Observable-Contextual-Comparative Framework",
-        body: "Rigorous skill assessment has three pillars. Observable means you're rating something you can see and describe in behavioral terms — 'maintains dribble below knee height through contact' is observable; 'has a solid handle' is not. Contextual means the assessment specifies the situation: 1-on-1 off the dribble, in a drill, in a scrimmage, in a game. The same player can be a 4 in scrimmage and an 8 in isolated drill work — both ratings are true, neither alone is complete. Comparative means you have a benchmark: against their own prior assessment, against a defined standard for their development window, or against teammates at the same position. All three pillars together produce an assessment the player can believe in because they can see exactly what was measured.",
-      },
-      {
-        id: "fm_02_assessment_s3",
-        type: "examine",
-        title: "How Assessment Drives Development Quality",
-        body: "Coaches who conduct structured skill assessments at least three times per season show 2.4× higher rates of IDP goal specificity and 1.8× higher rates of player-reported goal clarity in post-season surveys. The relationship runs both ways: the assessment forces the coach to name what they're developing; the naming makes the IDP goal possible; the goal makes the assessment worth repeating. Review your last assessment round — were the ratings based on observable behaviors in a defined context, or on general impression?",
-      },
-      {
-        id: "fm_02_assessment_s4",
-        type: "apply",
-        title: "Run Assessments for Three Players",
-        body: "Open the Skill Assessment tool and select three players from your active roster — ideally one who is ahead of development expectations, one who is meeting them, and one who is behind. For each player, complete the assessment rubric using only observable behaviors you have actually seen. Where you're uncertain, note it: 'not yet observed in game context' is better data than a guessed rating. After saving all three, use the comparison view to identify the single highest-priority growth area for each player.",
-        platformAction:
-          "Open Skill Assessments, rate three players on at least 5 skills each using observable behaviors, and log one growth priority note per player.",
-      },
-      {
-        id: "fm_02_assessment_s5",
-        type: "reflect",
-        title: "The Gap Between What You See and What You Measure",
-        body: "Think about a player you believe has high potential but whose metrics don't reflect it yet. Is there a mismatch between your impression and your assessment data — and if so, which one do you trust more? What would it take to design an assessment situation that would capture what you're seeing intuitively? That design question is the heart of skill assessment mastery.",
-      },
-    ],
-  },
+    // ── Module 2 ────────────────────────────────────────────────────────────
+    {
+      id: "fm_02_practice",
+      path: "foundation",
+      pathId: "foundation",
+      category: "Practice Design",
+      domain: "Practice Design",
+      title: "The 4-Block Practice Structure",
+      subtitle: "Why order matters more than content in practice design",
+      description:
+        "A well-ordered practice teaches faster than the same content in the wrong sequence. This module teaches the four-block framework and shows you why each block serves a distinct cognitive and physical purpose.",
+      estimatedMinutes: 25,
+      status: "complete",
+      completedAt: "2025-05-12T11:30:00Z",
+      deliverableCompleted: true,
+      prerequisiteIds: [],
+      deliverableType: "practice_plan_save",
+      deliverablePrompt:
+        "Build a complete practice plan using the 4-block structure. All four blocks must be present with estimated times and at least one drill per block.",
+      deliverableHref: "/app/coach/practice",
+      sections: [
+        {
+          type: "frame",
+          title: "The Practice That Wastes Its Own Best Minutes",
+          estimatedMinutes: 3,
+          content:
+            "Most coaches plan practices by listing drills they want to run. They sequence by gut feel — start with something easy, build to the hard stuff, condition at the end. This logic isn't wrong, but it's incomplete.\n\nThe most common practice design mistake isn't wasted time — it's missequenced time. A coach runs a complex offensive scheme in the first 20 minutes when players are physically and neurologically cold. Then they hammer ball-handling drills in minute 50 when attention and glycogen are both depleted. The content was fine. The order cost them.\n\nThe 4-block framework isn't a rigid formula. It's a cognitive map. Each block exists because players' bodies and brains are ready for different kinds of learning at different points in a session.",
+        },
+        {
+          type: "concept",
+          title: "The Four Blocks and Why Each Exists",
+          estimatedMinutes: 8,
+          content:
+            "**Block 1 — Warm-Up (10–15% of total time)**\nPhysical activation, but also cognitive activation. The best warm-up segments don't just elevate heart rate — they establish the day's focal point. If today's theme is ball pressure defense, your warm-up should include movement patterns that mirror defensive positioning. Give players a cue or concept in warm-up that you'll reinforce in every subsequent block.\n\n**Block 2 — Skill Development (30–40% of total time)**\nThis is the learning block. Players are physically ready but not yet fatigued. Cognitive load is highest here. This is where you introduce or refine a skill in a controlled, lower-stakes environment. Repetition volume matters here. Error correction should be immediate and specific — this is your highest-feedback window.\n\n**Block 3 — Competitive Application (35–45% of total time)**\nNow players apply what they just practiced under game-like resistance. 3v3 defense, half-court 5v5, situational play. This block reveals whether the skill developed in Block 2 is transferring. If it's not, that's diagnostic information — you adjust the Block 2 work next practice.\n\n**Block 4 — Conditioning + Closure (10–15% of total time)**\nConditioning when players are already tired mirrors the late-game demands of real competition. Close every practice with a ritual: a word from a player leader, a stat from the day, the one thing you're taking into game prep.",
+        },
+        {
+          type: "examine",
+          title: "How Your Practice Time Is Allocated",
+          estimatedMinutes: 4,
+          content:
+            "Pull up your last three saved practice plans. How much time was allocated to each type of work? Most coaches, when they map this honestly, find that Block 2 (skill development) is either over-weighted — leaving Block 3 short — or under-weighted in favor of scrimmage time.\n\nNeither extreme is wrong in context. But the absence of intentional Block 3 time is the most common cause of skills that look good in drills but disappear in games. The transfer problem is a practice design problem.\n\nThe 4-block structure isn't about rigidity. It's about intention. Every minute should have a reason.",
+        },
+        {
+          type: "apply",
+          title: "Build a Practice Plan Using the 4-Block Structure",
+          estimatedMinutes: 8,
+          content:
+            "Open the Practice Plan Builder and create your next practice session using the 4-block structure. Each block should have: a time allocation, a primary drill or activity, and a one-line coaching focus.\n\nBefore you save, check: Is your theme visible in every block? Does Block 2 directly prepare players for what they'll face in Block 3? Is conditioning honest — actual work, not a cooldown lap?\n\nSave the plan and it will count toward your credential deliverable.",
+          actionPrompt:
+            "Build a full practice plan with all four blocks labeled and timed. Include at least one drill per block and a session theme.",
+          actionHref: "/app/coach/practice",
+        },
+        {
+          type: "reflect",
+          title: "Your Best Practice",
+          estimatedMinutes: 2,
+          content:
+            "Think about the best practice session you've ever run — the one where players were engaged start to finish and left with something real. Was it the content, or was it the structure? How did the session flow?\n\nNow think about one upcoming practice where you've been tempted to wing it. What would change if you committed to the 4-block structure for that session specifically?",
+        },
+      ],
+    },
 
-  // ── Module 3: Practice Design 101 ─────────────────────────────────────────
-  {
-    id: "fm_03_practice",
-    title: "Practice Design 101",
-    subtitle: "Why order matters more than content in practice design",
-    pathId: "foundation",
-    order: 3,
-    estimatedMinutes: 25,
-    category: "practice-design",
-    platformDeliverable:
-      "Build a complete practice plan using the 4-block structure. All four blocks must be present with estimated times and at least one drill per block.",
-    sections: [
-      {
-        id: "fm_03_practice_s1",
-        type: "frame",
-        title: "The Practice That Wastes Its Own Best Minutes",
-        body: "Most coaches plan practices by listing drills they want to run and sequencing by gut feel. The most common practice design mistake isn't wasted time — it's missequenced time. A coach runs a complex offensive scheme in the first 20 minutes when players are physically and neurologically cold, then hammers ball-handling drills in minute 50 when attention and glycogen are both depleted. The content was fine; the order cost them. The 4-block framework isn't a rigid formula — it's a cognitive map that respects how players' bodies and brains are ready for different kinds of learning at different points in a session.",
-      },
-      {
-        id: "fm_03_practice_s2",
-        type: "concept",
-        title: "The Four Blocks and Why Each Exists",
-        body: "Block 1 — Warm-Up (10–15% of total time) establishes the day's focal point and activates both physically and cognitively; the best warm-ups embed the session theme so players arrive mentally focused before Block 2 begins. Block 2 — Skill Development (30–40%) is the learning block: players are ready but not yet fatigued, cognitive load is highest, and this is where you install or refine skills through breakdown drills with immediate error correction. Block 3 — Competitive Application (35–45%) applies Block 2 skills under game-like resistance — this is where transfer happens, where basketball IQ is actually built, and where you get diagnostic information about what Block 2 needs next time. Block 4 — Conditioning + Closure (10–15%) mirrors late-game physical demands and creates the team-building ritual that makes practices matter beyond the gym.",
-      },
-      {
-        id: "fm_03_practice_s3",
-        type: "examine",
-        title: "How Your Practice Time Is Allocated",
-        body: "Pull up your last three saved practice plans and map time by block type. Most coaches, when they do this honestly, find that Block 2 (skill development) is either over-weighted — leaving Block 3 short — or under-weighted in favor of scrimmage time. The absence of intentional Block 3 time is the most common cause of skills that look good in drills but disappear in games. The transfer problem is almost always a practice design problem.",
-      },
-      {
-        id: "fm_03_practice_s4",
-        type: "apply",
-        title: "Build a Practice Plan Using the 4-Block Structure",
-        body: "Open the Practice Plan Builder and create your next practice session with all four blocks labeled and timed. Each block should include a time allocation, a primary drill or activity, and a one-line coaching focus. Before saving, check: Is your session theme visible across all four blocks? Does Block 2 directly prepare players for what they'll face in Block 3? Is conditioning genuine work, not a cooldown?",
-        platformAction:
-          "Build a full practice plan in the Practice Planner with all four blocks labeled, timed, and connected to a single session theme.",
-      },
-      {
-        id: "fm_03_practice_s5",
-        type: "reflect",
-        title: "Your Best Practice",
-        body: "Think about the best practice session you've ever run — the one where players were engaged from start to finish and left with something real. Was it the content, or was it the structure and sequencing? Now think about one upcoming practice where you've been tempted to wing it. What would change if you committed to the 4-block structure for that session specifically?",
-      },
-    ],
-  },
+    // ── Module 3 ────────────────────────────────────────────────────────────
+    {
+      id: "fm_03_cues",
+      path: "foundation",
+      pathId: "foundation",
+      category: "Teaching & Cueing",
+      domain: "Teaching & Cueing",
+      title: "The 3-Cue Rule",
+      subtitle: "Why giving 5 cues kills learning — and how to pick the right 1–3",
+      description:
+        "Coaches who give too many instructions during a drill don't help players — they freeze them. This module teaches the cognitive science behind cue selection and gives you a repeatable system for identifying the highest-leverage cues for any skill.",
+      estimatedMinutes: 20,
+      status: "in_progress",
+      deliverableCompleted: false,
+      prerequisiteIds: ["fm_02_practice"],
+      deliverableType: "cue_save",
+      deliverablePrompt:
+        "Save 3 cues to your Cue Library for a drill you use at least weekly. Each cue should target a different skill element and be worded in player-facing language.",
+      deliverableHref: "/app/coach/cues",
+      sections: [
+        {
+          type: "frame",
+          title: "The Paralysis You're Accidentally Creating",
+          estimatedMinutes: 2,
+          content:
+            "You've seen it. A player is mid-drill, and you call out: 'Stay low, eyes up, right hand, drive your shoulder, don't reach!' The player's body stiffens. The dribble gets tentative. The error you were trying to prevent happens anyway — because you overloaded the system.\n\nHuman working memory holds approximately 3–5 chunks of information at a time. When a player is executing a physical skill under any kind of time or competitive pressure, that number drops. One well-chosen cue, delivered clearly, does more than five technically correct ones.\n\nThe 3-cue rule isn't about dumbing things down. It's about coaching at the level where the brain can actually act on the instruction.",
+        },
+        {
+          type: "concept",
+          title: "Selecting the Right Cue at the Right Moment",
+          estimatedMinutes: 7,
+          content:
+            "Not all cues are equal. The best cues share three characteristics: they are specific to an observable action, they are expressed in player-facing language (what to do, not what not to do), and they address the highest-leverage point in the skill chain.\n\n**The skill chain principle**: Most complex basketball skills have a chain of 4–6 sequential actions. A cue hits highest when it targets the first breakdown in the chain — the root error, not the symptom.\n\n**External vs. internal cues**: Research consistently shows that external cues (focused on the environment or an object) outperform internal cues (focused on body parts) for motor learning. 'Finish toward the square' outperforms 'extend your arm.' 'Get your hip past the defender's hip' outperforms 'lean in.'\n\n**Cueing timing windows**: Different moments in a drill require different cue types:\n- Before the rep: technical setup cues ('hips low before you catch')\n- During the rep: attentional cues only ('square')\n- After the rep: diagnostic cues ('you rushed the footwork — try again')\n\nSelect your max three cues before the drill starts. Commit to them. If you find yourself adding a fourth in the moment, it means you haven't identified your highest-leverage point yet.",
+        },
+        {
+          type: "examine",
+          title: "Your Cueing Patterns",
+          estimatedMinutes: 3,
+          content:
+            "Think about the last time you ran a drill you use regularly — the crossover, the closeout, the post seal. How many distinct cues did you give across the drill?\n\nCoaches who have never cataloged their cues often discover they give 7–10 distinct instructions in a 15-minute drill block. Even if each cue is individually correct, the cumulative load overwhelms retention. The players who got better that day probably self-selected which cue to act on — which may not have been the most important one.\n\nYour cue library in HoopsOS is designed to force this selection up front. Three cues per drill, saved before the session, means you've done the cognitive work of prioritization before you're standing on the court.",
+        },
+        {
+          type: "apply",
+          title: "Build Your Cue Library for One Drill",
+          estimatedMinutes: 6,
+          content:
+            "Choose a drill you run at least once a week. Open the Cue Library and create entries for exactly three cues for that drill.\n\nFor each cue, write:\n1. The cue phrase itself — player-facing, action-oriented, 5 words or fewer\n2. When to deliver it (before, during, or after the rep)\n3. The error it corrects\n\nAfter saving all three, review them together. Do they cover the full skill chain without overlapping? Is any cue addressing a symptom rather than a root cause? If yes, revise before saving.",
+          actionPrompt:
+            "Open the Cue Library and save 3 cues for one of your weekly drills. Each cue should be 5 words or fewer and worded from the player's perspective.",
+          actionHref: "/app/coach/cues",
+        },
+        {
+          type: "reflect",
+          title: "The Cue You'll Never Stop Using",
+          estimatedMinutes: 2,
+          content:
+            "Every coach has a cue that just works — one they've used for years because players respond to it faster than anything else. What is yours? Why do you think it works?\n\nNow: what's a skill in your system that you've never fully curated cues for? What would change about how you teach that skill if you went through the selection process this module describes?",
+        },
+      ],
+    },
 
-  // ── Module 4: Film Review Fundamentals ────────────────────────────────────
-  {
-    id: "fm_04_film",
-    title: "Film Review Fundamentals",
-    subtitle: "Why timestamp notes have 3× more impact — and what to look for first",
-    pathId: "foundation",
-    order: 4,
-    estimatedMinutes: 22,
-    category: "film",
-    platformDeliverable:
-      "Review one pending film submission and add at least 3 timestamp annotations — one positive, one developmental, one connected to an active IDP goal.",
-    sections: [
-      {
-        id: "fm_04_film_s1",
-        type: "frame",
-        title: "The Film Review No One Watched",
-        body: "A player uploads their shooting session. You write: 'Good effort — footwork needs work, keep the elbow in.' The player reads it, nods, uploads next week's video, gets the same feedback. Now imagine they receive instead: '0:34 — Your plant foot is 45 degrees open before the catch; that's why the release is right of center. 1:12 — Watch this rep: your elbow came in and the ball went straight. That's the feeling to chase.' The second coach didn't work harder — they worked differently. They made film interactive, something the player watches with purpose, rewinding to specific moments and connecting visual proof to felt sensation.",
-      },
-      {
-        id: "fm_04_film_s2",
-        type: "concept",
-        title: "The Anatomy of a High-Value Timestamp Note",
-        body: "Effective timestamp annotations do three things: anchor the observation to an exact moment so the player knows what to look at, name the observable behavior rather than the outcome, and connect to something the player already knows is important. The first-60-seconds rule is foundational: watch completely before annotating, because coaches who jump in early note the most visible error rather than the most important one. Every film review should contain at least one positive timestamp — 'this is the feeling you want' — because the brain learns patterns through contrast, not just error correction, and players who receive only developmental notes begin to watch film defensively. The IDP-connected annotation is your highest-leverage move: when a player reads 'this is the exact situation your IDP goal is about,' the goal becomes real in a way no conversation achieves.",
-      },
-      {
-        id: "fm_04_film_s3",
-        type: "examine",
-        title: "Your Current Film Queue",
-        body: "Film reviews that sit in a queue for more than 72 hours see a significant drop in player engagement when they do arrive — the player has moved on mentally and the feedback feels historical rather than actionable. In your current queue, how many submissions have zero annotations? How many reviews are you writing without timestamps? Coaches who adopt timestamp-first reviewing typically cut their average annotation time because the timestamp forces identification of one specific moment rather than writing general impressions that require more words to say less.",
-      },
-      {
-        id: "fm_04_film_s4",
-        type: "apply",
-        title: "Review One Film Submission With Timestamps",
-        body: "Open your film queue and select the oldest pending submission. Before adding any note, watch the first 60 seconds completely. Then add exactly three timestamp annotations: one positive naming the mechanism that's working, one developmental describing a specific observable error with one corrective action, and one connecting a moment to a goal in this player's active IDP by name. Do not add a fourth annotation — three specific timestamps beat six general ones.",
-        platformAction:
-          "Open your Film Review queue, select the oldest pending upload, and add 3 timestamp annotations — positive, developmental, and IDP-linked.",
-      },
-      {
-        id: "fm_04_film_s5",
-        type: "reflect",
-        title: "What Film Reveals That Practice Doesn't",
-        body: "Think about a player whose development stalled despite consistent practice. Did you ever review film with them — not for them, with them? Film is the one place where the player can see exactly what you see. What does access to that shared visual truth change about your responsibility to annotate it with precision and care?",
-      },
-    ],
-  },
+    // ── Module 4 ────────────────────────────────────────────────────────────
+    {
+      id: "fm_04_film",
+      path: "foundation",
+      pathId: "foundation",
+      category: "Film Feedback",
+      domain: "Film Feedback",
+      title: "Timestamp Film Feedback",
+      subtitle: "Why timestamp notes have 3× more impact — and what to look for first",
+      description:
+        "General film feedback gets ignored. Timestamp annotations — specific moments with specific context — get replayed. This module teaches you to observe film the way players learn from it.",
+      estimatedMinutes: 22,
+      status: "not_started",
+      deliverableCompleted: false,
+      prerequisiteIds: ["fm_01_idp"],
+      deliverableType: "film_annotation",
+      deliverablePrompt:
+        "Review one pending film submission and add at least 3 timestamp annotations. At least one should be positive, one developmental, and one connected to an IDP goal.",
+      deliverableHref: "/app/coach/film",
+      sections: [
+        {
+          type: "frame",
+          title: "The Film Review No One Watched",
+          estimatedMinutes: 2,
+          content:
+            "A player uploads their shooting session. You write: 'Good effort — footwork needs work, keep the elbow in.' The player reads it, nods, uploads next week's video, gets the same feedback.\n\nNow imagine the same player gets this instead: '0:34 — Right here, your plant foot is 45 degrees open before the catch. That's why the release is right of center. 1:12 — Watch this rep. Your elbow came in and the ball went straight. That's the feeling to chase.'\n\nThe second coach didn't work harder. They worked differently. They made the film interactive — something the player watches with a purpose, rewinding to specific moments, connecting visual proof to felt sensation. That's film feedback that transfers.",
+        },
+        {
+          type: "concept",
+          title: "The Anatomy of a High-Value Timestamp Note",
+          estimatedMinutes: 7,
+          content:
+            "Effective timestamp annotations do three things: they anchor the observation to an exact moment, they name the observable behavior (not the outcome — the cause), and they connect to something the player already knows is important.\n\n**The first 60 seconds rule**: When reviewing any player upload, watch the first 60 seconds before adding any note. This forces you to observe before you react. Coaches who annotate too early often note the most visible error rather than the most important one.\n\n**Positive-developmental-IDP balance**: Every film review should contain at least one timestamp showing the player doing something right. The brain learns patterns through contrast — 'this is the feeling you want' — not just through error correction.\n\nThe IDP connection is the highest-leverage annotation you can make. When a player sees their own film and reads 'this is the exact situation your IDP goal is about,' the goal becomes real in a way that no conversation achieves.\n\n**Language patterns that land**:\n- Lead with the timestamp and a very short framing word: '1:22 — Here'\n- Describe what you see, not what it means: 'your back foot is behind your front knee'\n- If corrective, give one action: 'plant the back foot parallel'\n- If positive, name the mechanism: 'elbow stayed in — that's why this one dropped'",
+        },
+        {
+          type: "examine",
+          title: "Your Current Film Queue",
+          estimatedMinutes: 4,
+          content:
+            "Film reviews that sit in a queue for more than 72 hours see a significant drop in player engagement when they do get reviewed — the player has moved on mentally. Speed of feedback matters almost as much as quality.\n\nIn your current queue, how many submissions have zero annotations? How many reviews are you writing without timestamps? Those two metrics tell you where your film feedback system has gaps.\n\nCoaches who adopt timestamp-first reviewing typically cut their average annotation time — not because they're doing less, but because the timestamp forces them to identify one specific moment rather than write general impressions that require more words to say less.",
+        },
+        {
+          type: "apply",
+          title: "Review One Film Submission With Timestamps",
+          estimatedMinutes: 7,
+          content:
+            "Open your film queue and select the oldest pending submission. Before adding any note, watch the first 60 seconds completely.\n\nThen add three timestamp annotations:\n1. One positive — something the player is doing right that they should know is right\n2. One developmental — a specific, observable error with one corrective action\n3. One IDP-connected — find a moment that directly relates to a goal in this player's active IDP, and call that connection out by name\n\nDo not add a fourth annotation for this exercise. Three specific timestamps beat six general ones.",
+          actionPrompt:
+            "Open your film queue, pick the oldest pending review, and add 3 timestamp annotations — one positive, one developmental, one IDP-connected.",
+          actionHref: "/app/coach/film",
+        },
+        {
+          type: "reflect",
+          title: "What Film Reveals That Practice Doesn't",
+          estimatedMinutes: 2,
+          content:
+            "Think about a player you've coached whose development stalled despite consistent practice. Did you ever review film with them — not for them, with them? What would you have seen if you had?\n\nFilm is the one place where the player can see what you see. What does that access change about your responsibility to annotate it well?",
+        },
+      ],
+    },
 
-  // ── Module 5: Player Communication ────────────────────────────────────────
-  {
-    id: "fm_05_communication",
-    title: "Player Communication",
-    subtitle: "The psychology of corrective feedback — and why timing changes everything",
-    pathId: "foundation",
-    order: 5,
-    estimatedMinutes: 18,
-    category: "communication",
-    platformDeliverable:
-      "Log one player observation in the platform — context, behavior observed, and your planned feedback timing and format.",
-    sections: [
-      {
-        id: "fm_05_comm_s1",
-        type: "frame",
-        title: "The Halftime Speech That Went Nowhere",
-        body: "Down eight at halftime, you delivered what felt like your best halftime speech — specific, urgent, emotionally grounded. The team came out flat in the third quarter anyway. This isn't a content problem. Hearing and receiving are different neurological events: a player flooded with cortisol from a frustrating half processes information differently than a player in a calm 1:1 conversation three days later. Feedback that lands when a player is ready to hear it is ten times more powerful than feedback delivered at coach-optimal timing.",
-      },
-      {
-        id: "fm_05_comm_s2",
-        type: "concept",
-        title: "The Four Conditions for Receivable Feedback",
-        body: "Feedback is receivable when four conditions are present: psychological safety (the player doesn't expect judgment about their character), relevance to a goal the player owns (feedback connects to something they care about — and IDPs create this frame), emotional regulation in both coach and player (most post-game windows are low-receptivity; immediate post-game feedback rarely forms long-term memory), and a shared evaluation frame where both parties use the same criteria to assess performance. Immediately post-game, the highest-value feedback is very short, specific, and positive: 'You made three correct rotations in the fourth — I saw that.' Everything developmental waits for a calmer window.",
-      },
-      {
-        id: "fm_05_comm_s3",
-        type: "examine",
-        title: "When You Give Most of Your Feedback",
-        body: "Most coaches give the majority of their corrective feedback in three windows: immediately after errors in practice, at halftime, and immediately post-game — precisely the windows of lowest player receptivity. The highest-receptivity windows are typically mid-week 1:1 video review, pre-practice individual check-in, and the first five minutes of practice before competitive pressure builds. How much of your current feedback volume is delivered in high-receptivity windows versus low-receptivity ones?",
-      },
-      {
-        id: "fm_05_comm_s4",
-        type: "apply",
-        title: "Log a Player Observation",
-        body: "After your next practice, log one observation about one player. Include what you noticed (a behavior, not a trait), the context (which drill or game situation), and a deliberate note about when and how you plan to deliver feedback about it — in-person, via film timestamp, or written message. Delaying the log until after practice also calibrates importance: was this observation still worth delivering a day later? If yes, it matters enough to deliver with intention.",
-        platformAction:
-          "Log one player observation in the Roster tool — behavior observed, context, and your planned feedback timing and format.",
-      },
-      {
-        id: "fm_05_comm_s5",
-        type: "reflect",
-        title: "The Feedback You Wish You'd Held Back",
-        body: "Think about a time you delivered corrective feedback that clearly didn't land — the player shut down, argued, or just nodded without absorbing anything. What was the context? Were the four conditions present? What would you do differently with the same observation now, knowing what you know about receptivity windows?",
-      },
-    ],
-  },
+    // ── Module 5 ────────────────────────────────────────────────────────────
+    {
+      id: "fm_05_drills",
+      path: "foundation",
+      pathId: "foundation",
+      category: "Drill Progression",
+      domain: "Drill Progression",
+      title: "Drill Progression: From Breakdown to Game Condition",
+      subtitle: "How to move players up the difficulty ladder without losing skill quality",
+      description:
+        "A drill is just a tool — the progression is the instruction. This module teaches you to sequence drills so skills transfer from controlled reps to live competition.",
+      estimatedMinutes: 20,
+      status: "not_started",
+      deliverableCompleted: false,
+      prerequisiteIds: ["fm_02_practice"],
+      deliverableType: "practice_plan_save",
+      deliverablePrompt:
+        "Build a 3-tier drill progression for one skill you're currently teaching. Save it to a practice plan.",
+      deliverableHref: "/app/coach/practice",
+      sections: [
+        {
+          type: "frame",
+          title: "The Drill That Doesn't Transfer",
+          estimatedMinutes: 2,
+          content:
+            "You've drilled the eurostep for three weeks. It looks clean in the breakdown drill. Then it's live 5v5 and players are still doing the old two-step drive to a contested layup. The transfer didn't happen.\n\nThis is the most common frustration in player development. Not that the skill wasn't practiced — it was. The progression was missing. The gap between 'doing it correctly in isolation' and 'doing it correctly under pressure' is a set of intermediate steps. Those steps are the progression.",
+        },
+        {
+          type: "concept",
+          title: "The Three-Tier Progression Model",
+          estimatedMinutes: 7,
+          content:
+            "Every skill should be taught across three tiers of difficulty, each tier increasing the decision-making load and defensive resistance.\n\n**Tier 1 — Isolated**: No defense, controlled tempo, full focus on mechanics. Players should be able to describe what they're doing as they do it. Error correction is immediate and technical.\n\n**Tier 2 — Semi-Live**: Passive or token resistance. Players now have to read a cue before executing the skill — the defender's foot position, the angle of approach. Cognitive load increases; mechanical expectations stay high.\n\n**Tier 3 — Competitive Application**: Full speed, real defense, game-representative constraints. The player can no longer rely on the motor memory built in Tier 1 — they have to access it automatically.\n\nThe error coaches make is jumping from Tier 1 to Tier 3 too quickly. Players fail at Tier 3 not because the skill is too hard, but because Tier 2 wasn't developed enough to build the recognition patterns that make automatic access possible.\n\nAlways exit a Tier when the player can perform the skill at 80% success rate in that context.",
+        },
+        {
+          type: "examine",
+          title: "Where Your Progressions Break Down",
+          estimatedMinutes: 3,
+          content:
+            "Think about the last skill you taught in a drill sequence. Did you spend meaningful time at Tier 2? Most coaches jump to Tier 3 — competitive application — because that's the most engaging for players and feels most like basketball. But if Tier 2 is thin or absent, the skill hasn't developed the decision-making pattern it needs to survive live play.\n\nThe transfer failure you see in games is usually a Tier 2 gap, not a Tier 1 gap.",
+        },
+        {
+          type: "apply",
+          title: "Design a 3-Tier Progression",
+          estimatedMinutes: 6,
+          content:
+            "Choose a skill you're actively teaching this week. In the Practice Plan Builder, create a drill progression with three named tiers, including time allocation for each.\n\nFor each tier: name the drill, describe the resistance level and decision cue (if any), and specify one observable success marker — how you'll know it's working before moving to the next tier.\n\nSave the progression as a reusable template.",
+          actionPrompt:
+            "Create a 3-tier drill progression in the Practice Plan Builder with one drill per tier and success markers for each.",
+          actionHref: "/app/coach/practice",
+        },
+        {
+          type: "reflect",
+          title: "The Player Who Made the Leap",
+          estimatedMinutes: 2,
+          content:
+            "Think about a player you've coached who made a real skill leap — something that showed up in games, not just drills. What was the progression that got them there? Was it a single breakthrough moment or accumulated reps across multiple weeks?\n\nWhat does that transfer story tell you about how to design progressions for the player on your roster who's currently stuck?",
+        },
+      ],
+    },
 
-  // ── Module 6: Setting Measurable Milestones ────────────────────────────────
-  {
-    id: "fm_06_milestones",
-    title: "Setting Measurable Milestones",
-    subtitle: "The checkpoint architecture that keeps development plans alive all season",
-    pathId: "foundation",
-    order: 6,
-    estimatedMinutes: 20,
-    category: "player-dev",
-    platformDeliverable:
-      "Add milestone checkpoints to at least two active IDPs — include an early indicator (within 21 days), a midpoint check, and a completion marker.",
-    sections: [
-      {
-        id: "fm_06_miles_s1",
-        type: "frame",
-        title: "The Goal Without a Checkpoint",
-        body: "A player's IDP says 'improve defensive positioning by season's end.' It's March. The season ends in four weeks. You haven't looked at the goal since November, and neither has the player. The goal wasn't bad — it was un-checkpointed. When the first moment of accountability is 'did it work?' at season's end, it arrives too late to course-correct and too late for the player to feel any developmental momentum along the way. Milestones turn a season-long intention into a series of achievable commitments.",
-      },
-      {
-        id: "fm_06_miles_s2",
-        type: "concept",
-        title: "The Three-Checkpoint Architecture",
-        body: "Every IDP goal needs three checkpoint types to stay alive. The Early Indicator (within 21 days) is your early warning system — it reveals whether the player understood the goal, is working toward it, and whether your drill design is creating the right opportunities. At this stage, success means engagement, not achievement: is the player attempting the target behavior in relevant situations? The Midpoint Check (5–8 weeks) evaluates whether skill acquisition is actually happening — you're looking for improvement in context, not just isolated drill performance. The Completion Marker defines what 'done' looks like with enough precision that both coach and player can independently evaluate it. Without these three waypoints, goals drift toward the end of the season and disappear.",
-      },
-      {
-        id: "fm_06_miles_s3",
-        type: "examine",
-        title: "Your Active IDP Milestone Coverage",
-        body: "Open your active roster and count how many IDP goals have a milestone due in the next 30 days. If that number is zero or near zero, you have an IDP health problem regardless of how well-written the underlying goals are. HoopsOS data shows that coaches with at least one milestone due per player per month have 3× higher IDP engagement rates from players — not because the milestones are harder, but because they keep the goal visible and create regular moments of shared accountability.",
-      },
-      {
-        id: "fm_06_miles_s4",
-        type: "apply",
-        title: "Add Milestones to Two Active IDPs",
-        body: "Select two players whose IDPs have goals but no near-term milestones. For each goal, build the three-checkpoint architecture: write the early indicator with a specific observable behavior and a target date within 21 days; write the midpoint check with a measurable success threshold; write the completion marker with precision that makes self-evaluation possible. When you save, share the milestone update with each player so they see the checkpoints as their own commitments.",
-        platformAction:
-          "Open the IDP Builder and add three milestone checkpoints to goals for at least two players — early indicator, midpoint, and completion marker.",
-      },
-      {
-        id: "fm_06_miles_s5",
-        type: "reflect",
-        title: "The Season You Lost Track",
-        body: "Think about a season where a player's development plan fell apart mid-season — not because the player stopped trying, but because the plan lost momentum and nobody was checking in. What would a milestone checkpoint at week three have revealed that could have changed the trajectory? What does that tell you about the real cost of un-checkpointed goals?",
-      },
-    ],
-  },
+    // ── Module 6 ────────────────────────────────────────────────────────────
+    {
+      id: "fm_06_communication",
+      path: "foundation",
+      pathId: "foundation",
+      category: "Player Communication",
+      domain: "Player Communication",
+      title: "Feedback That Players Actually Hear",
+      subtitle: "The psychology of corrective feedback — and why timing changes everything",
+      description:
+        "Corrective feedback that lands in the wrong moment teaches nothing. This module covers the science of player receptivity and gives you a framework for delivering feedback that motivates rather than deflates.",
+      estimatedMinutes: 18,
+      status: "not_started",
+      deliverableCompleted: false,
+      prerequisiteIds: ["fm_01_idp"],
+      deliverableType: "observation_log",
+      deliverablePrompt:
+        "Log one player observation using the Feedback Ledger. Note the context, the content, and how the player responded.",
+      deliverableHref: "/app/coach/roster",
+      sections: [
+        {
+          type: "frame",
+          title: "The Halftime Speech That Went Nowhere",
+          estimatedMinutes: 2,
+          content:
+            "Down eight at halftime, you delivered what felt like your best halftime speech — specific, urgent, emotionally grounded. The team came out flat in the third quarter anyway.\n\nThis isn't a content problem. The players heard you. But hearing and receiving are different neurological events. A player who is flooded with cortisol from a frustrating half processes information differently than a player in a calm 1:1 conversation three days later.\n\nFeedback that lands when a player is ready to hear it is 10× more powerful than feedback delivered at coach-optimal timing.",
+        },
+        {
+          type: "concept",
+          title: "The Four Conditions for Receivable Feedback",
+          estimatedMinutes: 6,
+          content:
+            "Feedback is receivable when four conditions are present: psychological safety, relevance to a goal the player owns, emotional regulation in both coach and player, and a shared frame for evaluation.\n\n**Psychological safety** means the player doesn't expect feedback to come with judgment about their character or value to the program. You build this through consistent positive feedback — not empty praise, but genuine acknowledgment of what's working.\n\n**Goal ownership** means the feedback connects to something the player cares about. 'Your step-back footwork is off' lands differently when the player has an IDP goal that specifically names footwork.\n\n**Emotional regulation** is the most overlooked factor. Immediately post-game — especially after a loss — most players are in a stress response state. Feedback given in this window often doesn't form into memory.\n\n**Shared evaluation frame** means both coach and player are using the same criteria to assess the performance. This is why IDPs are developmental tools, not administrative ones.",
+        },
+        {
+          type: "examine",
+          title: "When You Give Most of Your Feedback",
+          estimatedMinutes: 3,
+          content:
+            "Most coaches give the majority of their corrective feedback in three windows: immediately after errors in practice, at halftime, and immediately post-game. These are precisely the windows of lowest player receptivity.\n\nThe highest-receptivity windows are typically: mid-week 1:1 video review, pre-practice individual check-in, and the first five minutes of practice before competitive pressure builds. How much of your current feedback is delivered in those windows?",
+        },
+        {
+          type: "apply",
+          title: "Log a Player Observation",
+          estimatedMinutes: 5,
+          content:
+            "After your next practice, log one observation about one player using the Observation Log. Include: what you noticed (behavior, not trait), the context (drill, scrimmage, between plays), and a note about when you plan to deliver feedback about it — and in which format.\n\nDelaying the feedback logging until after practice also helps you calibrate: was this observation still important a day later? If yes, it's worth delivering.",
+          actionPrompt:
+            "Log one player observation in the Roster tool — context, behavior observed, and your planned feedback timing.",
+          actionHref: "/app/coach/roster",
+        },
+        {
+          type: "reflect",
+          title: "The Feedback You Wish You'd Held Back",
+          estimatedMinutes: 2,
+          content:
+            "Think about a time you delivered corrective feedback that you could tell didn't land — maybe the player shut down, argued back, or just nodded without really hearing you. What was the context? Were the four conditions present?\n\nWhat would you do differently with that same observation now?",
+        },
+      ],
+    },
 
-  // ── Module 7: Parent Engagement ───────────────────────────────────────────
-  {
-    id: "fm_07_parents",
-    title: "Parent Engagement",
-    subtitle: "A framework for high-stakes parent conversations that protect the player",
-    pathId: "foundation",
-    order: 7,
-    estimatedMinutes: 19,
-    category: "communication",
-    platformDeliverable:
-      "Write a reflection applying the EARS framework to one parent conversation you've had this season — real or anticipated.",
-    sections: [
-      {
-        id: "fm_07_parents_s1",
-        type: "frame",
-        title: "The Email at 10:47 PM",
-        body: "It comes in after a tough loss. Subject line: 'Concerns about my son's role.' You've seen this email before — different parent, same emotional fingerprint. The content isn't really about playing time; it's about a parent watching their child struggle and not knowing what to do with that feeling. How you respond — and when — shapes your relationship with that family for the rest of the season and shapes whether you can continue being an effective coach for their kid.",
-      },
-      {
-        id: "fm_07_parents_s2",
-        type: "concept",
-        title: "The EARS Framework",
-        body: "The EARS framework provides a consistent structure for high-stakes parent conversations: Empathize by acknowledging the parent's emotional experience without validating the complaint's premise ('I understand it's hard to watch your son not get the minutes you expected — his development matters a lot to me too'); Acknowledge one specific observed behavior or growth ('Marcus has shown real growth in his defensive positioning — I want you to know I'm tracking that'); Redirect from the parent's grievance to the development process ('The way I measure progress is [behavior] right now, not minutes yet — here's what I'm watching for'); Specify one observable thing for the parent to look for in the next two games. The EARS framework doesn't promise what parents want — it shows them you see their child as an individual, which is what most parent anxiety is actually asking for.",
-      },
-      {
-        id: "fm_07_parents_s3",
-        type: "examine",
-        title: "Your Communication History",
-        body: "Think about the parent conversations that went well — what did they have in common? Most coaches find that successful conversations include a specific observation about the player (not a general reassurance), a concrete next step, and an explicit invitation for continued dialogue. The conversations that go sideways usually share one failure: the coach defended a decision instead of redirecting to development. Once you're defending, the parent is arguing. Once the parent is arguing, the player feels the tension.",
-      },
-      {
-        id: "fm_07_parents_s4",
-        type: "apply",
-        title: "Reflect on One Parent Interaction",
-        body: "Using the coaching journal, write a reflection on one parent interaction from this season — positive or challenging. Apply the EARS framework retroactively: where did the conversation go well? Where could EARS have changed the direction? If you anticipate a challenging parent conversation in the coming week, write out how you'd open it using the EARS framework before you have it — preparation changes the quality of presence.",
-        platformAction:
-          "Open your Coaching Journal and write a reflection applying the EARS framework to a real or anticipated parent conversation.",
-      },
-      {
-        id: "fm_07_parents_s5",
-        type: "reflect",
-        title: "The Parent You've Misread",
-        body: "Most difficult parent behavior is anxiety, not hostility. When you assume a difficult parent is challenging your authority rather than expressing fear about their child's future, everything about the conversation changes. Who is the parent on your current roster you find hardest to engage? What might they actually be afraid of — and how would that reframe shift your approach to the next interaction?",
-      },
-    ],
-  },
+    // ── Module 7 ────────────────────────────────────────────────────────────
+    {
+      id: "fm_07_agedev",
+      path: "foundation",
+      pathId: "foundation",
+      category: "Age-Appropriate Dev",
+      domain: "Age-Appropriate Dev",
+      title: "Coaching the Stage, Not the Age",
+      subtitle: "How developmental readiness changes everything about what you can teach",
+      description:
+        "A 14-year-old in early puberty and a 14-year-old post-growth-spurt are fundamentally different athletes. This module gives you the developmental lens to design training that matches physical and cognitive readiness.",
+      estimatedMinutes: 24,
+      status: "not_started",
+      deliverableCompleted: false,
+      prerequisiteIds: ["fm_01_idp", "fm_05_drills"],
+      deliverableType: "idp_update",
+      deliverablePrompt:
+        "Review two players' IDPs and update the training focus based on their developmental stage. Add a note indicating which stage framework you applied.",
+      deliverableHref: "/app/coach/idp",
+      sections: [
+        {
+          type: "frame",
+          title: "The 13-Year-Old You're Coaching Like a Senior",
+          estimatedMinutes: 3,
+          content:
+            "You have a 13-year-old who's big, strong, and skilled. You start him in the post, design plays for him, and expect him to lead on defense. He's physically ready. But he's not cognitively ready — at 13, the prefrontal cortex is still building the connections that support complex decision-making under pressure, reading multiple defenders, and self-regulating after errors.\n\nTreating a physically mature early developer like a finished product is one of the most common and costly mistakes in youth basketball development.",
+        },
+        {
+          type: "concept",
+          title: "The Four Developmental Windows",
+          estimatedMinutes: 9,
+          content:
+            "**Window 1 — FUNdamental (ages 6–10)**: Movement literacy is the priority. Agility, balance, coordination. Basketball-specific skills are secondary. Coaching focus: make movement joyful, build basic motor competency, never specialize.\n\n**Window 2 — Learning to Train (ages 10–14)**: This is the motor skill acquisition window. Players are neurologically primed for technical learning — footwork patterns, shooting mechanics, defensive positioning. Repetition volume matters more than competitive intensity. Specialization is still premature.\n\n**Window 3 — Training to Train (ages 14–17)**: Physical development accelerates. Players can now tolerate higher training loads and respond well to structured conditioning. Cognitive capacity for tactical understanding expands dramatically. Position specialization becomes developmentally appropriate.\n\n**Window 4 — Training to Compete (17+)**: The athlete's job becomes performance optimization and competitive durability. Training loads, recovery, mental performance, and career-level goal-setting are the coaching priorities.\n\nThe practical implication: your IDP goals and drill progressions should reflect the player's window, not their grade or skill level.",
+        },
+        {
+          type: "examine",
+          title: "Where Your Roster Actually Sits",
+          estimatedMinutes: 4,
+          content:
+            "Look at your active roster. For each player, estimate their developmental window based on physical maturity, not age. You'll likely find that a single age group spans two or even three windows — especially at the 12–15U level.\n\nThis helps explain why players who look similar in practice perform so differently in competition. The Window 2 player who looks technically solid is running on mechanics; the Window 3 player who looks less polished may have far more adaptive capacity for game-speed reads.",
+        },
+        {
+          type: "apply",
+          title: "Update Two IDPs With a Developmental Lens",
+          estimatedMinutes: 6,
+          content:
+            "Select two players whose IDPs you've recently written. For each, identify their developmental window. Then review the IDP goals: are they appropriate for that window?\n\nA Window 2 player shouldn't have a goal primarily about game IQ or tactical responsibility. A Window 3 player can handle goals about reading coverages, leading on defense, and managing their own preparation.\n\nUpdate the goals to reflect the window and add a coaching note documenting your reasoning.",
+          actionPrompt:
+            "Open the IDP tool, identify two players' developmental windows, and update their goals to match.",
+          actionHref: "/app/coach/idp",
+        },
+        {
+          type: "reflect",
+          title: "The Player You've Been Misreading",
+          estimatedMinutes: 2,
+          content:
+            "Every coach has one — a player who frustrates them because they're not responding to coaching the way you'd expect. Is it possible that player is in a different developmental window than you've assumed?\n\nWhat would change about how you work with them if you coached their stage instead of their age?",
+        },
+      ],
+    },
 
-  // ── Module 8: Readiness Monitoring ────────────────────────────────────────
-  {
-    id: "fm_08_readiness",
-    title: "Readiness Monitoring",
-    subtitle: "How to read player availability before it becomes a problem",
-    pathId: "foundation",
-    order: 8,
-    estimatedMinutes: 20,
-    category: "data",
-    platformDeliverable:
-      "Review your team's Readiness Dashboard and flag at least two players for follow-up based on their current trend data.",
-    sections: [
-      {
-        id: "fm_08_ready_s1",
-        type: "frame",
-        title: "The Player Who Looked Fine",
-        body: "You've had it happen: a player looks fine at the start of practice. By the third block, their effort has dropped and their decision-making is erratic. After practice they tell you they haven't slept more than four hours in three nights because of finals. You didn't know. You couldn't have seen it. But a readiness check-in at the start of practice — even a one-question digital pulse — would have told you. Readiness monitoring isn't about coddling players; it's about having information that makes your coaching decisions better.",
-      },
-      {
-        id: "fm_08_ready_s2",
-        type: "concept",
-        title: "The Four Readiness Domains",
-        body: "Player readiness operates across four interdependent domains: Physical (sleep quality and quantity, soreness, injury status, nutrition), Mental-Emotional (stress load, motivation level, confidence, focus quality), Academic-Life (test schedules, grade pressure, family situations, extracurricular demands), and Recovery (training load over the last 72 hours, perceived recovery, hydration). No single domain tells the full story — a player can be physically rested but mentally checked out, or academically stressed but physically ready to have a great practice. The HoopsOS Readiness Dashboard aggregates daily check-in data across these domains so you see trends, not just snapshots. A single low readiness score is noise; a three-day trend is signal.",
-      },
-      {
-        id: "fm_08_ready_s3",
-        type: "examine",
-        title: "What Your Team Trends Are Saying",
-        body: "Open your Readiness Dashboard and look at the last 14 days for your full roster. Look for players whose readiness has trended downward for three or more consecutive days — this is a proactive intervention window, not a crisis window. Also look for players whose physical and mental scores are diverging in opposite directions: high physical readiness with low mental-emotional scores often indicates a player who's physically present but mentally disengaged, which carries its own development risk.",
-      },
-      {
-        id: "fm_08_ready_s4",
-        type: "apply",
-        title: "Flag Two Players for Follow-Up",
-        body: "In the Readiness Dashboard, identify two players whose trend data suggests a conversation is warranted — one whose scores have been declining and one whose domain scores are significantly mismatched. For each, write a brief note on what you're observing and what kind of check-in makes sense: a quick pre-practice word, a formal 1:1, or a referral to a resource. Flag both players in the platform so you have a record of the observation.",
-        platformAction:
-          "Open the Readiness Dashboard, review the last 14 days of team data, and flag two players for follow-up with a note on what you observed.",
-      },
-      {
-        id: "fm_08_ready_s5",
-        type: "reflect",
-        title: "The Coach Who Knows Their Players",
-        body: "The best coaches in any sport describe knowing intuitively when a player is 'off' before being told. That intuition is real — but it's based on longitudinal attention to individual baselines, not magic. What would it mean for your coaching practice if you had structured, consistent readiness data on every player every day? What decision would you have made differently in the last month if you'd had that information?",
-      },
-    ],
-  },
+    // ── Module 8 ────────────────────────────────────────────────────────────
+    {
+      id: "fm_08_parents",
+      path: "foundation",
+      pathId: "foundation",
+      category: "Parent Communication",
+      domain: "Parent Communication",
+      title: "The Parent Conversation That Goes Sideways",
+      subtitle: "A framework for high-stakes parent conversations that protect the player",
+      description:
+        "Parent conversations about playing time, development, and expectations are the most emotionally charged situations in youth coaching. This module gives you a repeatable framework that keeps the player's development at the center.",
+      estimatedMinutes: 19,
+      status: "not_started",
+      deliverableCompleted: false,
+      prerequisiteIds: ["fm_06_communication"],
+      deliverableType: "reflection",
+      deliverablePrompt:
+        "Write a reflection on one challenging parent interaction you've had. Apply the EARS framework to how you would handle it now.",
+      deliverableHref: "/app/coach/education/module/fm_08_parents",
+      sections: [
+        {
+          type: "frame",
+          title: "The Email at 10:47 PM",
+          estimatedMinutes: 2,
+          content:
+            "It comes in after a tough loss. The subject line is 'Concerns about my son's role.' You've seen this email before — different parent, same emotional fingerprint. The content isn't really about playing time. It's about a parent watching their child struggle and not knowing what to do with that feeling.\n\nHow you respond — and when — will shape your relationship with that family for the rest of the season. More importantly, it will shape whether you can continue being an effective coach for their kid.",
+        },
+        {
+          type: "concept",
+          title: "The EARS Framework",
+          estimatedMinutes: 7,
+          content:
+            "The EARS framework gives you a consistent structure for high-stakes parent conversations:\n\n**E — Empathize**: Start by acknowledging the parent's emotional experience without validating the complaint's premise. 'I understand it's hard to watch your son not get the minutes you expected. His development matters a lot to me too.' You're not agreeing; you're acknowledging.\n\n**A — Acknowledge**: State one specific thing you genuinely appreciate or have observed about the player. This isn't flattery — it's evidence that you see their child as an individual.\n\n**R — Redirect**: Move from the parent's concern to the development process. 'The way I measure progress is [skill, behavior, trend], not minutes yet — here's what I'm watching for.' This reframes the conversation from a grievance to a shared development goal.\n\n**S — Specify**: Give them one observable thing to look for. 'In the next two games, watch how many times Marcus makes the right rotation on the weak side.' This gives the parent something to root for instead of something to resent.\n\nMost parent frustration is really anxiety in disguise — anxiety that their kid is being overlooked. Evidence that you see their child is the most powerful thing you can offer.",
+        },
+        {
+          type: "examine",
+          title: "Your Communication History",
+          estimatedMinutes: 3,
+          content:
+            "Think about the parent conversations that went well — what did they have in common? Most coaches find that successful parent conversations involve a specific observation about the player, a concrete next step, and an explicit invitation to continue the conversation.\n\nThe conversations that go sideways usually share one failure: the coach defended a decision instead of redirecting to development. Once you're defending, the parent is arguing.",
+        },
+        {
+          type: "apply",
+          title: "Reflect on One Parent Interaction",
+          estimatedMinutes: 5,
+          content:
+            "Using the journal in this module, write a reflection on one parent interaction you've had this season. Apply the EARS framework retroactively: where did it go well? Where could EARS have changed the direction?\n\nIf you anticipate a challenging parent conversation in the coming week, write out how you'd open it using the EARS framework before you have it.",
+          actionPrompt:
+            "Write a journal reflection applying the EARS framework to a real parent conversation.",
+          actionHref: "/app/coach/education/module/fm_08_parents",
+        },
+        {
+          type: "reflect",
+          title: "The Parent You've Misread",
+          estimatedMinutes: 2,
+          content:
+            "Most difficult parent behavior is anxiety, not hostility. When you assume a difficult parent is challenging your authority rather than expressing fear about their child's future, the conversation changes.\n\nWho is the parent on your current roster you find hardest to talk to? What might they actually be afraid of?",
+        },
+      ],
+    },
 
-  // ── Module 9: WOD Design ──────────────────────────────────────────────────
-  {
-    id: "fm_09_wod",
-    title: "WOD Design",
-    subtitle: "Designing daily work that players own and actually complete",
-    pathId: "foundation",
-    order: 9,
-    estimatedMinutes: 21,
-    category: "practice-design",
-    platformDeliverable:
-      "Create one WOD for a specific player tied to an active IDP goal. Include warm-up, skill reps with target counts, and a self-assessment prompt.",
-    sections: [
-      {
-        id: "fm_09_wod_s1",
-        type: "frame",
-        title: "The WOD Nobody Did",
-        body: "You built a training document for your players' off-day work: shooting reps, ball-handling patterns, conditioning. You shared it in the team group chat. Three weeks later, in a film session, you notice the same technical errors you were trying to fix with the WOD. When you ask, most players admit they did it once or twice in the first week. The WOD failed not because players are lazy, but because it wasn't designed to be owned — it was designed to be assigned.",
-      },
-      {
-        id: "fm_09_wod_s2",
-        type: "concept",
-        title: "The Four Elements of an Owned WOD",
-        body: "A WOD players actually complete has four elements: a clear IDP connection ('this is the skill your goal targets'), a time-bounded structure (a WOD that takes 25 minutes beats one that takes 'as long as it takes'), a rep target specific enough to be self-tracked ('7 of 10 successful reps at the point-of-contact marker' rather than '100 makes'), and a one-question self-assessment that prompts reflection rather than just completion. The self-assessment is the underestimated element — when a player asks themselves 'did I feel my footwork differently today?', they're doing the metacognitive work that accelerates transfer from drill to game context. Without it, WOD completion is just box-checking.",
-      },
-      {
-        id: "fm_09_wod_s3",
-        type: "examine",
-        title: "Your WOD Completion Data",
-        body: "Look at your WOD completion rates in the platform over the last 30 days. The coaches with the highest completion rates share a pattern: their WODs are individually assigned (not group blasts), directly tied to a named IDP goal, and include a brief self-report field that takes less than two minutes to complete. Group WODs have their place in team culture, but individual WOD ownership is built through individual connection — the player sees their name, their goal, their drill.",
-      },
-      {
-        id: "fm_09_wod_s4",
-        type: "apply",
-        title: "Build a WOD for One Player",
-        body: "Choose a player with an active IDP goal that maps well to skill work they can do without a full training environment. In the WOD Planner, build a session with: a two-sentence connection to their IDP goal, a structured warm-up under five minutes, a skill block with specific rep targets and observable success criteria, and one self-assessment question at the end. Assign it specifically to that player with a completion window and a platform notification.",
-        platformAction:
-          "Open the WOD Planner, create a player-specific WOD tied to one active IDP goal, and assign it with a completion deadline.",
-      },
-      {
-        id: "fm_09_wod_s5",
-        type: "reflect",
-        title: "The Work Between Practices",
-        body: "Development is what happens between practices as much as during them. A player who trains intentionally for 20 minutes on three off-days accumulates more deliberate practice hours over a season than a player who only shows up to team sessions. What does designing better WODs tell you about your responsibility as a development coach — and what's the one player on your roster who would benefit most from a well-designed individual training plan right now?",
-      },
-    ],
-  },
-];
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Development Path — 6 Modules
-// ─────────────────────────────────────────────────────────────────────────────
-
-const developmentModules: EducationModule[] = [
-  {
-    id: "dm_01_adv_idp",
-    title: "Advanced IDP Strategies",
-    subtitle: "Building 12-month development arcs with measurable longitudinal outcomes",
-    pathId: "development",
-    order: 1,
-    estimatedMinutes: 30,
-    category: "player-dev",
-    platformDeliverable:
-      "Build a 12-month development arc for one player — include quarterly goal phases, a skill priority sequence, and a milestone map from current level to target ceiling.",
-    sections: [
-      {
-        id: "dm_01_adv_idp_s1",
-        type: "frame",
-        title: "The Season-by-Season Player Who Never Takes the Leap",
-        body: "You've coached players who improve every year in every measurable way, yet never quite break through to the next competitive level. Their IDP goals are good; their work ethic is real; their improvement is consistent. What's missing is architecture — a multi-season development arc that sequences skill acquisition in the right order, manages physical and cognitive load across time, and targets the specific ceiling-breakers that gate advancement at each level. Annual IDPs fix annual problems; 12-month arcs build players.",
-      },
-      {
-        id: "dm_01_adv_idp_s2",
-        type: "concept",
-        title: "The Four-Phase Development Arc",
-        body: "A 12-month development arc is divided into four phases, each with a distinct priority and success criteria. Phase 1 — Foundation Repair (months 1–2): identify and address the limiting technical deficiency that most constrains game performance; this is always a mechanics or decision pattern problem, never an effort problem. Phase 2 — Skill Installation (months 3–5): introduce the target skill in controlled conditions, build the motor pattern to 80% reliability in drill contexts, begin Tier 2 (semi-live) exposure. Phase 3 — Transfer and Application (months 6–9): move the skill into game-representative environments, track transfer rate explicitly, adjust drill design based on what's not transferring. Phase 4 — Ceiling Push (months 10–12): with the foundation skills stable, introduce the advanced reads, positions, and competitive situations that define the next developmental level. Without this sequencing, coaches introduce ceiling-push skills before the foundation is ready to support them.",
-      },
-      {
-        id: "dm_01_adv_idp_s3",
-        type: "examine",
-        title: "Your Current Longest-Tenured Players",
-        body: "Identify two players who have been in your program for two or more years. Look at their IDP history: is there a visible development arc across the seasons, or is each year's plan essentially the same set of goals with updated dates? For most coaches, the honest answer is that long-term plans default to repeating the same annual priorities rather than progressing through a sequenced arc. That repetition isn't a player problem — it's a planning problem.",
-      },
-      {
-        id: "dm_01_adv_idp_s4",
-        type: "apply",
-        title: "Build One 12-Month Arc",
-        body: "Choose a player you'll coach for at least the next 12 months. In the IDP Builder, create a long-form arc with four labeled phases, a skill priority sequence, and at least two milestones per phase. The ceiling-push in Phase 4 should describe a specific competitive situation the player cannot currently succeed in — and should feel ambitious but achievable given the foundation being built in Phases 1–3.",
-        platformAction:
-          "Open the IDP Builder, create a 12-month arc with four phases and milestone maps, and share the full plan with the player.",
-      },
-      {
-        id: "dm_01_adv_idp_s5",
-        type: "reflect",
-        title: "The Player You've Been Under-Planning For",
-        body: "Every program has a player who has been in the system long enough to deserve a multi-year plan but who has only ever received season-length IDPs. What would a 12-month arc change for that player — in their development trajectory, in their sense of being seen, and in your coaching relationship with them?",
-      },
-    ],
-  },
-
-  {
-    id: "dm_02_film_ai",
-    title: "AI-Assisted Film Analysis",
-    subtitle: "Leveraging technology without losing your coaching eye",
-    pathId: "development",
-    order: 2,
-    estimatedMinutes: 28,
-    category: "film",
-    platformDeliverable:
-      "Run one film session using the AI analysis tool, then add your own annotations to at least 3 AI-flagged moments — noting where you agree, disagree, or would add nuance.",
-    sections: [
-      {
-        id: "dm_02_film_s1",
-        type: "frame",
-        title: "What the Algorithm Can't See",
-        body: "AI film analysis tools can identify that a player's elbow drifted outside the shooting window on 14 of 22 attempts. What they cannot tell you is that this player's mechanics broke down specifically in the fourth quarter, only after pick-and-roll coverages forced them to shoot from a non-preferred angle, following a rough interaction with a teammate on the bench. The algorithm sees the pattern; you see the context. Advanced film analysis is about using AI to surface patterns efficiently so you have more time and attention for the contextual interpretation that only a coach can provide.",
-      },
-      {
-        id: "dm_02_film_s2",
-        type: "concept",
-        title: "The Three-Layer Film Review System",
-        body: "Advanced film analysis operates in three layers that should never be collapsed. Layer 1 — Pattern Detection: use AI tools to identify statistical patterns across a session or game (shot selection by zone, defensive positioning frequency, transition decisions). This layer tells you where to look. Layer 2 — Contextual Analysis: watch the flagged moments in sequence, adding your coaching interpretation about the situation, opponent pressure, fatigue, game state, and prior context. This is where your expertise is irreplaceable. Layer 3 — Developmental Mapping: connect what you found in Layers 1–2 to the player's IDP, to your drill design, and to the specific cues and progressions you're using. Without Layer 3, film analysis produces observations but not development actions.",
-      },
-      {
-        id: "dm_02_film_s3",
-        type: "examine",
-        title: "Where Technology Adds Leverage",
-        body: "Coaches who use AI film tools without a layered framework tend to over-index on what the algorithm surfaces most prominently — typically volume-based statistical patterns — and under-weight low-frequency, high-importance moments that require human recognition, like a player's body language after a missed assignment or a subtle read that was correct even if the outcome wasn't. Audit your last three AI-assisted film sessions: how many of your final annotations were driven by the AI flag versus your own eye? The right ratio depends on your workflow, but a coach who is only annotating AI-flagged moments has outsourced their coaching eye.",
-      },
-      {
-        id: "dm_02_film_s4",
-        type: "apply",
-        title: "Run a Three-Layer Film Session",
-        body: "Open the Film Analysis tool and select a recent game or practice upload. Let the AI run its full pattern detection pass. Then work through the flagged moments in Layer 2, adding your contextual interpretation to each. Finally, in Layer 3, connect at least three of your annotations to a specific player's IDP goal, drill plan, or cue you plan to introduce next practice.",
-        platformAction:
-          "Run the AI Film Analysis tool on one session, annotate at least 3 flagged moments with your contextual interpretation, and link each to a player's IDP or drill plan.",
-      },
-      {
-        id: "dm_02_film_s5",
-        type: "reflect",
-        title: "Your Coaching Eye",
-        body: "The thing an algorithm cannot develop is the coaching eye — the rapid, pattern-matching visual expertise built through thousands of hours of intentional observation. What does your eye catch that statistics miss? If you had to describe the single most important thing you know how to see in film that a software tool would never surface, what would it be?",
-      },
-    ],
-  },
-
-  {
-    id: "dm_03_benchmarks",
-    title: "Benchmarking & Positioning",
-    subtitle: "Using competitive context to set development targets that actually matter",
-    pathId: "development",
-    order: 3,
-    estimatedMinutes: 26,
-    category: "data",
-    platformDeliverable:
-      "Run a benchmark comparison for two players against their position peer group and update each player's IDP with one goal that responds to the benchmark gap.",
-    sections: [
-      {
-        id: "dm_03_bench_s1",
-        type: "frame",
-        title: "The Player Who Is Good Enough — For What?",
-        body: "You have a shooting guard who scores 14 points per game, shoots 38% from three, and defends with effort. Is that good enough? The answer entirely depends on the context: good enough to start on your current roster, yes. Good enough to play in the recruiting events they're targeting next summer, probably not. Good enough to get a scholarship offer from the programs they're interested in, that depends on which programs. Without benchmarking, development goals float in a vacuum — technically measurable but disconnected from the competitive context that gives them meaning.",
-      },
-      {
-        id: "dm_03_bench_s2",
-        type: "concept",
-        title: "The Four Benchmark Contexts",
-        body: "Meaningful benchmarking requires four contexts to be useful. Roster Context: where does the player stand relative to teammates at the same position? This drives playing time decisions and role definition. Competitive Level Context: how does the player compare to opponents they'll face in their primary competitive circuit? This drives readiness decisions. Recruiting Target Context: where does the player need to be to compete for opportunities at the level they're targeting? This drives aspiration-setting. Developmental Trajectory Context: is the player improving faster or slower than peers at their stage who ultimately reached a similar target level? This drives urgency calibration. HoopsOS benchmark data aggregates across all four contexts — the mistake is using only one when making development decisions.",
-      },
-      {
-        id: "dm_03_bench_s3",
-        type: "examine",
-        title: "Your Players Against Their Peer Groups",
-        body: "Open the Benchmarking tool and pull reports for three players at different positions. For each, look at the gap between their current metrics and the 70th percentile of their position peer group at the same competitive level. That 70th-percentile gap is your highest-priority development target — it's the threshold that separates players who are competitive from players who are comfortably competitive. Now look at their IDP goals: how many of those goals are directly responding to an identified benchmark gap?",
-      },
-      {
-        id: "dm_03_bench_s4",
-        type: "apply",
-        title: "Set One Benchmark-Driven Goal",
-        body: "Choose two players and run their full benchmark comparison reports. For each, identify the single metric gap with the most impact on their competitive positioning. Then open their IDPs and add one goal that directly targets that gap — written in the behavior + condition + standard formula, with a target that would move them meaningfully toward the 70th percentile in that metric within the next 90 days.",
-        platformAction:
-          "Open the Benchmarking tool, run position reports for two players, and add one benchmark-driven IDP goal for each based on their identified gap.",
-      },
-      {
-        id: "dm_03_bench_s5",
-        type: "reflect",
-        title: "Honest Conversations About Competitive Reality",
-        body: "Benchmark data sometimes reveals a gap between a player's aspirations and their current competitive standing that is difficult to address honestly. How do you have that conversation — the one where the data shows a player is significantly below their target level — in a way that motivates rather than deflates? What's the framing that turns a benchmark gap into a development challenge rather than a verdict?",
-      },
-    ],
-  },
-
-  {
-    id: "dm_04_at_risk",
-    title: "At-Risk Player Intervention",
-    subtitle: "Recognizing the signals and building the conversation framework that helps",
-    pathId: "development",
-    order: 4,
-    estimatedMinutes: 28,
-    category: "leadership",
-    platformDeliverable:
-      "Flag one at-risk player in the platform, log the observation that prompted the flag, and write your planned intervention approach.",
-    sections: [
-      {
-        id: "dm_04_risk_s1",
-        type: "frame",
-        title: "The Player Who Disappeared Slowly",
-        body: "It didn't happen overnight. Over six weeks, their effort in drills gradually dropped from 95% to 70%. They started arriving to practice just on time instead of early. Their film review completion went from reliable to sporadic. In the locker room, they were present but not engaged. You noticed but assumed it was a phase, a bad stretch of school, something that would resolve itself. By the time you had a real conversation, they'd mentally left the program three weeks earlier. At-risk identification is about catching the slow fade before it becomes a departure.",
-      },
-      {
-        id: "dm_04_risk_s2",
-        type: "concept",
-        title: "The At-Risk Signal Cluster",
-        body: "No single behavior reliably predicts at-risk status — it's always a cluster of changes from an individual baseline. The most predictive signals are: engagement decline (effort, attention, and initiative all trending down simultaneously), social withdrawal from the team environment (pre-practice conversations, locker room presence, response to coach interaction), platform behavior changes (WOD completion drops, film review lapse, readiness check-in quality declining), and unexplained absence or recurring tardiness. The critical word is 'change' — an introverted player who has always been quiet isn't at-risk; an extroverted player who has gone quiet over three weeks is. Your baseline knowledge of each player is the essential tool for at-risk identification.",
-      },
-      {
-        id: "dm_04_risk_s3",
-        type: "examine",
-        title: "Your Current Roster for Signal Clusters",
-        body: "Review your readiness data, WOD completion, and film engagement for the last 21 days. Flag any player who shows at least three behavioral changes from their personal baseline. Cross-reference with your own observation memory: have any of these players seemed different in practice in ways that didn't show up in data? The combination of behavioral data and coaching observation is your most accurate at-risk screen.",
-      },
-      {
-        id: "dm_04_risk_s4",
-        type: "apply",
-        title: "Open the Intervention Conversation",
-        body: "Once you've identified a player showing at-risk signals, the intervention conversation should happen within 48 hours of identification — not at the next scheduled check-in, not after the next game. The conversation structure: open with a specific observation ('I've noticed your energy has been different the last three weeks — I've noticed this because I pay attention to you specifically'), offer space without pressure ('I don't need to know everything, but I want you to know I'm paying attention'), and identify one concrete next step together. Flag the player in HoopsOS so you have a record of the observation and can track the intervention outcome.",
-        platformAction:
-          "Flag one at-risk player in the platform, log the specific signals that prompted the flag, and write your planned conversation approach.",
-      },
-      {
-        id: "dm_04_risk_s5",
-        type: "reflect",
-        title: "The One You Missed",
-        body: "Most coaches, when they think honestly about their career, can name a player they lost to the slow fade — a player who drifted out of the program or disengaged completely before the coach recognized what was happening. What were the signals that, in retrospect, were there all along? What would earlier intervention have required you to see, or be willing to act on, that you weren't ready for at the time?",
-      },
-    ],
-  },
-
-  {
-    id: "dm_05_recruiting",
-    title: "Recruiting Readiness",
-    subtitle: "Building the player file and communication approach that creates real opportunities",
-    pathId: "development",
-    order: 5,
-    estimatedMinutes: 32,
-    category: "player-dev",
-    platformDeliverable:
-      "Complete a recruiting readiness review for one player — finalize their player profile, export their film highlight reel, and draft the coach outreach summary for one target program.",
-    sections: [
-      {
-        id: "dm_05_rec_s1",
-        type: "frame",
-        title: "The Player Who Was Ready — Except for the File",
-        body: "You had a player who was genuinely ready to play at the next level — the skill was there, the character was there, the grades were there. But when a program expressed interest, the film was scattered across three different platforms and hadn't been edited since the previous season. The player profile was incomplete. There was no statistical narrative connecting their development to their current level. The opportunity didn't close, but it took three weeks to get the right information to the right person — and in recruiting, three weeks can cost a player a scholarship conversation.",
-      },
-      {
-        id: "dm_05_rec_s2",
-        type: "concept",
-        title: "The Three-Component Recruiting File",
-        body: "A complete recruiting file for any player has three components that must be current at all times, not assembled in a rush when interest arrives. The Player Profile is a one-page document covering academic standing, physical measurements, position, competitive level, and a three-sentence development narrative that tells a program what the player is being built for. The Film Archive must be organized by context (showcase, AAU, high school, practice) and include both highlights and evaluation film — programs want to see how a player performs in full-game context, not just best moments. The Metric Snapshot pulls the player's current benchmark data, assessment ratings, and IDP progress into a format a college coach can interpret in 90 seconds. The power of the HoopsOS recruiting hub is that all three components update continuously from your existing coaching work — the assessment you run today becomes part of the recruiting file tomorrow.",
-      },
-      {
-        id: "dm_05_rec_s3",
-        type: "examine",
-        title: "Your Recruiting-Ready Players",
-        body: "Open the Recruiting Hub and filter your roster for players within 18 months of their primary recruiting window. For each, check the completeness of their three-component file. The most common gaps are: film archive not organized by context, assessment data more than 60 days old, and no current narrative connecting development trajectory to competitive readiness. For each gap, estimate how long it would take to fill — because when a program expresses interest, you have 24–48 hours to respond with a complete file before the window closes.",
-      },
-      {
-        id: "dm_05_rec_s4",
-        type: "apply",
-        title: "Build One Complete Recruiting File",
-        body: "Select one player in their primary recruiting window and complete all three components of their recruiting file. Write the development narrative with a specific program-type in mind — what a D1 program is looking for is different from what a D2 program or a top prep school wants to hear. Export the film highlight reel using the platform's film tools. Run a benchmark comparison and include the relevant position peer data in the metric snapshot.",
-        platformAction:
-          "Open the Recruiting Hub, complete the player profile, film archive, and metric snapshot for one player, and draft the outreach summary for one target program.",
-      },
-      {
-        id: "dm_05_rec_s5",
-        type: "reflect",
-        title: "Development vs. Exposure",
-        body: "The most important question in player recruiting readiness is one most coaches avoid: are you building this player for the next level, or are you exposing them to the next level before they're built? Those are very different coaching philosophies with very different outcomes — one results in a player who earns an opportunity and grows into it; the other results in a player who gets looks they can't capitalize on and loses confidence in the process. Where does your current approach sit, and is it the approach that serves each player's actual trajectory?",
-      },
-    ],
-  },
-
-  {
-    id: "dm_06_culture",
-    title: "Team Culture Building",
-    subtitle: "Creating the environment where development actually happens",
-    pathId: "development",
-    order: 6,
-    estimatedMinutes: 30,
-    category: "leadership",
-    platformDeliverable:
-      "Write your program's culture definition — three to five behavioral standards, how they're co-owned with players, and how they're enforced consistently.",
-    sections: [
-      {
-        id: "dm_06_culture_s1",
-        type: "frame",
-        title: "The Team That Works Hard for No One",
-        body: "You've seen it: a roster full of talented, hardworking players who somehow underperform relative to their individual ability every time they compete together. The X's and O's are fine. The individual skills are real. But something in the collective environment is extracting effort and draining cohesion. Culture isn't a motivational poster or a team motto — it's the operating system that determines whether individual talent becomes collective performance, and whether development happens in an environment of psychological safety or self-protection.",
-      },
-      {
-        id: "dm_06_culture_s2",
-        type: "concept",
-        title: "The Four Pillars of a Development Culture",
-        body: "A development culture is built on four interdependent pillars: Psychological Safety — players must believe that attempting a new skill in practice and failing is safer than defaulting to what they know; without this, no real skill acquisition occurs. Shared Standards — the behavioral commitments of the program are specific, publicly known, consistently enforced, and co-owned by players rather than handed down from above. Recognition Architecture — the program has explicit, regular ways of recognizing growth behavior, not just performance outcomes; this shapes what players believe the program values. Challenge-Support Balance — the environment pushes players to uncomfortable growth edges while simultaneously providing the relational support that makes discomfort tolerable. Programs that have the challenge without the support produce burnout; programs that have the support without the challenge produce comfortable underachievers.",
-      },
-      {
-        id: "dm_06_culture_s3",
-        type: "examine",
-        title: "What Your Culture Actually Rewards",
-        body: "The most revealing culture diagnostic isn't your team handbook — it's what gets celebrated and what gets ignored in your daily program environment. What behaviors receive the most visible recognition from you? What behaviors do players know you'll overlook when winning is on the line? The gap between what a program says it values and what its daily environment actually rewards is where culture either holds or fractures. Be honest about that gap in your program right now.",
-      },
-      {
-        id: "dm_06_culture_s4",
-        type: "apply",
-        title: "Write Your Program Culture Definition",
-        body: "In your coaching journal, write a culture definition for your program with three to five specific behavioral standards — not values (honesty, commitment) but observable behaviors (every player gets to practice five minutes early, every criticism of a teammate in practice is followed by one statement of support, every film review is completed within 48 hours of the session upload). For each standard, write how you'll co-own it with players, how you'll track it, and what happens — specifically and consistently — when it isn't met.",
-        platformAction:
-          "Write your program's culture definition in the Coaching Journal — behavioral standards, co-ownership process, and enforcement commitment.",
-      },
-      {
-        id: "dm_06_culture_s5",
-        type: "reflect",
-        title: "The Culture You Inherited vs. The Culture You're Building",
-        body: "Every coach either inherits a culture or builds one — and most do both, inheriting some things they want to keep and some they want to change. What's the one cultural element from a program or coach you've learned from that you've deliberately tried to carry forward? And what's the one cultural norm you've inherited — from a previous coach, a club culture, or your own playing experience — that you're actively trying to dismantle?",
-      },
-    ],
-  },
-];
+    // ── Module 9 ────────────────────────────────────────────────────────────
+    {
+      id: "fm_09_accountability",
+      path: "foundation",
+      pathId: "foundation",
+      category: "Accountability Systems",
+      domain: "Accountability Systems",
+      title: "Building Accountability That Players Actually Respect",
+      subtitle: "The difference between consequences and accountability — and why it matters",
+      description:
+        "Consequences are what you do to players. Accountability is a system players opt into. This module teaches you to build accountability structures that players see as fair, meaningful, and motivating.",
+      estimatedMinutes: 21,
+      status: "not_started",
+      deliverableCompleted: false,
+      prerequisiteIds: ["fm_06_communication", "fm_07_agedev"],
+      deliverableType: "reflection",
+      deliverablePrompt:
+        "Write a reflection defining your program's accountability standard for one specific behavior. Include what the standard is, how it's communicated, and what happens when it isn't met.",
+      deliverableHref: "/app/coach/education/module/fm_09_accountability",
+      sections: [
+        {
+          type: "frame",
+          title: "The Rule Nobody Follows",
+          estimatedMinutes: 2,
+          content:
+            "You have a team rule: miss a film review without communicating, and you don't start the next game. It's posted in the team group chat. Three players have missed film reviews this month. You've started all three of them because the games mattered and you didn't want to hurt the team.\n\nThe rule exists. The accountability doesn't. And everyone on the team knows the difference.",
+        },
+        {
+          type: "concept",
+          title: "The Three Elements of Real Accountability",
+          estimatedMinutes: 8,
+          content:
+            "Accountability that players respect has three elements: clarity, consistency, and co-ownership.\n\n**Clarity** means the expectation is specific enough that a player could evaluate their own compliance without asking you. 'Be coachable' is not accountable. 'Complete your assigned film review within 48 hours of the session upload' is accountable.\n\n**Consistency** is the credibility test. A standard that is applied inconsistently — even once, even for good reasons — signals that the standard is actually a preference. Players are exquisitely sensitive to inconsistency because it reveals the real hierarchy: wins over standards.\n\nThis doesn't mean rigidity. 'This week I'm making an exception because of X' is different from silently ignoring the standard. Naming the exception and its reason preserves the standard; silence erodes it.\n\n**Co-ownership** is the element most coaches undervalue. Accountability that players participated in building feels like a shared commitment. Accountability that was handed down feels like a power assertion.\n\nAt the start of the season, run a team conversation: 'What standards do we need to hold each other to this year?' Document what they say. Use it. When a player falls short, you're holding them to their own word.",
+        },
+        {
+          type: "examine",
+          title: "Your Accountability Track Record",
+          estimatedMinutes: 3,
+          content:
+            "Think about the last three times a player or team fell short of a stated standard. Did you apply the stated consequence? If not, what prevented you?\n\nThe most common barrier is consequences that are too expensive to apply consistently — starting lineup changes that hurt the team, conditioning punishments that feel punitive. If your consequences are too costly to use, they're designed wrong.",
+        },
+        {
+          type: "apply",
+          title: "Define One Standard",
+          estimatedMinutes: 6,
+          content:
+            "Using the reflection journal, write out one accountability standard for your program. Make it specific enough to be self-evaluable, connected to platform behavior you can track, and paired with a consequence you will actually apply every time.\n\nThen write one sentence about how you'd co-own this standard with your team — how you'd introduce it as a team commitment rather than a coach mandate.",
+          actionPrompt:
+            "Write one complete accountability standard — expectation, measurement, consequence, and team ownership note — in your coaching journal.",
+          actionHref: "/app/coach/education/module/fm_09_accountability",
+        },
+        {
+          type: "reflect",
+          title: "What You're Actually Holding Players To",
+          estimatedMinutes: 2,
+          content:
+            "If your players were asked to describe the real standards of your program — not the stated ones, the real ones — what would they say?\n\nThat gap between the stated standard and the real standard is your accountability deficit. What's one standard you want to close that gap on before the next practice?",
+        },
+      ],
+    },
+  ],
+};
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Elite Path — 4 Modules
+// Development Path — 16 module outlines
 // ─────────────────────────────────────────────────────────────────────────────
 
-const eliteModules: EducationModule[] = [
-  {
-    id: "em_01_analytics",
-    title: "Program Analytics Mastery",
-    subtitle: "Turning your platform data into a competitive development advantage",
-    pathId: "elite",
-    order: 1,
-    estimatedMinutes: 45,
-    category: "data",
-    platformDeliverable:
-      "Build a program analytics dashboard with at least 5 custom metrics that track the behaviors you've identified as most predictive of player development outcomes in your system.",
-    sections: [
-      {
-        id: "em_01_analytics_s1",
-        type: "frame",
-        title: "The Coach Who Has All the Data and None of the Answers",
-        body: "A platform that generates hundreds of data points per player per week can paradoxically make coaching decisions harder, not easier. When everything is measured, the signal-to-noise problem becomes the primary analytical challenge — not data collection. Elite coaches don't use more data than average coaches; they use more discriminating data, selecting and tracking the specific metrics they've identified as most predictive of the outcomes they're building toward. Analytics mastery is not about comprehensiveness — it's about ruthless, evidence-based selection.",
-      },
-      {
-        id: "em_01_analytics_s2",
-        type: "concept",
-        title: "The Predictive Metric Framework",
-        body: "Building an analytics system starts by identifying which behaviors in your program are most predictive of the developmental outcomes you care about — not which behaviors are most measurable. The framework has four steps: Outcome Definition (what specific player or program outcomes are you trying to produce?), Behavioral Hypothesis (what coaching and player behaviors do you theorize drive those outcomes?), Metric Selection (which measurable data points best represent those behaviors?), and Correlation Testing (over one to two seasons, which of your hypothesized behaviors actually correlate with your target outcomes?). The elite coach's advantage is that they've done this work explicitly — they know which three metrics in their system are the ones that actually matter, and they've stopped tracking the other forty.",
-      },
-      {
-        id: "em_01_analytics_s3",
-        type: "examine",
-        title: "Your Highest-Correlation Behaviors",
-        body: "Open the Analytics hub and run a correlation analysis between your top-performing players (by your own development criteria, not stats) and their behavioral data patterns over the last season. Look for the two or three behaviors that the players you're most proud of developing have in common — not genetic or physical, but behavioral and habitual. Those patterns are your program's actual development predictors. Everything else is noise that a less analytically mature coach is treating as signal.",
-      },
-      {
-        id: "em_01_analytics_s4",
-        type: "apply",
-        title: "Build Your Custom Analytics Dashboard",
-        body: "In the Analytics hub, create a custom dashboard that surfaces only the metrics you've identified as highest-correlation predictors in your program. For each metric, write a one-sentence hypothesis statement: 'I believe that [behavior] predicts [outcome] because [mechanism].' This forces intellectual honesty about why you're tracking what you're tracking. Set alert thresholds for when any player drops below your identified baseline in a predictive metric — these are your early intervention triggers.",
-        platformAction:
-          "Open the Analytics hub, create a custom dashboard with at least 5 predictive metrics, and set alert thresholds for each.",
-      },
-      {
-        id: "em_01_analytics_s5",
-        type: "reflect",
-        title: "What You Believe vs. What the Data Shows",
-        body: "Every experienced coach has strongly held beliefs about player development that feel intuitively correct and may or may not be supported by data. What's one coaching belief you've held for years that your own program data either confirms or contradicts? What would it take for data to change your mind about something you're currently very sure of — and what does your answer to that question tell you about your relationship with evidence?",
-      },
-    ],
-  },
+const makeLockedModule = (
+  id: string,
+  domain: string,
+  title: string,
+  subtitle: string,
+  path: CoachLevel
+): Module => ({
+  id,
+  path,
+  pathId: path,
+  domain,
+  category: domain,
+  title,
+  subtitle,
+  description: "",
+  estimatedMinutes: 28,
+  sections: [],
+  deliverableType: "reflection",
+  deliverablePrompt: "",
+  deliverableHref: "",
+  status: "locked",
+  deliverableCompleted: false,
+  prerequisiteIds: [],
+});
 
-  {
-    id: "em_02_staff",
-    title: "Staff Cohort Leadership",
-    subtitle: "Building a coaching staff that multiplies your development impact",
-    pathId: "elite",
-    order: 2,
-    estimatedMinutes: 42,
-    category: "leadership",
-    platformDeliverable:
-      "Complete a staff cohort review — assess each staff member's development focus, assign one learning module to each, and document the shared coaching philosophy your staff is aligned on.",
-    sections: [
-      {
-        id: "em_02_staff_s1",
-        type: "frame",
-        title: "The Staff That Pulls in Three Directions",
-        body: "You have three assistant coaches. One believes in high-volume repetition and structured drills. One believes in constraint-led, game-representative environments. One believes in player autonomy and self-directed practice. All three are coaching your players in the same program, sending contradictory signals about what good basketball is, how errors should be treated, and what the path to development looks like. Players who can read these contradictions — and the best players always can — either pick a coach to trust and ignore the others, or stop trusting any of them. Staff alignment isn't about everyone agreeing on everything; it's about everyone agreeing on what matters most.",
-      },
-      {
-        id: "em_02_staff_s2",
-        type: "concept",
-        title: "The Alignment-Autonomy-Development Framework",
-        body: "Great coaching staffs are built on three explicit agreements: Philosophical Alignment on the non-negotiables (what the program will always prioritize and how players will be treated), Methodological Autonomy within the aligned framework (how each coach teaches their area is their domain; how the program defines development is the head coach's domain), and Staff Development as an explicit responsibility (every assistant coach should be growing as a coach, and the head coach is responsible for designing that growth). The most common failure in staff building is creating alignment without autonomy — leading to assistants who execute instructions without developing their own coaching eye — or creating autonomy without alignment — leading to the three-direction problem described above.",
-      },
-      {
-        id: "em_02_staff_s3",
-        type: "examine",
-        title: "Your Staff's Philosophical Coherence",
-        body: "Ask each of your assistant coaches to independently write three sentences answering: 'What is this program trying to build in players, and how do we build it?' Compare the responses without attributing them. The degree of overlap tells you your current philosophical coherence. In most staffs, the non-attributed responses reveal significant divergence not in personality but in fundamental coaching philosophy — divergence the head coach often assumed wasn't there.",
-      },
-      {
-        id: "em_02_staff_s4",
-        type: "apply",
-        title: "Run a Staff Cohort Review",
-        body: "In the Staff Cohort hub, create a profile for each coaching staff member that includes their current development focus, their primary coaching methodology, and one module from the Education Hub you're assigning them based on a gap you've identified. Then write a shared coaching philosophy document — three to five sentences that every staff member's coaching must be consistent with. Share it with the staff and create a standing monthly check-in in the platform to review alignment.",
-        platformAction:
-          "Open the Staff Cohort hub, complete staff profiles, assign one education module to each staff member, and publish your shared coaching philosophy document.",
-      },
-      {
-        id: "em_02_staff_s5",
-        type: "reflect",
-        title: "The Coach Who Made You Better",
-        body: "Think about a coach — head coach, assistant coach, or mentor — who genuinely made you a better coach. What did they do specifically that developed you? Was it structured feedback, deliberate exposure to challenging situations, philosophical conversation, or something else? Now turn it around: what are you specifically doing to develop each coach on your staff, and is it working?",
-      },
-    ],
-  },
-
-  {
-    id: "em_03_attribution",
-    title: "Coaching Impact Attribution",
-    subtitle: "Connecting your coaching behaviors to player outcomes with rigor and honesty",
-    pathId: "elite",
-    order: 3,
-    estimatedMinutes: 38,
-    category: "data",
-    platformDeliverable:
-      "Build your coaching impact report — identify three behaviors you believe drove measurable player outcomes this season and build the evidence case for each.",
-    sections: [
-      {
-        id: "em_03_attr_s1",
-        type: "frame",
-        title: "Taking Credit Honestly",
-        body: "When a player improves dramatically, how much of that improvement is your coaching and how much would have happened anyway? The honest answer is that nobody knows precisely — but the elite coach thinks carefully about this question rather than defaulting to full attribution in either direction. Attribution matters because misattribution leads to bad decisions: a coach who takes full credit for a natural talent's development may fail to replicate that development in less naturally gifted players; a coach who attributes all improvement to the player may not recognize which of their behaviors are actually driving outcomes.",
-      },
-      {
-        id: "em_03_attr_s2",
-        type: "concept",
-        title: "The Attribution Evidence Framework",
-        body: "Rigorous coaching impact attribution requires four types of evidence: Temporal Correlation (the player behavior change followed a specific coaching intervention within a plausible timeframe), Mechanism Logic (you can explain the specific pathway by which your intervention should have produced the outcome — not just that it did), Baseline Comparison (the player improved at a rate meaningfully beyond their established development trajectory, suggesting an external catalyst), and Specificity (the improvement is specific to the skills and behaviors you actually targeted, not a general performance upturn that could be explained by other factors). None of these is definitive alone; together, they constitute a credible attribution case.",
-      },
-      {
-        id: "em_03_attr_s3",
-        type: "examine",
-        title: "Your Season's Coaching Interventions",
-        body: "Review the significant coaching changes you made this season: curriculum adjustments, drill design changes, individual interventions, IDP rewrites, feedback approach shifts. For each, ask: did the targeted player or group show measurable improvement in the targeted area within a plausible timeframe? Can you trace the mechanism? Is the improvement beyond their baseline trajectory? Interventions that pass all three tests are your best attribution candidates.",
-      },
-      {
-        id: "em_03_attr_s4",
-        type: "apply",
-        title: "Build Your Impact Report",
-        body: "In the Impact Report tool, document three coaching behaviors from this season that you believe drove measurable player outcomes. For each, assemble the four-component evidence case: timeline of intervention, mechanism explanation, baseline comparison data, and specificity mapping. Be honest about where the evidence is weak and where it's strong — a credible impact report includes its own limitations, which makes the strong cases more credible, not less.",
-        platformAction:
-          "Open the Coaching Impact Report tool, document three attributed coaching-to-outcome connections with full evidence cases, and publish the report.",
-      },
-      {
-        id: "em_03_attr_s5",
-        type: "reflect",
-        title: "What You'd Do Differently",
-        body: "If you could redesign one coaching intervention from this season with the benefit of hindsight, what would you change? Not the outcome — the process: the timing, the approach, the dosage, the delivery. The coaches who improve the fastest are the ones who can evaluate their own interventions with the same rigor they'd apply to evaluating a player's development. What does your self-evaluation process look like right now, and is it honest enough to drive real improvement?",
-      },
-    ],
-  },
-
-  {
-    id: "em_04_systemic",
-    title: "Systemic Player Development",
-    subtitle: "Building a program architecture where development is inevitable, not incidental",
-    pathId: "elite",
-    order: 4,
-    estimatedMinutes: 50,
-    category: "leadership",
-    platformDeliverable:
-      "Document your program's full development system — intake process, IDP architecture, assessment cadence, platform integration, and staff accountability structures.",
-    sections: [
-      {
-        id: "em_04_sys_s1",
-        type: "frame",
-        title: "The Program Where Development Happens to Coaches Too",
-        body: "The highest-functioning development programs share a characteristic that is rarely discussed: they're systems, not people. When the head coach is absent for a week, the development doesn't pause. When an assistant coach leaves, the new coach can step into a documented process and understand what the program is trying to build and how. When a player joins mid-season, there's an intake process that gets them into a development plan within two weeks. The program's development outcomes are not primarily a function of the head coach's individual brilliance — they're a function of a system that was intelligently designed and is consistently maintained.",
-      },
-      {
-        id: "em_04_sys_s2",
-        type: "concept",
-        title: "The Six Components of a Development System",
-        body: "A true development system has six documented, consistently executed components: Intake (how every new player is assessed, onboarded into an IDP, and introduced to the program's development philosophy within a defined window), Assessment Cadence (when and how skill assessments happen, who administers them, and how results feed into IDP updates), Coaching Accountability (how the head coach tracks that assistants are delivering coaching interventions as designed), Deliverable Architecture (what players are expected to produce — film uploads, WOD completion, journal entries — and what happens when they don't), Data Review Cadence (when coaching staff reviews platform data together, what decisions that review drives, and how those decisions are documented), and External Calibration (how the program compares its development outcomes against external benchmarks and updates its methods in response). Most programs have some of these; elite programs have all six.",
-      },
-      {
-        id: "em_04_sys_s3",
-        type: "examine",
-        title: "The Gaps in Your Current System",
-        body: "Evaluate your current program against the six components. Be specific: not 'we have an assessment process' but 'we assess twice per season, Coach Williams administers, results are in HoopsOS within 48 hours, and every assessment triggers an IDP review within one week.' Vague component descriptions reveal underdeveloped components. Which of your six components has the weakest documentation and the least consistent execution? That's where your system is most fragile — most dependent on a specific person doing the right thing rather than a process ensuring it happens.",
-      },
-      {
-        id: "em_04_sys_s4",
-        type: "apply",
-        title: "Document Your Development System",
-        body: "Write a full development system document for your program — six components, each with a specific description of how it works, who is responsible, what the timeline is, and how it connects to the platform. This document should be detailed enough that a new assistant coach hired tomorrow could read it and understand exactly how the program develops players. Save it to the platform as a living document with a quarterly review commitment.",
-        platformAction:
-          "Document your program's full six-component development system in the platform and publish it as a living document with a quarterly review date.",
-      },
-      {
-        id: "em_04_sys_s5",
-        type: "reflect",
-        title: "The Legacy Question",
-        body: "In ten years, when coaches who came through your program are coaching their own players, what will they say your program taught them? Not the skills, not the tactics — what will they say about how your program thought about development, how it treated players as individuals, and what it meant to be coached by a system that took every player seriously? That answer is your program's real legacy — and it's built one decision, one IDP, one conversation at a time.",
-      },
-    ],
-  },
-];
+export const developmentPath: LearningPath = {
+  id: "development",
+  level: 2,
+  coachLevel: "development",
+  title: "Development Path",
+  subtitle: "Build advanced coaching systems that drive measurable player outcomes.",
+  description:
+    "Sixteen modules for coaches who have mastered the foundation systems and are ready to build sophisticated development architecture.",
+  credentialTitle: "HoopsOS Development Certificate",
+  totalModules: 16,
+  completedModules: 0,
+  estimatedHours: 10,
+  completionGate: [
+    "Foundation Certificate earned",
+    "All 16 modules complete",
+    "Peer review completed with another coach",
+    "Program culture document submitted",
+  ],
+  modules: [
+    makeLockedModule("dm_01", "Film Analysis", "Reading Defensive Schemes on Film", "Identifying coverages from pre-snap alignment", "development"),
+    makeLockedModule("dm_02", "Film Analysis", "Building a Film Study Curriculum", "A repeatable film review system for your roster", "development"),
+    makeLockedModule("dm_03", "Practice Design", "Constraint-Led Drill Design", "How constraints force adaptation faster than instruction", "development"),
+    makeLockedModule("dm_04", "Practice Design", "Managing Energy Across a Weekly Training Block", "Load, recovery, and peak readiness for game day", "development"),
+    makeLockedModule("dm_05", "Player Development Planning", "The Long-Term Athlete Development Arc", "Writing 12-month development plans with measurable outcomes", "development"),
+    makeLockedModule("dm_06", "Player Development Planning", "When Goals Stall: Diagnosing and Resetting IDP Progress", "The 3 reasons goals stop moving — and how to restart them", "development"),
+    makeLockedModule("dm_07", "Teaching & Cueing", "Advanced Cueing: Analogies, Imagery, and Feel Cues", "When words fail — non-verbal coaching that accelerates learning", "development"),
+    makeLockedModule("dm_08", "Teaching & Cueing", "Drill Variety and Retention Science", "Why blocked practice plateaus and how variability accelerates learning", "development"),
+    makeLockedModule("dm_09", "Player Communication", "Handling At-Risk Conversations", "When a player is struggling beyond basketball", "development"),
+    makeLockedModule("dm_10", "Player Communication", "Motivating Across Personality Types", "How to individualize your coaching presence for different players", "development"),
+    makeLockedModule("dm_11", "Accountability Systems", "Observation Habits: Coaching With Your Eyes", "A systematic approach to what you watch and when", "development"),
+    makeLockedModule("dm_12", "Accountability Systems", "Building a Coaching Staff Culture", "How alignment and distributed accountability multiply your impact", "development"),
+    makeLockedModule("dm_13", "Age-Appropriate Dev", "Specialization and the Early Developer", "When to specialize, when to protect, and how to have that conversation", "development"),
+    makeLockedModule("dm_14", "Parent Communication", "Running the Mid-Season Parent Meeting", "A structured format for program-wide expectation resets", "development"),
+    makeLockedModule("dm_15", "Program Building", "Building Your Program's Development Identity", "Defining what you stand for as a coaching program", "development"),
+    makeLockedModule("dm_16", "Program Building", "Retention: Why Players Leave and What Keeps Them", "The data and psychology behind player and family retention", "development"),
+  ],
+};
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Learning Paths
+// Elite Path — 20 module outlines
 // ─────────────────────────────────────────────────────────────────────────────
 
-export const learningPaths: LearningPath[] = [
-  {
-    id: "foundation",
-    title: "Foundation Path",
-    level: 1,
-    description:
-      "Nine focused modules covering the essential disciplines of player development — from writing goals that actually change behavior to communicating with parents under pressure. Each module connects directly to your work inside HoopsOS.",
-    modules: foundationModules,
-    credentialTitle: "HoopsOS Foundation Certificate",
-  },
-  {
-    id: "development",
-    title: "Development Path",
-    level: 2,
-    description:
-      "Six modules for coaches who have mastered foundation systems and are ready to build sophisticated development architecture — from advanced film analysis and benchmark-driven goal setting to at-risk intervention and team culture design.",
-    modules: developmentModules,
-    credentialTitle: "HoopsOS Development Certificate",
-  },
-  {
-    id: "elite",
-    title: "Elite Path",
-    level: 3,
-    description:
-      "Four master-level modules for coaches building programs where development is systematic and inevitable — analytics mastery, staff cohort leadership, coaching impact attribution, and full program system design.",
-    modules: eliteModules,
-    credentialTitle: "HoopsOS Elite Certificate",
-  },
-];
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Flat module array
-// ─────────────────────────────────────────────────────────────────────────────
-
-export const allModules: EducationModule[] = [
-  ...foundationModules,
-  ...developmentModules,
-  ...eliteModules,
-];
+export const elitePath: LearningPath = {
+  id: "elite",
+  level: 3,
+  coachLevel: "elite",
+  title: "Elite Path",
+  subtitle: "Master-level coaching systems for coaches developing high-performance athletes.",
+  description:
+    "Twenty modules for coaches operating at the highest level of youth and prep basketball.",
+  credentialTitle: "HoopsOS Elite Certificate",
+  totalModules: 20,
+  completedModules: 0,
+  estimatedHours: 16,
+  completionGate: [
+    "Development Certificate earned",
+    "All 20 modules complete",
+    "Case study submitted with season-long player outcome data",
+    "Cohort peer review completed",
+    "Mentorship session with Elite-certified coach",
+  ],
+  modules: [
+    makeLockedModule("em_01", "Tactical Systems", "Building a Full-Court Pressure System", "Installing press defense with multiple looks", "elite"),
+    makeLockedModule("em_02", "Tactical Systems", "Half-Court Offense: Motion Principles vs. Set Plays", "When to run sets and when to trust motion", "elite"),
+    makeLockedModule("em_03", "Tactical Systems", "Scouting and Opponent Preparation at Scale", "A repeatable scouting process your staff can execute", "elite"),
+    makeLockedModule("em_04", "Tactical Systems", "Transition Offense: Building an Early Offense System", "Converting defense to offense in fewer than 4 seconds", "elite"),
+    makeLockedModule("em_05", "Performance Science", "Periodization for Basketball: Planning a Full Season", "Load management, peaking, and season-long development arcs", "elite"),
+    makeLockedModule("em_06", "Performance Science", "Recovery Protocols: What the Science Actually Says", "Sleep, nutrition, and active recovery in youth athletics", "elite"),
+    makeLockedModule("em_07", "Performance Science", "Mental Performance Training for High-Stakes Competition", "Pre-game routines, pressure management, and resilience", "elite"),
+    makeLockedModule("em_08", "Performance Science", "Nutrition and Sleep: The Unsexy Performance Variables", "The most impactful interventions most coaches ignore", "elite"),
+    makeLockedModule("em_09", "Player Development Planning", "Recruiting Conversations: Development vs. Exposure", "Navigating recruiting culture without compromising development", "elite"),
+    makeLockedModule("em_10", "Player Development Planning", "Building the Elite Player's Skill Portfolio", "Designing IDPs for players with Division I ambitions", "elite"),
+    makeLockedModule("em_11", "Film Analysis", "AI-Assisted Film Review: Leverage and Limits", "What AI can and can't tell you about player development", "elite"),
+    makeLockedModule("em_12", "Film Analysis", "Building a Team Film Culture", "Getting players to watch film like coaches watch film", "elite"),
+    makeLockedModule("em_13", "Program Leadership", "Hiring and Developing Assistant Coaches", "Building a coaching staff that multiplies your impact", "elite"),
+    makeLockedModule("em_14", "Program Leadership", "Financial Sustainability for Independent Coaching Programs", "Revenue models, pricing, and long-term program health", "elite"),
+    makeLockedModule("em_15", "Program Leadership", "Managing Up: Working With Club Directors and School ADs", "Navigating institutional relationships without losing your voice", "elite"),
+    makeLockedModule("em_16", "Program Leadership", "Crisis Communication: When Things Go Wrong Publicly", "Protecting your program and your players in public moments", "elite"),
+    makeLockedModule("em_17", "Coach Development", "Building Your Coaching Philosophy Document", "Writing the document that makes every hard decision easier", "elite"),
+    makeLockedModule("em_18", "Coach Development", "Mentorship: Building Your Own Coach Development Network", "Finding, using, and becoming a coaching mentor", "elite"),
+    makeLockedModule("em_19", "Coach Development", "Self-Evaluation: Reviewing Your Own Coaching Film", "How to watch yourself coach without defensiveness", "elite"),
+    makeLockedModule("em_20", "Coach Development", "The Coach Who Keeps Growing: Staying Current in the Game", "A system for ongoing learning beyond courses and clinics", "elite"),
+  ],
+};
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Contextual Triggers
@@ -1019,158 +836,295 @@ export const allModules: EducationModule[] = [
 
 export const contextualTriggers: ContextualTrigger[] = [
   {
-    id: "ct_assessments",
-    triggerRoute: "/app/coach/assessments",
-    moduleId: "fm_02_assessment",
-    headline: "Turn your assessments into development fuel",
-    body: "Observable, contextual skill ratings drive IDP specificity. Learn the framework that makes assessments players believe in.",
-    ctaLabel: "Skill Assessment Mastery →",
-  },
-  {
-    id: "ct_practice",
-    triggerRoute: "/app/coach/practice-plans",
-    moduleId: "fm_03_practice",
-    headline: "Structure beats effort in practice design",
-    body: "The 4-block framework isn't a template — it's a cognitive map. Understand why order matters more than content.",
-    ctaLabel: "Practice Design 101 →",
-  },
-  {
-    id: "ct_film",
-    triggerRoute: "/app/coach/film",
-    moduleId: "fm_04_film",
-    headline: "Timestamp notes have 3× more impact",
-    body: "General film feedback gets ignored. Specific timestamp annotations get replayed. Learn the technique in 22 minutes.",
-    ctaLabel: "Film Review Fundamentals →",
-  },
-  {
-    id: "ct_idp",
-    triggerRoute: "/app/coach/players/:id/idp",
+    id: "ct_01",
+    condition: "Coach has an active IDP with no milestones set",
     moduleId: "fm_01_idp",
     headline: "IDPs without milestones complete 40% less often",
-    body: "The 3-part goal formula — behavior, condition, standard — turns a development intention into something both coach and player can act on.",
-    ctaLabel: "IDP Fundamentals →",
+    ctaLabel: "3-min framework →",
+    ctaHref: "/app/coach/education/module/fm_01_idp",
+    dismissible: true,
   },
   {
-    id: "ct_readiness",
-    triggerRoute: "/app/coach/readiness",
-    moduleId: "fm_08_readiness",
-    headline: "Readiness data is your early warning system",
-    body: "A single low score is noise. A three-day trend is signal. Learn how to read the four readiness domains before they become problems.",
-    ctaLabel: "Readiness Monitoring →",
-  },
-  {
-    id: "ct_at_risk",
-    triggerRoute: "/app/coach/at-risk",
-    moduleId: "dm_04_at_risk",
-    headline: "At-risk players fade slowly — catch it early",
-    body: "The signal is never one behavior — it's a cluster of changes from a personal baseline. Learn the framework that opens the right conversation.",
-    ctaLabel: "At-Risk Intervention →",
-  },
-  {
-    id: "ct_recruiting",
-    triggerRoute: "/app/coach/recruiting",
-    moduleId: "dm_05_recruiting",
-    headline: "The file should be ready before the call comes",
-    body: "When a program expresses interest, you have 24–48 hours. Learn how to keep a complete recruiting file current from your daily coaching work.",
-    ctaLabel: "Recruiting Readiness →",
-  },
-  {
-    id: "ct_benchmarks",
-    triggerRoute: "/app/coach/benchmarks",
-    moduleId: "dm_03_benchmarks",
-    headline: "Development targets without context are just numbers",
-    body: "Meaningful goals require four benchmark contexts. Learn to connect your players' current metrics to the competitive reality they're building toward.",
-    ctaLabel: "Benchmarking & Positioning →",
-  },
-];
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Journal Prompts
-// ─────────────────────────────────────────────────────────────────────────────
-
-export const journalPrompts: JournalPrompt[] = [
-  {
-    id: "jp_01",
-    moduleId: "fm_01_idp",
-    prompt:
-      "Think about a player you've coached who made a meaningful developmental leap. What made the difference — was it the right goal, the right moment, or the right level of specificity in how the goal was written?",
-    category: "player-dev",
-  },
-  {
-    id: "jp_02",
-    moduleId: "fm_02_assessment",
-    prompt:
-      "Think about a player you believe has high potential that your current metrics don't fully capture. What assessment situation would you design to surface what you're seeing intuitively?",
-    category: "player-dev",
-  },
-  {
-    id: "jp_03",
-    moduleId: "fm_03_practice",
-    prompt:
-      "Think about the best practice session you've ever run. Was it the content, or was it the structure and sequencing that made it work — and how would you replicate it?",
-    category: "practice-design",
-  },
-  {
-    id: "jp_04",
+    id: "ct_02",
+    condition: "Film review submitted with 0 annotations",
     moduleId: "fm_04_film",
-    prompt:
-      "Think about a player whose development stalled despite consistent practice. What would you have seen if you'd reviewed film with them — not for them, with them?",
-    category: "film",
+    headline: "Timestamp notes have 3× the impact of general feedback",
+    ctaLabel: "Learn the technique →",
+    ctaHref: "/app/coach/education/module/fm_04_film",
+    dismissible: true,
   },
   {
-    id: "jp_05",
-    moduleId: "fm_05_communication",
-    prompt:
-      "Think about a time you delivered corrective feedback that clearly didn't land. What was the context, and what would you do differently with the same observation now?",
-    category: "communication",
+    id: "ct_03",
+    condition: "First at-risk player flag appears in the system",
+    moduleId: "dm_09",
+    headline: "At-risk situations need a specific conversation framework",
+    ctaLabel: "Handling at-risk talks →",
+    ctaHref: "/app/coach/education/module/dm_09",
+    dismissible: true,
   },
   {
-    id: "jp_06",
-    moduleId: "fm_07_parents",
-    prompt:
-      "Who is the parent on your current roster you find hardest to engage? What might they actually be afraid of — and how would reframing that shift your approach to the next interaction?",
-    category: "communication",
+    id: "ct_04",
+    condition: "Practice plan saved with no conditioning block",
+    moduleId: "fm_02_practice",
+    headline: "Missing conditioning? The 4-block structure keeps this balanced",
+    ctaLabel: "Review the framework →",
+    ctaHref: "/app/coach/education/module/fm_02_practice",
+    dismissible: true,
   },
   {
-    id: "jp_07",
-    moduleId: "dm_04_at_risk",
-    prompt:
-      "Think about a player you've lost to the slow fade — who drifted out of the program before you recognized what was happening. What signals were there all along, and what would earlier intervention have required you to see?",
-    category: "leadership",
+    id: "ct_05",
+    condition: "Same drill type used in 5 consecutive practice plans",
+    moduleId: "dm_08",
+    headline: "Repetition builds habit — but variety builds retention",
+    ctaLabel: "The science of variability →",
+    ctaHref: "/app/coach/education/module/dm_08",
+    dismissible: true,
   },
   {
-    id: "jp_08",
-    moduleId: "em_04_systemic",
-    prompt:
-      "In ten years, when coaches who came through your program are coaching their own players, what will they say your program taught them about how development actually works?",
-    category: "leadership",
+    id: "ct_06",
+    condition: "IDP completion rate drops below 50% across the roster",
+    moduleId: "dm_06",
+    headline: "When goals stall, the framework — not the player — needs adjusting",
+    ctaLabel: "Diagnose and reset IDPs →",
+    ctaHref: "/app/coach/education/module/dm_06",
+    dismissible: true,
+  },
+  {
+    id: "ct_07",
+    condition: "Coach has not logged an observation in more than 14 days",
+    moduleId: "dm_11",
+    headline: "Observation frequency is the #1 predictor of IDP quality",
+    ctaLabel: "Build the habit →",
+    ctaHref: "/app/coach/education/module/dm_11",
+    dismissible: true,
+  },
+  {
+    id: "ct_08",
+    condition: "New coach account created (first login within 7 days)",
+    moduleId: "fm_01_idp",
+    headline: "Start where development starts — with a goal that changes behavior",
+    ctaLabel: "Begin Foundation Path →",
+    ctaHref: "/app/coach/education/module/fm_01_idp",
+    dismissible: false,
   },
 ];
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Helper functions
+// Sample Journal Entries — Coach Marcus
 // ─────────────────────────────────────────────────────────────────────────────
 
-export function getModule(id: string): EducationModule | undefined {
-  return allModules.find((m) => m.id === id);
+export const sampleJournalEntries: CoachingJournalEntry[] = [
+  {
+    id: "jrn_01",
+    moduleId: "fm_01_idp",
+    moduleName: "Writing IDPs That Actually Change Player Behavior",
+    prompt: "Think about the player you just updated — what does goal-clarity change for them?",
+    response:
+      "Updated Jaylen's IDP tonight. Changed 'improve your handle under pressure' to 'protect the ball with a change-of-pace crossover when a defender's hips are square at a success rate of 4 of 5 reps in the Tuesday defense drill by Dec 15.' Writing it that specifically forced me to realize I didn't actually know what Jaylen's current rate was. So I watched 20 minutes of his Thursday session and counted. He's at 2 of 5 right now. That's useful. That's actionable. This was a good exercise — I think I've been writing IDP goals for the form, not for the player.",
+    createdAt: "2025-05-10T21:15:00Z",
+  },
+  {
+    id: "jrn_02",
+    moduleId: "fm_02_practice",
+    moduleName: "The 4-Block Practice Structure",
+    prompt: "Think about your best practice session — was it the content or the structure that made it work?",
+    response:
+      "Ran the 4-block practice today. Didn't tell the players about the framework — just built it in. The difference in attention during Block 2 was real. I think because the warm-up had already primed the theme so when we got into the breakdown drills, players were already in that headspace. Biggest thing I noticed: Block 3 exposed two guys who looked great in Block 2. Their technique disappeared the second there was a real defender. That's not a Block 3 problem — that's a Block 2 tempo problem. Next practice I need to introduce more realistic pace in Block 2 before moving to competitive.",
+    createdAt: "2025-05-12T22:05:00Z",
+  },
+  {
+    id: "jrn_03",
+    moduleId: "fm_03_cues",
+    moduleName: "The 3-Cue Rule",
+    prompt: "What's the cue you'll never stop using — and why does it work?",
+    response:
+      "My best cue of all time is 'beat the hip.' Four years ago I started saying it on drive situations — the offensive player's hip needs to get past the defender's hip to create real separation. Players pick it up immediately. I think it works because it's external, it's binary, and it's transferable to any drive situation. The concept module is right that external cues beat internal ones. Now I need to audit the rest of my cue library with this lens.",
+    createdAt: "2025-05-13T20:30:00Z",
+  },
+  {
+    id: "jrn_04",
+    moduleId: "fm_08_parents",
+    moduleName: "The Parent Conversation That Goes Sideways",
+    prompt: "Who is the parent on your roster you find hardest to talk to — and what might they actually be afraid of?",
+    response:
+      "DeShawn's dad. He comes to every game and tracks minutes on his phone. I've assumed for two months that he's trying to catch me being unfair. Reading this module shifted something. He coached youth basketball for 11 years before his work schedule made him stop. Basketball was his identity, and now he watches his son play it without him. I think what he's afraid of is that DeShawn will miss his window. I haven't been empathizing with that. I've been defending my rotation logic when what he actually needs to hear is that I see DeShawn's long-term ceiling.",
+    createdAt: "2025-05-14T19:45:00Z",
+  },
+  {
+    id: "jrn_05",
+    moduleId: "fm_06_communication",
+    moduleName: "Feedback That Players Actually Hear",
+    prompt: "Think about a time your feedback didn't land — what was the context?",
+    response:
+      "Post-game after the Eastside loss in March. We were down 11, came back to within 4, turned the ball over on back-to-back possessions and lost by 9. In the locker room I gave what I thought was a sharp, specific analysis. Nobody could tell me a word I said three days later. Marcus came to me on Wednesday and said 'coach, I think I made a mistake on that third possession — can we watch it together?' That was the real teaching moment — two days post-game, player-initiated, calm. I need to stop treating the post-game locker room as a teaching environment.",
+    createdAt: "2025-05-15T08:10:00Z",
+  },
+];
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Foundation Credential
+// ─────────────────────────────────────────────────────────────────────────────
+
+export const foundationCredential: Credential = {
+  level: "foundation",
+  title: "HoopsOS Foundation Certificate",
+  description:
+    "Awarded to coaches who demonstrate mastery of core development systems — from IDP design to practice structure, cueing, film feedback, and family communication.",
+  earned: false,
+  progress: 67,
+  unlocksNextPath: true,
+  requirements: [
+    {
+      id: "cr_01",
+      label: "Complete all 9 Foundation modules",
+      description: "All modules must be marked complete with deliverables submitted.",
+      type: "module",
+      target: "9 of 9 modules complete",
+      currentValue: "2 of 9 complete",
+      met: false,
+    },
+    {
+      id: "cr_02",
+      label: "All active players have IDPs",
+      description: "Every player on your active roster has an active Individual Development Plan.",
+      type: "behavior",
+      target: "100% IDP coverage",
+      currentValue: "11 of 11 players",
+      met: true,
+    },
+    {
+      id: "cr_03",
+      label: "IDP milestone coverage",
+      description: "At least 80% of active players have IDPs with at least two milestones set.",
+      type: "behavior",
+      target: "80% of players have milestones",
+      currentValue: "8 of 11 players",
+      met: true,
+    },
+    {
+      id: "cr_04",
+      label: "Film reviews with timestamp annotations",
+      description: "At least 3 film review sessions must include timestamp annotations.",
+      type: "deliverable",
+      target: "3 sessions with timestamps",
+      currentValue: "1 session",
+      met: false,
+    },
+    {
+      id: "cr_05",
+      label: "Cue Library populated",
+      description: "At least 5 drills have cues saved in the Cue Library.",
+      type: "behavior",
+      target: "5 drills with cues",
+      currentValue: "5 of 5 drills",
+      met: true,
+    },
+    {
+      id: "cr_06",
+      label: "Practice plans using 4-block structure",
+      description: "At least 4 saved practice plans use the 4-block format.",
+      type: "deliverable",
+      target: "4 plans with all blocks",
+      currentValue: "4 of 4 plans",
+      met: true,
+    },
+    {
+      id: "cr_07",
+      label: "Coaching journal entries",
+      description: "At least 5 journal entries saved across at least 3 different modules.",
+      type: "deliverable",
+      target: "5 entries across 3+ modules",
+      currentValue: "5 entries, 5 modules",
+      met: true,
+    },
+    {
+      id: "cr_08",
+      label: "Observation log entries",
+      description: "At least 10 player observations logged in the past 30 days.",
+      type: "behavior",
+      target: "10 observations in 30 days",
+      currentValue: "6 observations",
+      met: false,
+    },
+    {
+      id: "cr_09",
+      label: "Parent communication log",
+      description: "At least 2 documented parent conversations using the EARS framework.",
+      type: "deliverable",
+      target: "2 documented conversations",
+      currentValue: "0 documented",
+      met: false,
+    },
+  ],
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Utility functions
+// ─────────────────────────────────────────────────────────────────────────────
+
+export function getAllModules(): Module[] {
+  return [
+    ...foundationPath.modules,
+    ...developmentPath.modules,
+    ...elitePath.modules,
+  ];
 }
 
-export function getPath(id: string): LearningPath | undefined {
-  return learningPaths.find((p) => p.id === id);
+export function getModuleById(id: string): Module | undefined {
+  return getAllModules().find((m) => m.id === id);
 }
 
+export function getPathProgress(level: CoachLevel | string): LearningPath {
+  if (level === "foundation" || level === "1") return foundationPath;
+  if (level === "development" || level === "2") return developmentPath;
+  return elitePath;
+}
+
+export function getActiveModule(): Module | undefined {
+  const inProgress = foundationPath.modules.find((m) => m.status === "in_progress");
+  if (inProgress) return inProgress;
+  return foundationPath.modules.find((m) => m.status === "not_started");
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Compatibility shims — support page files that use the legacy API shape
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * EducationModule — alias for Module that explicitly surfaces the optional
+ * legacy fields (category, pathId, completedAt) as required by older page files.
+ */
+export type EducationModule = Module;
+
+/** @deprecated Use foundationPath / developmentPath / elitePath directly */
+export const learningPaths: LearningPath[] = [
+  foundationPath,
+  developmentPath,
+  elitePath,
+];
+
+/** @deprecated Use getAllModules() */
+export const allModules: Module[] = getAllModules();
+
+/** @deprecated Use getModuleById() */
+export function getModule(id: string): Module | undefined {
+  return getModuleById(id);
+}
+
+/** @deprecated Use getActiveModule() */
 export function getNextModule(_coachId?: string): EducationModule | undefined {
-  // Return the first incomplete module in the foundation path
-  const incomplete = foundationModules.find((m) => !m.completedAt);
-  if (incomplete) return incomplete;
-  // If foundation complete, return first development module
-  return developmentModules[0];
+  return getActiveModule();
 }
 
-export function getTriggerForRoute(route: string): ContextualTrigger | undefined {
-  return contextualTriggers.find((t) => {
-    // Allow :param segments to match
-    const pattern = t.triggerRoute.replace(/:[^/]+/g, "[^/]+");
-    return new RegExp(`^${pattern}$`).test(route);
-  });
-}
+/** @deprecated Journal prompts are now embedded in module reflect sections */
+export const journalPrompts: Array<{
+  id: string;
+  moduleId: string;
+  prompt: string;
+  category: string;
+}> = sampleJournalEntries.map((e) => ({
+  id: e.id,
+  moduleId: e.moduleId,
+  prompt: e.prompt,
+  category: "general",
+}));
