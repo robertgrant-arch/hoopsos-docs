@@ -47,6 +47,7 @@ import {
 } from "lucide-react";
 import { AppShell, PageHeader } from "@/components/app/AppShell";
 import { Button } from "@/components/ui/button";
+import { CollapsibleSection } from "@/components/ui/CollapsibleSection";
 import {
   Dialog,
   DialogContent,
@@ -382,15 +383,6 @@ function TriagePanel({ onDismiss }: { onDismiss: (key: string) => void }) {
     })),
   ];
 
-  if (items.length === 0) {
-    return (
-      <div className="rounded-xl border border-border bg-card px-5 py-4 flex items-center gap-2 text-[13px] text-[oklch(0.65_0.18_150)]">
-        <CheckCircle2 className="w-4 h-4" />
-        All clear — no items need your attention right now
-      </div>
-    );
-  }
-
   const badgeProps = (kind: TriageItem["kind"]) => {
     if (kind === "restricted") return { bg: "oklch(0.68 0.22 25 / 0.1)", text: "oklch(0.68 0.22 25)", label: "Restricted" };
     if (kind === "flagged")    return { bg: "oklch(0.72 0.17 75 / 0.1)", text: "oklch(0.72 0.17 75)", label: "Flagged" };
@@ -405,16 +397,28 @@ function TriagePanel({ onDismiss }: { onDismiss: (key: string) => void }) {
     return <ClipboardList className="w-3.5 h-3.5" />;
   }
 
-  return (
-    <div className="rounded-xl border border-border bg-card overflow-hidden">
-      <SectionHeader
-        title={`Needs Attention · ${items.length}`}
-        href="/app/coach/readiness"
-        linkLabel="Full readiness"
-      />
+  const summaryText =
+    items.length === 0
+      ? "All clear"
+      : `${items.length} item${items.length !== 1 ? "s" : ""} need review`;
 
+  return (
+    <CollapsibleSection
+      title="Needs Attention"
+      count={items.length}
+      href="/app/coach/readiness"
+      linkLabel="Full readiness"
+      defaultOpen
+      summary={summaryText}
+    >
+      {items.length === 0 ? (
+        <div className="px-5 py-4 flex items-center gap-2 text-[13px]" style={{ color: "oklch(0.65 0.18 150)" }}>
+          <CheckCircle2 className="w-4 h-4" />
+          All clear — no items need your attention right now
+        </div>
+      ) : (
       <div className="divide-y divide-border/40">
-        {items.map((item, idx) => {
+        {items.map((item) => {
           const key = item.kind === "overdue" ? item.assignmentId : item.playerId + item.kind;
           const bp = badgeProps(item.kind);
 
@@ -515,7 +519,8 @@ function TriagePanel({ onDismiss }: { onDismiss: (key: string) => void }) {
           );
         })}
       </div>
-    </div>
+      )}
+    </CollapsibleSection>
   );
 }
 
@@ -573,9 +578,17 @@ function UpcomingEvents() {
     return                            { bg: "oklch(0.75 0.12 140 / 0.1)", text: "oklch(0.75 0.12 140)", label: "Practice" };
   };
 
+  const nextGame = UPCOMING_EVENTS.find((e) => e.type === "game");
+
   return (
-    <div className="rounded-xl border border-border bg-card overflow-hidden">
-      <SectionHeader title="Upcoming" href="/app/team/schedule" linkLabel="Full schedule" />
+    <CollapsibleSection
+      title="Upcoming"
+      count={UPCOMING_EVENTS.length}
+      href="/app/team/schedule"
+      linkLabel="Full schedule"
+      defaultOpen
+      summary={nextGame ? `Next game ${nextGame.date} · ${nextGame.time}` : `${UPCOMING_EVENTS.length} events`}
+    >
       <div className="divide-y divide-border/40">
         {UPCOMING_EVENTS.map((ev) => {
           const s = eventTypeStyle(ev.type);
@@ -603,7 +616,7 @@ function UpcomingEvents() {
           );
         })}
       </div>
-    </div>
+    </CollapsibleSection>
   );
 }
 
@@ -616,14 +629,15 @@ function FilmQueue() {
   const pending = athleteUploads.filter((u) => u.status !== "COACH_REVIEWED");
 
   return (
-    <div className="rounded-xl border border-border bg-card overflow-hidden">
-      <SectionHeader
-        title={`Film Queue · ${pending.length}`}
-        href="/app/coach/queue"
-        linkLabel="Open queue"
-      />
+    <CollapsibleSection
+      title="Film Queue"
+      count={pending.length}
+      href="/app/coach/queue"
+      linkLabel="Open queue"
+      summary={pending.length > 0 ? `${pending.length} video${pending.length !== 1 ? "s" : ""} need review` : "Queue clear"}
+    >
       {pending.length === 0 ? (
-        <div className="px-5 py-4 flex items-center gap-2 text-[12px] text-[oklch(0.65_0.18_150)]">
+        <div className="px-5 py-4 flex items-center gap-2 text-[12px]" style={{ color: "oklch(0.65 0.18 150)" }}>
           <CheckCircle2 className="w-4 h-4" /> Queue clear
         </div>
       ) : (
@@ -649,7 +663,7 @@ function FilmQueue() {
           ))}
         </div>
       )}
-    </div>
+    </CollapsibleSection>
   );
 }
 
@@ -660,10 +674,19 @@ function FilmQueue() {
 
 function DevelopmentAlerts() {
   return (
-    <div className="rounded-xl border border-border bg-card overflow-hidden">
-      <SectionHeader title="Development Gaps" href="/app/coach/roster" linkLabel="All players" />
+    <CollapsibleSection
+      title="Development Gaps"
+      count={DEVELOPMENT_ALERTS.length}
+      href="/app/coach/roster"
+      linkLabel="All players"
+      summary={
+        DEVELOPMENT_ALERTS.length > 0
+          ? `${DEVELOPMENT_ALERTS.length} player${DEVELOPMENT_ALERTS.length !== 1 ? "s" : ""} need attention`
+          : "No gaps"
+      }
+    >
       {DEVELOPMENT_ALERTS.length === 0 ? (
-        <div className="px-5 py-4 flex items-center gap-2 text-[12px] text-[oklch(0.65_0.18_150)]">
+        <div className="px-5 py-4 flex items-center gap-2 text-[12px]" style={{ color: "oklch(0.65 0.18 150)" }}>
           <CheckCircle2 className="w-4 h-4" /> No development gaps
         </div>
       ) : (
@@ -685,7 +708,7 @@ function DevelopmentAlerts() {
           ))}
         </div>
       )}
-    </div>
+    </CollapsibleSection>
   );
 }
 
@@ -762,29 +785,30 @@ export function CoachDashboard() {
             <DevelopmentAlerts />
 
             {/* Quick actions — condensed to 4 high-frequency items */}
-            <div className="rounded-xl border border-border bg-card p-4">
-              <h3 className="font-bold text-[14px] mb-3">Quick Actions</h3>
-              <QuickAction
-                href="/app/coach/assignments"
-                icon={<ClipboardList className="w-4 h-4" />}
-                label="Assign Workout"
-              />
-              <QuickAction
-                href="/app/coach/film/upload"
-                icon={<Film className="w-4 h-4" />}
-                label="Upload Film"
-              />
-              <QuickAction
-                href="/app/playbook"
-                icon={<Sparkles className="w-4 h-4" />}
-                label="Design a Play"
-              />
-              <QuickAction
-                href="/app/coach/inbox"
-                icon={<MessageSquare className="w-4 h-4" />}
-                label="Messages"
-              />
-            </div>
+            <CollapsibleSection title="Quick Actions" defaultOpen>
+              <div className="p-3 space-y-0.5">
+                <QuickAction
+                  href="/app/coach/assignments"
+                  icon={<ClipboardList className="w-4 h-4" />}
+                  label="Assign Workout"
+                />
+                <QuickAction
+                  href="/app/coach/film/upload"
+                  icon={<Film className="w-4 h-4" />}
+                  label="Upload Film"
+                />
+                <QuickAction
+                  href="/app/playbook"
+                  icon={<Sparkles className="w-4 h-4" />}
+                  label="Design a Play"
+                />
+                <QuickAction
+                  href="/app/coach/inbox"
+                  icon={<MessageSquare className="w-4 h-4" />}
+                  label="Messages"
+                />
+              </div>
+            </CollapsibleSection>
           </div>
         </div>
       </div>
