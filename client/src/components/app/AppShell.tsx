@@ -256,9 +256,12 @@ const COACH_SIDEBAR_SECTIONS: SidebarSection[] = [
   {
     title: "DEVELOP",
     items: [
-      { href: "/app/coach/assessments",  label: "Assessments",  icon: <ClipboardCheck className="w-4 h-4" /> },
-      { href: "/app/coach/benchmarks",   label: "Benchmarking", icon: <TrendingUp className="w-4 h-4" />     },
-      { href: "/app/coach/idp/generate", label: "IDP Builder",  icon: <Target className="w-4 h-4" />         },
+      { href: "/app/coach/assess/quick",  label: "Quick Assess",     icon: <ClipboardCheck className="w-4 h-4" /> },
+      { href: "/app/coach/assessments",   label: "Assessments",      icon: <ClipboardList className="w-4 h-4" />  },
+      { href: "/app/coach/observe/quality", label: "Observation Quality", icon: <Activity className="w-4 h-4" />  },
+      { href: "/app/coach/film-link",     label: "Film Corroboration", icon: <Film className="w-4 h-4" />         },
+      { href: "/app/coach/benchmarks",    label: "Benchmarking",     icon: <TrendingUp className="w-4 h-4" />     },
+      { href: "/app/coach/idp/generate",  label: "IDP Builder",      icon: <Target className="w-4 h-4" />         },
     ],
   },
   {
@@ -306,8 +309,16 @@ const COACH_SIDEBAR_SECTIONS: SidebarSection[] = [
       { href: "/app/coach/education/mirror",         label: "My Data",         icon: <Activity className="w-4 h-4" />      },
       { href: "/app/coach/cues",                     label: "Cue Library",     icon: <MessageSquare className="w-4 h-4" /> },
       { href: "/app/coach/education/journal",        label: "Coaching Journal", icon: <FileText className="w-4 h-4" />     },
-      { href: "/app/coach/education/cohort",         label: "Staff Cohort",    icon: <Users className="w-4 h-4" />         },
-      { href: "/app/coach/education/certifications", label: "Certifications",  icon: <Award className="w-4 h-4" />         },
+      { href: "/app/coach/education/cohort",           label: "Staff Cohort",      icon: <Users className="w-4 h-4" />         },
+      { href: "/app/coach/education/certifications",   label: "Certifications",    icon: <Award className="w-4 h-4" />         },
+      { href: "/app/coach/education/prescriptions",    label: "My Prescriptions",  icon: <Target className="w-4 h-4" />        },
+    ],
+  },
+  {
+    title: "PROFILE",
+    items: [
+      { href: "/app/coach/career",        label: "Career Record",    icon: <TrendingUp className="w-4 h-4" /> },
+      { href: "/app/coach/season-report", label: "Season Report",    icon: <BarChart2 className="w-4 h-4" />  },
     ],
   },
 ];
@@ -345,7 +356,11 @@ const NAV: Record<Role, NavItem[]> = {
     { href: "/app/player/recruiting",            label: "Recruiting Profile", icon: <Star className="w-5 h-5" />        },
     { href: "/app/player/resume",                label: "My Resume",          icon: <FileText className="w-5 h-5" />    },
     { href: "/app/player/recruiting/visibility", label: "Privacy Settings",   icon: <Shield className="w-5 h-5" />     },
-    { href: "/app/player/vdv",                   label: "My VDV Score",       icon: <TrendingUp className="w-5 h-5" />  },
+    { href: "/app/player/vdv",            label: "My VDV Score",       icon: <TrendingUp className="w-5 h-5" />  },
+    { href: "/app/player/coach-view",     label: "Coach's View",       icon: <Target className="w-5 h-5" />      },
+    { href: "/app/player/skill-velocity", label: "Skill Velocity",     icon: <Activity className="w-5 h-5" />    },
+    { href: "/app/player/growth-story",   label: "My Growth Story",    icon: <Star className="w-5 h-5" />        },
+    { href: "/app/player/milestones",     label: "Milestones",         icon: <Trophy className="w-5 h-5" />      },
   ],
   COACH: [], // handled via COACH_SIDEBAR_SECTIONS + COACH_TABS
   TEAM_ADMIN: [
@@ -408,7 +423,9 @@ const NAV: Record<Role, NavItem[]> = {
     { href: "/app/family/privacy",         label: "Privacy Settings", icon: <Shield className="w-5 h-5" />    },
     { href: "/app/family/access-requests", label: "Access Requests",  icon: <Bell className="w-5 h-5" />      },
     { href: "/app/family/report",          label: "Progress Report",  icon: <FileText className="w-5 h-5" />  },
-    { href: "/app/parent/engagement",      label: "Engagement Score", icon: <Activity className="w-5 h-5" />  },
+    { href: "/app/parent/engagement",        label: "Engagement Score",    icon: <Activity className="w-5 h-5" />   },
+    { href: "/app/parent/weekly-pulse",      label: "Weekly Pulse",        icon: <Bell className="w-5 h-5" />      },
+    { href: "/app/parent/recruiter-activity", label: "Recruiter Activity", icon: <Star className="w-5 h-5" />      },
   ],
   SUPER_ADMIN: [
     { href: "/app/admin",            label: "Overview",            icon: <LayoutDashboard className="w-5 h-5" /> },

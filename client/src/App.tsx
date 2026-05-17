@@ -214,6 +214,22 @@ const TeamRoster        = React.lazy(() => import("@/pages/app/AppPages").then(m
 const TeamTeams         = React.lazy(() => import("@/pages/app/AppPages").then(m => ({ default: m.TeamTeams })));
 const TeamSettings      = React.lazy(() => import("@/pages/app/AppPages").then(m => ({ default: m.TeamSettings })));
 
+// New player & coach experience pages
+const QuickAssessFlowPage      = React.lazy(() => import("@/pages/app/coach/QuickAssessFlowPage"));
+const CoachCareerRecordPage    = React.lazy(() => import("@/pages/app/coach/CoachCareerRecordPage"));
+const FilmCorroborationEntryPage = React.lazy(() => import("@/pages/app/coach/FilmCorroborationEntryPage"));
+const LiveObservationQualityPage = React.lazy(() => import("@/pages/app/coach/LiveObservationQualityPage"));
+const CoachSeasonReportPage    = React.lazy(() => import("@/pages/app/coach/CoachSeasonReportPage"));
+const ModulePrescriptionPage   = React.lazy(() => import("@/pages/app/coach/education/ModulePrescriptionPage"));
+const CoachViewTransparencyPage = React.lazy(() => import("@/pages/app/player/CoachViewTransparencyPage"));
+const SkillVelocityPage        = React.lazy(() => import("@/pages/app/player/SkillVelocityPage"));
+const PlayerGrowthStoryPage    = React.lazy(() => import("@/pages/app/player/PlayerGrowthStoryPage"));
+const PlayerMilestonePage      = React.lazy(() => import("@/pages/app/player/PlayerMilestonePage"));
+const RecruiterViewActivityPage = React.lazy(() => import("@/pages/app/parent/RecruiterViewActivityPage"));
+const ParentWeeklyPulsePage    = React.lazy(() => import("@/pages/app/parent/ParentWeeklyPulsePage"));
+const PlayerOnboardingPage     = React.lazy(() => import("@/pages/app/player/PlayerOnboardingPage"));
+const CoachOnboardingFlow      = React.lazy(() => import("@/pages/app/coach/CoachOnboardingFlow"));
+
 // KPI / Analytics dashboard pages
 const VDVCommandCenterPage         = React.lazy(() => import("@/pages/app/analytics/VDVCommandCenterPage"));
 const NorthStarDashboardPage       = React.lazy(() => import("@/pages/app/analytics/NorthStarDashboardPage"));
@@ -461,6 +477,22 @@ function Router() {
         <Route path="/app/team/roster" component={TeamRoster} />
         <Route path="/app/team/teams" component={TeamTeams} />
         <Route path="/app/team/settings" component={TeamSettings} />
+
+        {/* New player & coach experience routes */}
+        <Route path="/app/coach/assess/quick"          component={guard(QuickAssessFlowPage)} />
+        <Route path="/app/coach/career"                component={guard(CoachCareerRecordPage)} />
+        <Route path="/app/coach/film-link"             component={guard(FilmCorroborationEntryPage)} />
+        <Route path="/app/coach/observe/quality"       component={guard(LiveObservationQualityPage)} />
+        <Route path="/app/coach/season-report"         component={guard(CoachSeasonReportPage)} />
+        <Route path="/app/coach/education/prescriptions" component={guard(ModulePrescriptionPage)} />
+        <Route path="/app/player/coach-view"           component={CoachViewTransparencyPage} />
+        <Route path="/app/player/skill-velocity"       component={SkillVelocityPage} />
+        <Route path="/app/player/growth-story"         component={PlayerGrowthStoryPage} />
+        <Route path="/app/player/milestones"           component={PlayerMilestonePage} />
+        <Route path="/app/parent/recruiter-activity"   component={RecruiterViewActivityPage} />
+        <Route path="/app/parent/weekly-pulse"         component={ParentWeeklyPulsePage} />
+        <Route path="/app/player/onboarding"           component={PlayerOnboardingPage} />
+        <Route path="/app/coach/onboarding"            component={guard(CoachOnboardingFlow)} />
 
         {/* KPI Analytics — platform-level */}
         <Route path="/app/analytics/vdv"          component={guard(VDVCommandCenterPage)} />
