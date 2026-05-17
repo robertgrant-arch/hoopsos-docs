@@ -224,10 +224,18 @@ const pwaPlugin = VitePWA({
     ],
   },
   workbox: {
-    maximumFileSizeToCacheInBytes: 5 * 1024 * 1024, // 5 MB — covers the current bundle
-    globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2}"],
-    // Serve stale content while revalidating — good for an ops app
+    // Only precache files under 500 kB — skips the large vendor chunks (HLS.js, React,
+    // canvas libs) which are already cached by the browser after first load.
+    maximumFileSizeToCacheInBytes: 512 * 1024,
+    // Precache HTML shell, CSS, icons, fonts. Skip large JS chunks — they cache at runtime.
+    globPatterns: ["**/*.{html,css,ico,svg,png,woff2}"],
+    // Runtime caching picks up JS chunks on first navigation (stale-while-revalidate)
     runtimeCaching: [
+      {
+        urlPattern: /\/assets\/.*\.js$/,
+        handler: "StaleWhileRevalidate",
+        options: { cacheName: "js-chunks", expiration: { maxEntries: 120, maxAgeSeconds: 60 * 60 * 24 * 30 } },
+      },
       {
         urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
         handler: "CacheFirst",
@@ -260,22 +268,82 @@ export default defineConfig({
         // can cache them independently from app code changes.
         manualChunks(id) {
           if (!id.includes("node_modules")) return undefined;
+          // React core — cached forever, never changes between deploys
           if (id.includes("/react/") || id.includes("/react-dom/") || id.includes("/scheduler/")) {
             return "vendor-react";
           }
+          // Radix UI + icon set + overlay components
           if (id.includes("/@radix-ui/") || id.includes("/lucide-react/") || id.includes("/cmdk/") || id.includes("/vaul/")) {
             return "vendor-ui";
           }
+          // Data fetching
           if (id.includes("/@tanstack/")) {
             return "vendor-query";
           }
+          // Router
           if (id.includes("/wouter/")) {
             return "vendor-router";
           }
+          // PWA runtime — tiny, never changes
           if (id.includes("/workbox-") || id.includes("/idb/")) {
             return "vendor-pwa";
           }
-          // All other node_modules go into a shared vendor chunk
+          // Auth — Clerk SDK is large, isolate it
+          if (id.includes("/@clerk/")) {
+            return "vendor-auth";
+          }
+          // Animation — framer-motion is large, only loaded by animated pages
+          if (id.includes("/framer-motion/")) {
+            return "vendor-motion";
+          }
+          // Charts — recharts + dependencies
+          if (id.includes("/recharts/") || id.includes("/victory-") || id.includes("/d3-")) {
+            return "vendor-charts";
+          }
+          // Canvas — konva + react-konva (playbook studio only)
+          if (id.includes("/konva/") || id.includes("/react-konva/") || id.includes("/use-image/")) {
+            return "vendor-canvas";
+          }
+          // Video / media — Mux player + HLS.js + media-chrome (all Mux deps)
+          if (
+            id.includes("/@mux/") ||
+            id.includes("/hls.js/") ||
+            id.includes("/media-chrome/") ||
+            id.includes("/custom-media-element/") ||
+            id.includes("/mux-embed/")
+          ) {
+            return "vendor-media";
+          }
+          // Markdown rendering stack — docs only
+          if (
+            id.includes("/react-markdown/") ||
+            id.includes("/remark-") ||
+            id.includes("/rehype-") ||
+            id.includes("/hast") ||
+            id.includes("/mdast") ||
+            id.includes("/unist") ||
+            id.includes("/micromark") ||
+            id.includes("/vfile")
+          ) {
+            return "vendor-markdown";
+          }
+          // Syntax highlighting — huge, docs/code pages only
+          if (id.includes("/highlight.js/")) {
+            return "vendor-highlight";
+          }
+          // Form handling
+          if (id.includes("/react-hook-form/") || id.includes("/@hookform/")) {
+            return "vendor-forms";
+          }
+          // Drag and drop
+          if (id.includes("/@dnd-kit/")) {
+            return "vendor-dnd";
+          }
+          // AI / generative
+          if (id.includes("/@google/generative-ai") || id.includes("/openai/")) {
+            return "vendor-ai";
+          }
+          // Remaining node_modules — should now be small utilities only
           return "vendor";
         },
       },
