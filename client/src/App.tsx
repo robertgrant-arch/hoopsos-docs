@@ -214,6 +214,11 @@ const TeamRoster        = React.lazy(() => import("@/pages/app/AppPages").then(m
 const TeamTeams         = React.lazy(() => import("@/pages/app/AppPages").then(m => ({ default: m.TeamTeams })));
 const TeamSettings      = React.lazy(() => import("@/pages/app/AppPages").then(m => ({ default: m.TeamSettings })));
 
+// Payments module
+const PaymentsDashboardPage  = React.lazy(() => import("@/pages/app/payments/PaymentsDashboardPage"));
+const OutstandingPaymentsPage = React.lazy(() => import("@/pages/app/payments/OutstandingPaymentsPage"));
+const CreateFeeRequestPage   = React.lazy(() => import("@/pages/app/payments/CreateFeeRequestPage"));
+
 // New player & coach experience pages
 const QuickAssessFlowPage      = React.lazy(() => import("@/pages/app/coach/QuickAssessFlowPage"));
 const CoachCareerRecordPage    = React.lazy(() => import("@/pages/app/coach/CoachCareerRecordPage"));
@@ -477,6 +482,11 @@ function Router() {
         <Route path="/app/team/roster" component={TeamRoster} />
         <Route path="/app/team/teams" component={TeamTeams} />
         <Route path="/app/team/settings" component={TeamSettings} />
+
+        {/* Payments module */}
+        <Route path="/app/payments"             component={guard(PaymentsDashboardPage)} />
+        <Route path="/app/payments/outstanding"  component={guard(OutstandingPaymentsPage)} />
+        <Route path="/app/payments/create"       component={guard(CreateFeeRequestPage)} />
 
         {/* New player & coach experience routes */}
         <Route path="/app/coach/assess/quick"          component={guard(QuickAssessFlowPage)} />
